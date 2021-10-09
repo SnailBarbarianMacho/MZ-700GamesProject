@@ -1,0 +1,2 @@
+{moveDown=2}{col=5}{ufo}{ufo} {col=6}Thank you for playing! {col=5}{ufo}{ufo}
+{moveDown=8}{moveRight=4}{col=7}あなたの コンティニュー かいすう:

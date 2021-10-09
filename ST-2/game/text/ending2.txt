@@ -1,0 +1,4 @@
+{moveRight=11}{col=2}Game over song
+
+{moveRight=10}{col=3}"Ronin" Composer
+{moveDown=10}{moveRight=2}{col=6}TAKO

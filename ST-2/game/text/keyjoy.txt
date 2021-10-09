@@ -1,0 +1,1 @@
+{col=3}AM7J Joystick adapter supported

@@ -1,0 +1,165 @@
+{
+    "comment_system" : "---------------- System",
+    "Pause": {
+        "x": 8, "y": 0, "w": 16, "h": 4
+    },
+    "Nr0": {
+        "mode": "Transparent",
+        "x": 24, "y": 0, "w": 4, "h": 4
+    },
+    "Nr1": {
+        "mode": "Transparent",
+        "x": 28, "y": 0, "w": 4, "h": 4
+    },
+    "Nr2": {
+        "mode": "Transparent",
+        "x": 32, "y": 0, "w": 4, "h": 4
+    },
+    "Nr3": {
+        "mode": "Transparent",
+        "x": 36, "y": 0, "w": 4, "h": 4
+    },
+    "Nr4": {
+        "mode": "Transparent",
+        "x": 32, "y": 4, "w": 4, "h": 4
+    },
+    "Nr5": {
+        "mode": "Transparent",
+        "x": 36, "y": 4, "w": 4, "h": 4
+    },
+    "Nr6": {
+        "mode": "Transparent",
+        "x": 32, "y": 8, "w": 4, "h": 4
+    },
+    "Nr7": {
+        "mode": "Transparent",
+        "x": 36, "y": 8, "w": 4, "h": 4
+    },
+
+    "comment_player" : "---------------- プレーヤー",
+    "Player": {
+        "x": 0, "y": 0, "w": 3, "h": 3
+    },
+    "Item": {
+        "x": 3, "y": 0, "w": 4, "h": 3
+    },
+    "SubLevel": {
+        "x": 7, "y": 0, "w": 1, "h": 3
+    },
+    "PlayerBullet": {
+        "x": 38, "y": 18, "w": 2, "h": 8
+    },
+
+    "comment_enemy" : "---------------- 敵",
+    "Enemy3_1": {
+        "x": 0, "y": 5, "w": 3, "h": 3
+    },
+    "Enemy3_2": {
+        "x": 3, "y": 5, "w": 3, "h": 3
+    },
+    "Enemy3_3": {
+        "x": 6, "y": 5, "w": 3, "h": 3
+    },
+    "Enemy3_4": {
+        "x": 9, "y": 5, "w": 3, "h": 3
+    },
+    "Enemy3_5": {
+        "x": 12, "y": 5, "w": 3, "h": 3
+    },
+    "Enemy3_6": {
+        "x": 15, "y": 5, "w": 3, "h": 3
+    },
+    "Enemy4_1": {
+        "x": 18, "y": 4, "w": 4, "h": 4
+    },
+    "Enemy4_2": {
+        "x": 22, "y": 4, "w": 4, "h": 4
+    },
+    "Enemy4_3": {
+        "x": 26, "y": 4, "w": 4, "h": 4
+    },
+    "Enemy5_1": {
+        "x": 0, "y": 8, "w": 5, "h": 5
+    },
+    "Enemy5_2": {
+        "x": 5, "y": 8, "w": 5, "h": 5
+    },
+    "Enemy5_3": {
+        "x": 10, "y": 8, "w": 5, "h": 5
+    },
+    "Enemy8_1": {
+        "x": 22, "y": 17, "w": 8, "h": 8
+    },
+
+    "comment_enemyDamage" : "---------------- 敵ダメージ",
+    "EnemyDamage_3": {
+        "x": 12, "y": 18, "w": 3, "h": 3
+    },
+    "EnemyDamage_3_6": {
+        "x": 32, "y": 14, "w": 3, "h": 3
+    },
+    "EnemyDamage_4": {
+        "x": 12, "y": 21, "w": 4, "h": 4
+    },
+    "EnemyDamage_5": {
+        "x": 35, "y": 12, "w": 5, "h": 5
+    },
+    "EnemyDamage_8": {
+        "x": 30, "y": 17, "w": 8, "h": 8
+    },
+    "EnemyRed_8": {
+        "x": 24, "y": 9, "w": 8, "h": 8
+    },
+
+    "comment_explosions" : "---------------- 爆発パターン",
+    "Explosion0": {
+        "mode": "Transparent",
+        "x": 0, "y": 13, "w": 3, "h": 3
+    },
+    "Explosion1": {
+        "mode": "Transparent",
+        "x": 3, "y": 13, "w": 3, "h": 3
+    },
+    "Explosion2": {
+        "mode": "Transparent",
+        "x": 6, "y": 13, "w": 3, "h": 3
+    },
+    "Explosion3": {
+        "mode": "Transparent",
+        "x": 9, "y": 13, "w": 3, "h": 3
+    },
+    "Explosion4": {
+        "mode": "Transparent",
+        "x": 12, "y": 13, "w": 3, "h": 3
+    },
+    "Explosion5": {
+        "mode": "Transparent",
+        "x": 15, "y": 13, "w": 3, "h": 3
+    },
+    "Explosion6": {
+        "mode": "Transparent",
+        "x": 18, "y": 13, "w": 3, "h": 3
+    },
+    "Explosion7": {
+        "mode": "Transparent",
+        "x": 21, "y": 13, "w": 3, "h": 3
+    },
+
+    "comment_title" : "---------------- タイトル",
+    "Title_S": {
+        "mode": "Transparent",
+        "x": 0, "y": 16, "w": 6, "h": 9
+    },
+    "Title_T": {
+        "mode": "Transparent",
+        "x": 6, "y": 16, "w": 6, "h": 9
+    },
+    "Title_Hyphen": {
+        "mode": "Transparent",
+        "x": 12, "y": 16, "w": 4, "h": 2
+    },
+    "Title_2": {
+        "mode": "Transparent",
+        "x": 16, "y": 16, "w": 6, "h": 9
+    }
+}

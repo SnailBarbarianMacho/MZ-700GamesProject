@@ -1,0 +1,4 @@
+{moveDown=3}{moveRight=3}Special thanks
+{moveDown=9}{moveRight=18}{col=6}URANUS
+
+{moveDown=9}{moveRight=18}{col=4}ひゃあ。えふ

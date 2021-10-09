@@ -1,0 +1,8 @@
+{col=7}Planning
+
+{col=6}Coder
+
+{col=5}CG designer
+
+{col=4}Sound designer
+{moveDown=6}{moveRight=19}{col=5}SNAIL

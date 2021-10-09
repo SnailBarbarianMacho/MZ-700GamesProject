@@ -1,0 +1,17 @@
+{moveRight=20}{col=4}Tools used
+
+{col=4}VS Code+PowerShell
+
+{col=2}PHP8
+
+{col=3}Domino
+
+{col=4}Z88DK
+
+{col=5}gmake
+
+{col=6}Exomizer3
+
+{col=7}CGE7
+
+{col=5}EmuZ-700
