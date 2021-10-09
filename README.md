@@ -38,7 +38,7 @@
   Needs MZ-700 monitor ROM image and font image.<br>
   Compatible images are available here http://mzakd.cool.coocan.jp/starthp/mz700win.html
 
-# Usage
+# Build
 
 * ビルドはプロジェクト ルートで<br>
   Build at the project root:
@@ -53,6 +53,17 @@
 ```
 * それぞれ, make clean や meke release が用意されてます<br>
   'make clean' and 'meke release' are available respectively.
+
+# How to use the EmuZ-700
+
+* エミュレータの設定 Settings the emulator
+  * Check [Device]->[Joystick]->[AM7J Adapter]
+  * Uncheck [Device]->[Sound]->[Play CMT Noise]
+  * Uncheck [Device]->[Sound]->[Play CMT Sound]
+* MZT ファイルのロードと実行 How to load and run the MZT program
+  * Reset once the CPU [Control]->[Reset]
+  * Set the MZT file on the Casset Tape [CMT]->[Play]
+  * Type 'L[CR]' in the monitor
 
 # Author
 
