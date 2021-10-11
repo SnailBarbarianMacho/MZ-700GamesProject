@@ -89,7 +89,7 @@ $(GAME_OUTFILE_PAK): $(GAME_OBJS) $(GAME_CRT0)
 	@echo Linking game ... [$@]
 	@$(PHP) $(TOOLS)/incBuildNr.php $(GAME_DIR)/src/build_nr.asm
 	@$(CC) +mz -mz80 -o $(GAME_OUTFILE_BIN) $(GAME_OBJS) -crt0$(GAME_CRT0) -zorg=$(GAME_ORG) $(LFLAGS) -Ca-DSTACK=$(GAME_STACK)
-#	@$(PHP) $(TOOLS)/makeMzt.php $(GAME_OUTFILE_BIN) $(PROG_NAME) $(GAME_ORG) $(GAME_ORG) $(GAME_OUTFILE).mzt
+	@$(PHP) $(TOOLS)/makeMzt.php $(GAME_OUTFILE_BIN) $(PROG_NAME) $(GAME_ORG) $(GAME_ORG) $(GAME_OUTFILE).mzt
 	@$(TOOLS)/exomizer.exe raw -B $(GAME_OUTFILE_BIN) -o $(GAME_OUTFILE_EXO)
 #	$(TOOLS)/exomizer.exe raw -B -d $(GAME_OUTFILE).exo -o a.out
 #	diff $(GAME_OUTFILE_BIN) a.out

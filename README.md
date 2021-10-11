@@ -22,6 +22,8 @@
 * **ST-2** <br>
   習作 縦シュー<br>
   Study shooting game.
+* 以後, 妻が許せばゲームを増やす予定<br>
+  I'm planning to increase the number of games, if my wife allows it.
 
 # Requirement
 
@@ -29,14 +31,17 @@
 * **z88dk** https://github.com/z88dk/z88dk/wiki <br>
   nightly build 20211001
 * **php 8.0** https://windows.php.net/ <br>
-  Uses mbstring.
+  mbstring を有効化してください.<br>
+  I'm using mbstring, so enable it.
 * **gmake 3.81 for Windows** http://gnuwin32.sourceforge.net/packages/make.htm
 * **exomizer 3.1.1** https://bitbucket.org/magli143/exomizer/wiki/Home<br>
-  Needs ANSI-C compiler.<br>
-  Build exomizer.exe and put in tools/.
+  Exomizer は用意してないのでソースを入手してビルドしてください.<br>
+  Needs ANSI-C compiler. Build exomizer.exe and put in tools/.
 * **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br>
-  Needs MZ-700 monitor ROM image and font image.<br>
-  Compatible images are available here http://mzakd.cool.coocan.jp/starthp/mz700win.html
+  モニター ROM イメージと日本版フォントイメージが必要です.<br>
+  Needs MZ-700 monitor ROM image and Japanese font image.<br>
+  互換イメージがここから入手できます:<br>
+  Compatible images are available here: http://mzakd.cool.coocan.jp/starthp/mz700win.html
 
 # Build
 
@@ -54,16 +59,16 @@
 * それぞれ, make clean や meke release が用意されてます<br>
   'make clean' and 'meke release' are available respectively.
 
-# How to use the EmuZ-700
+# EmuZ-700 あんちょこ Cheat Sheet
 
-* エミュレータの設定 Settings the emulator
+* エミュレータのおすすめ設定 Recommended emulator settings
   * Check [Device]->[Joystick]->[AM7J Adapter]
   * Uncheck [Device]->[Sound]->[Play CMT Noise]
   * Uncheck [Device]->[Sound]->[Play CMT Sound]
 * MZT ファイルのロードと実行 How to load and run the MZT program
-  * Reset once the CPU [Control]->[Reset]
-  * Set the MZT file on the Casset Tape [CMT]->[Play]
-  * Type 'L[CR]' in the monitor
+  * 1. Reset once the CPU [Control]->[Reset]
+  * 2. Set the MZT file [CMT]->[Play]
+  * 3. Type 'L[CR]' on the monitor. The program is automatically loaded and executed.
 
 # Author
 
