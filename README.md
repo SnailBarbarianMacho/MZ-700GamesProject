@@ -21,7 +21,8 @@
   https://www.youtube.com/watch?v=Qs5GZ-hzjp4
 * **ST-2** <br>
   習作 縦シュー<br>
-  Study shooting game.
+  Study shooting game.<br>
+  https://www.youtube.com/watch?v=PG0ijYIvdNw
 * 以後, 妻が許せばゲームを増やす予定<br>
   I'm planning to increase the number of games, if my wife allows it.
 
@@ -62,9 +63,10 @@
 # EmuZ-700 あんちょこ Cheat Sheet
 
 * エミュレータのおすすめ設定 Recommended emulator settings
-  * Check [Device]->[Joystick]->[AM7J Adapter]
   * Uncheck [Device]->[Sound]->[Play CMT Noise]
   * Uncheck [Device]->[Sound]->[Play CMT Sound]
+  * Check [Device]->[Joystick]->[AM7J Adapter]
+  * Use XInput Joystick.
 * MZT ファイルのロードと実行 How to load and run the MZT program
   * 1. Reset once the CPU [Control]->[Reset]
   * 2. Set the MZT file [CMT]->[Play]
