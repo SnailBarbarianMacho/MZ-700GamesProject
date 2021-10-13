@@ -157,7 +157,7 @@ depend $(GAME_DEPENDS):
 	@echo Generating dependencies...
 	@$(PHP) $(TOOLS)/makeDepend.php\
 		$(GAME_DIR)/src $(GAME_DIR)/cg $(GAME_DIR)/music $(GAME_DIR)/text $(GAME_DIR)/obj\
-		$(GAME_DIR)/cg/st2.cgedit.txt $(GAME_DIR)/cg/st2.cgedit.json\
+		$(GAME_DIR)/cg/cg.cgedit.txt $(GAME_DIR)/cg/cg.cgedit.json\
 		GAME_OBJS $(GAME_DEPENDS)
 
 # Release build(need clean)

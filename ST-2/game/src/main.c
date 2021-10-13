@@ -13,7 +13,6 @@
 #include "system/obj.h"
 #include "system/math.h"
 #include "steps/stepLogo.h"
-//#include "steps/stepEnding.h"//TEST
 #include "game/stars.h"
 #include "game/score.h"
 #include "objworks/objItem.h"
@@ -21,7 +20,6 @@
 void main() __naked
 {
     sysInit(stepLogoInit, stepLogoMain);
-    //sysInit(stepEndingInit, stepEndingMain);//TEST
     inputInit();
     vramInit();
     sdInit();
@@ -30,7 +28,6 @@ void main() __naked
     scoreInit();
     starsInit();
     objItemInitTab();
-    // 画面書き込みと音のテスト
     while (1)
     {
         sdSeMain(); // サウンドは 1 フレームに 2 回呼ぶ. 最初は SE→BGMの順, 2回目はその逆

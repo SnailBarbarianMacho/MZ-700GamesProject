@@ -5,8 +5,8 @@
   Nowadays, there are 8-bit cross-compilers and emulators. So I made it.
 * 実行可能バイナリ (.mzt) は残してるので, ビルドしないで遊ぶことができます<br>
   I'm leaving the executable binaries (.mzt) so you can play without building.
-* エミュレータでしか動作確認してません<br>
-  I confirmed the operation only with the emulator.
+* EmuZ-700 エミュレータでしか動作確認してません<br>
+  I confirmed the operation only with the EmuZ-700 emulator.
 
 # Features
 
@@ -26,8 +26,20 @@
 * 以後, 妻が許せばゲームを増やす予定<br>
   I'm planning to increase the number of games, if my wife allows it.
 
+# Do you want to play early? 手っ取り早く遊びたい人のガイド(for Windows)
+
+1. Set up the EmuZ-700 emulator and image ROMs.
+2. Download the .mzt file from this repository.
+
 # Requirement
 
+* **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br>
+  代表的な MZ-700 エミュレータ.<br>
+  A typical MZ-700 emulator. <br>
+  モニター ROM イメージと日本版フォントイメージが必要です.<br>
+  Needs MZ-700 monitor ROM image and Japanese font image.<br>
+  互換イメージがここから入手できます:<br>
+  Compatible images are available here: http://mzakd.cool.coocan.jp/starthp/mz700win.html
 * Windows 10 + Power Shell 7
 * **z88dk** https://github.com/z88dk/z88dk/wiki <br>
   nightly build 20211001
@@ -38,11 +50,6 @@
 * **exomizer 3.1.1** https://bitbucket.org/magli143/exomizer/wiki/Home<br>
   Exomizer は用意してないのでソースを入手してビルドしてください.<br>
   Needs ANSI-C compiler. Build exomizer.exe and put in tools/.
-* **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br>
-  モニター ROM イメージと日本版フォントイメージが必要です.<br>
-  Needs MZ-700 monitor ROM image and Japanese font image.<br>
-  互換イメージがここから入手できます:<br>
-  Compatible images are available here: http://mzakd.cool.coocan.jp/starthp/mz700win.html
 
 # Build
 
@@ -68,9 +75,9 @@
   * Check [Device]->[Joystick]->[AM7J Adapter]
   * Use XInput Joystick.
 * MZT ファイルのロードと実行 How to load and run the MZT program
-  * 1. Reset once the CPU [Control]->[Reset]
-  * 2. Set the MZT file [CMT]->[Play]
-  * 3. Type 'L[CR]' on the monitor. The program is automatically loaded and executed.
+  1. Reset once the CPU [Control]->[Reset]
+  2. Set the MZT file [CMT]->[Play]
+  3. Type 'L[CR]' on the monitor. The program is automatically loaded and executed.
 
 # Author
 
