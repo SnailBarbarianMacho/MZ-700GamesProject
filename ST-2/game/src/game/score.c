@@ -31,8 +31,13 @@ static const u8* spStepString;
 
 // ---------------------------------------------------------------- マクロ
 #define LEFT        2         // 残機数(自機含まず)
+#if DEBUG
 #define START_LEVEL 1         // 最初のレベル
-//#define START_LEVEL 130       // TEST
+//#define START_LEVEL 130       // TEST デバッグ用
+#else
+#define START_LEVEL 1         // 最初のレベル
+#endif
+
 
 // ---------------------------------------------------------------- サウンド
 #define SE_LEVEL_UP_CT  48

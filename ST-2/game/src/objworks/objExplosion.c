@@ -59,15 +59,15 @@ bool objExplosionPlayerMain(Obj* const pObj)
 }
 
 // ---------------------------------------------------------------- 描画
-void objExplosionDisp(Obj* const pObj, u8* dispAddr)
+void objExplosionDraw(Obj* const pObj, u8* drawAddr)
 {
     static const u8* const pExplosionTab[] = {
         sExplosion7, sExplosion6, sExplosion5, sExplosion4,
         sExplosion3, sExplosion2, sExplosion1, sExplosion0,
     };
-    vVramDraw3x3Transparent(dispAddr, pExplosionTab[pObj->ct]);
+    vVramDraw3x3Transparent(drawAddr, pExplosionTab[pObj->ct]);
 }
-void objExplosionPlayerDisp(Obj* const pObj, u8* dispAddr)
+void objExplosionPlayerDraw(Obj* const pObj, u8* drawAddr)
 {
     static const u8* const pExplosionTab[] = {
         sExplosion7, sExplosion6, sExplosion7, sExplosion6,
@@ -75,5 +75,5 @@ void objExplosionPlayerDisp(Obj* const pObj, u8* dispAddr)
         sExplosion3, sExplosion2, sExplosion3, sExplosion2,
         sExplosion1, sExplosion0, sExplosion1, sExplosion0,
     };
-    vVramDraw3x3Transparent(dispAddr, pExplosionTab[pObj->ct]);
+    vVramDraw3x3Transparent(drawAddr, pExplosionTab[pObj->ct]);
 }

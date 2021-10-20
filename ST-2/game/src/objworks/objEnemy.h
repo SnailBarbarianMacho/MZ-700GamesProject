@@ -46,20 +46,20 @@ bool objEnemyMain8_2(Obj* const pObj);
 bool objEnemyMain8_3(Obj* const pObj);
 
 // ---------------------------------------------------------------- 描画
-void objEnemyDisp3_1(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp3_2(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp3_3(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp3_4(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp3_5(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp3_6(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp4_1(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp4_2(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp4_3(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp5_1(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp5_2(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp5_3(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp8_1(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp8_2(Obj* const pObj, u8* dispAddr);
-void objEnemyDisp8_3(Obj* const pObj, u8* dispAddr);
+void objEnemyDraw3_1(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw3_2(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw3_3(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw3_4(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw3_5(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw3_6(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw4_1(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw4_2(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw4_3(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw5_1(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw5_2(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw5_3(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw8_1(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw8_2(Obj* const pObj, u8* drawAddr);
+void objEnemyDraw8_3(Obj* const pObj, u8* drawAddr);
 
 #endif // OBJ_ENEMY_H_INCLUDED

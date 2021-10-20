@@ -81,34 +81,34 @@ bool objEnemyBulletMain(Obj* const pObj)
 //
 #pragma disable_warning 85  // pObj 未使用
 #pragma save
-void objEnemyBulletDisp(Obj* const pObj, u8* dispAddr)
+void objEnemyBulletDraw(Obj* const pObj, u8* drawAddr)
 {
 #if 0 // C 版
     if ((u8)pObj->uGeo.geo8.xl < 0x80) {
         if ((u8)pObj->uGeo.geo8.yl < 0x80) {
-            *dispAddr = 0xff;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)) = 0x70;
+            *drawAddr = 0xff;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)) = 0x70;
         } else {
-            *dispAddr           = 0xfc;
-            *(dispAddr + 0x100) = 0xf3;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)        ) = 0x70;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 0x100) = 0x70;
+            *drawAddr           = 0xfc;
+            *(drawAddr + 0x100) = 0xf3;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)        ) = 0x70;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 0x100) = 0x70;
         }
     } else {
         if ((u8)pObj->uGeo.geo8.yl < 0x80) {
-            *dispAddr       = 0xfa;
-            *(dispAddr + 1) = 0xf5;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)    ) = 0x70;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 1) = 0x70;
+            *drawAddr       = 0xfa;
+            *(drawAddr + 1) = 0xf5;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)    ) = 0x70;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 1) = 0x70;
         } else {
-            *dispAddr           = 0xf8;
-            *(dispAddr + 1)     = 0xf4;
-            *(dispAddr + 0x100) = 0xf2;
-            *(dispAddr + 0x101) = 0xf1;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)        ) = 0x70;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) +     1) = 0x70;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 0x100) = 0x70;
-            *(dispAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 0x101) = 0x70;
+            *drawAddr           = 0xf8;
+            *(drawAddr + 1)     = 0xf4;
+            *(drawAddr + 0x100) = 0xf2;
+            *(drawAddr + 0x101) = 0xf1;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)        ) = 0x70;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) +     1) = 0x70;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 0x100) = 0x70;
+            *(drawAddr + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) + 0x101) = 0x70;
         }
     }
 #else // ASM 版(重ね合わせ処理付き)
@@ -128,7 +128,7 @@ STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL, Asm2); // ※2 修�
 __asm
     pop     HL                      // リターン アドレス(捨てる)
     pop     DE                      // pObj
-    pop     HL                      // dispAddr
+    pop     HL                      // drawAddr
     ld      BC, 0xf070              // B = 疑似グラフィックコード  C = ATB
 
     inc     E                       // ※1
@@ -136,7 +136,7 @@ __asm
 
     ld      A, (DE)                 // pObj->uGeo.geo8.xl
     cp      A, 0x80
-    jp      nc, BULLET_DISP_2
+    jp      nc, BULLET_DRAW_2
 
     ld      A, E                                            // ※2
     add     A, #(OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL)   // ※2
@@ -144,7 +144,7 @@ __asm
 
     ld      A, (DE)                 // pObj->uGeo.geo8.yl
     cp      A, 0x80
-    jp      nc, BULLET_DISP_1
+    jp      nc, BULLET_DRAW_1
 
     // -------- パターン 0
     // TEXT
@@ -162,12 +162,12 @@ __asm
     ld      SP, HL
     ret
 
-BULLET_DISP_1:
+BULLET_DRAW_1:
     // -------- パターン 1
     // TEXT
-    DRAW_BULLET(BULLET_DISP_1_1, 0x0c)
+    DRAW_BULLET(BULLET_DRAW_1_1, 0x0c)
     inc     H
-    DRAW_BULLET(BULLET_DISP_1_2, 0x03)
+    DRAW_BULLET(BULLET_DRAW_1_2, 0x03)
     ld      A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
     add     A, L
     ld      L, A
@@ -183,20 +183,20 @@ BULLET_DISP_1:
     ld      SP, HL
     ret
 
-BULLET_DISP_2:
+BULLET_DRAW_2:
     ld      A, E                                            // ※2
     add     A, #(OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL)   // ※2
     ld      E, A                                            // ※2
 
     ld      A, (DE)                 // pObj->uGeo.geo8.yl
     cp      A, 0x80
-    jp      nc, BULLET_DISP_3
+    jp      nc, BULLET_DRAW_3
 
     // -------- パターン 2
     // TEXT
-    DRAW_BULLET(BULLET_DISP_2_1, 0x0a)
+    DRAW_BULLET(BULLET_DRAW_2_1, 0x0a)
     inc     L
-    DRAW_BULLET(BULLET_DISP_2_2, 0x05)
+    DRAW_BULLET(BULLET_DRAW_2_2, 0x05)
     ld      A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
     add     A, L
     ld      L, A
@@ -212,16 +212,16 @@ BULLET_DISP_2:
     ld      SP, HL
     ret
 
-BULLET_DISP_3:
+BULLET_DRAW_3:
     // -------- パターン 3
     // TEXT
-    DRAW_BULLET(BULLET_DISP_3_1, 0x08)
+    DRAW_BULLET(BULLET_DRAW_3_1, 0x08)
     inc     L
-    DRAW_BULLET(BULLET_DISP_3_2, 0x04)
+    DRAW_BULLET(BULLET_DRAW_3_2, 0x04)
     inc     H
-    DRAW_BULLET(BULLET_DISP_3_3, 0x01)
+    DRAW_BULLET(BULLET_DRAW_3_3, 0x01)
     dec     L
-    DRAW_BULLET(BULLET_DISP_3_4, 0x02)
+    DRAW_BULLET(BULLET_DRAW_3_4, 0x02)
     ld      A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
     add     A, L
     ld      L, A

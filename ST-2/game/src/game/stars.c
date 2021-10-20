@@ -116,7 +116,7 @@ __asm
     inc     A
     ld      (HL), A
     and     A, 1
-    jp      z, STARS_MAIN_FAR_DISP
+    jp      z, STARS_MAIN_FAR_DRAW
     ld      HL, (#_StarsFar)
 
     // ---- ループ
@@ -155,12 +155,12 @@ __endasm;
 
     // --------------- 遠景の星々(表示)
 __asm
-STARS_MAIN_FAR_DISP:
+STARS_MAIN_FAR_DRAW:
     ld      HL, (#_StarsFar)
 
     // ---- ループ
     ld      A, (HL)         // col
-STARS_MAIN_FAR_DISP_LOOP:
+STARS_MAIN_FAR_DRAW_LOOP:
     inc     L
     ld      E, (HL)         // E = x
     inc     L
@@ -180,7 +180,7 @@ STARS_MAIN_FAR_DISP_LOOP:
     inc     L
     ld      A, (HL)         // col
     or      A
-    jp      nz, STARS_MAIN_FAR_DISP_LOOP
+    jp      nz, STARS_MAIN_FAR_DRAW_LOOP
 __endasm;
 
     // --------------- 近景の星々(移動+表示)

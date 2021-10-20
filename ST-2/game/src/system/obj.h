@@ -76,8 +76,8 @@ typedef struct s_Obj // 構造体の大きさは 2 のべき乗であること!
     // 1 フレームに 1 回呼ばれる関数です. false を返すと消えます. nullable.
     bool (*mainFunc)(struct s_Obj* const);
     // 描画時に呼ばれる関数です. nullable.
-    //    dispAddr は, x, y から計算されるアドレスです
-    void (*dispFunc)(struct s_Obj* const, u8* dispAddr);
+    //    drawAddr は, x, y から計算されるアドレスです
+    void (*drawFunc)(struct s_Obj* const, u8* drawAddr);
 
     // ---- フラグ, 体力, 攻撃力, ステップ, カウンタ
     bool    bHit;           // 衝突検出
@@ -153,7 +153,7 @@ void objMain() __z88dk_fastcall;
  * Obj を生成します - プレーヤー
  * @param initFunc 初期化関数. nullable
  * @param mainFunc 1 フレームに 1 回呼ばれる関数. false を返すと消えます
- * @param dispFunc 表示時に呼ばれる関数. nullable
+ * @param drawFunc 表示時に呼ばれる関数. nullable
  * @param pParent  この Obj を生成した親. nullable
  * @return 生成に成功したら ポインタを返すので, 各自初期化(座標等)をしてください.
  *   メモリ不足で失敗したら, nullptr を返します
@@ -161,7 +161,7 @@ void objMain() __z88dk_fastcall;
 Obj* objCreatePlayer(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent);
 /**
  * Obj を生成します - プレーヤー弾
@@ -170,7 +170,7 @@ Obj* objCreatePlayer(
 Obj* objCreatePlayerBullet(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent);
 /**
  * Obj を生成します - 敵
@@ -179,7 +179,7 @@ Obj* objCreatePlayerBullet(
 Obj* objCreateEnemy(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent);
 /**
  * Obj を生成します - 敵弾
@@ -188,7 +188,7 @@ Obj* objCreateEnemy(
 Obj* objCreateEnemyBullet(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent);
 /**
  * Obj を生成します - アイテム
@@ -197,7 +197,7 @@ Obj* objCreateEnemyBullet(
 Obj* objCreateItem(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent);
 /**
  * Obj を生成します - その他
@@ -206,7 +206,7 @@ Obj* objCreateItem(
 Obj* objCreateEtc(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent);
 
 // ---------------------------------------------------------------- 初期化マクロ

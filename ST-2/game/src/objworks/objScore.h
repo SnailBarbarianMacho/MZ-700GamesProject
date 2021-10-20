@@ -12,6 +12,6 @@
 // ---------------------------------------------------------------- 初期化, メイン, 描画
 void objScoreInit(Obj* const pObj, Obj* const pEnemy);
 bool objScoreMain(Obj* const pObj);
-void objScoreDisp(Obj* const pObj, u8* dispAddr);
+void objScoreDraw(Obj* const pObj, u8* drawAddr);
 
 #endif // OBJ_SCORE_H_INCLUDED

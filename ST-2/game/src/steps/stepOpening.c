@@ -22,7 +22,7 @@ void stepOpeningInit()
     scoreSetStepString(stepStr);
 #endif
     // プレーヤー出現
-    Obj* pPlayer = objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDisp, nullptr);
+    Obj* pPlayer = objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDraw, nullptr);
     pPlayer->step          = OBJ_PLAYER_STEP_DEMO;
     pPlayer->uGeo.geo8.yh  = VRAM_HEIGHT;
     pPlayer->uGeo.geo.sy   = -0x0080;

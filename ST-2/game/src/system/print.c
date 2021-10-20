@@ -98,7 +98,7 @@ PRINT_LOOP:
 
     // -------- 制御コードならばテーブル ジャンプ
     cp      A, CHAR_SP          // 0xf0
-    jp      c, PRINT_DISP_CHAR
+    jp      c, PRINT_DRAW_CHAR
 
     add     A, A                // a = e0, e2, ..., fe
     push    HL
@@ -219,7 +219,7 @@ PRINT_CRLF_COMMON:
 
 
     // -------- 文字表示
-PRINT_DISP_CHAR:
+PRINT_DRAW_CHAR:
     ld      (DE), A // text
     inc     E
     exx

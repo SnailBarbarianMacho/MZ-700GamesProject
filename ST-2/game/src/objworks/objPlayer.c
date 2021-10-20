@@ -30,8 +30,15 @@
 static u8   sRapidFireTimer;// 連射タイマー
 
 // ---------------------------------------------------------------- マクロ
-#define DEBUG_INVINCIBLE 0      // 1 だと無敵. デバッグ用
-#define RAPID_FIRE_PERIOD 2     // 連射度. 小さいほど連射する
+#if DEBUG
+#define DEBUG_INVINCIBLE 0      // 0/1 = 通常/無敵. デバッグ用
+#define RAPID_FIRE_PERIOD 2     // 連射度. 小さいほど連射する. 0 なら自動連射
+//#define RAPID_FIRE_PERIOD 0     // TEST デバッグ用
+#else
+#define DEBUG_INVINCIBLE 0      // 0/1 = 通常/無敵. デバッグ用
+#define RAPID_FIRE_PERIOD 2     // 連射度. 小さいほど連射する. 0 なら自動連射
+#endif
+
 #define CT_NORMAL       100     // 無敵時間
 #define CT_DEAD         50
 #define CT_CONTINUE     255     // コンティニュー時間
@@ -131,7 +138,7 @@ bool objPlayerMain(Obj* const pObj)
                 pObj->ct   = CT_DEAD;
                 pObj->uGeo.geo.sx = 0;
                 pObj->uGeo.geo.sy = 0;
-                objCreateEtc(objExplosionPlayerInit, objExplosionMain, objExplosionPlayerDisp, pObj);
+                objCreateEtc(objExplosionPlayerInit, objExplosionMain, objExplosionPlayerDraw, pObj);
                 sdSetSeSequencer(sePlayerDead, SD_SE_PRIORITY_1, SE_PLAYER_DEAD_CT);
 #endif
             }
@@ -139,15 +146,19 @@ bool objPlayerMain(Obj* const pObj)
 
         // 弾
         // 押しっぱなしでも連射しますが, 連打のほうが沢山弾が出ます
+#if RAPID_FIRE_PERIOD == 0
+        objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, pObj);
+#else
         if (inp & INPUT_MASK_A) {
             if (RAPID_FIRE_PERIOD <= sRapidFireTimer) {
-                objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDisp, pObj);
+                objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, pObj);
                 sRapidFireTimer = 0;
             }
             sRapidFireTimer ++;
         } else {
             sRapidFireTimer = RAPID_FIRE_PERIOD;
         }
+#endif
         break;
 
     case OBJ_PLAYER_STEP_DEAD:
@@ -187,19 +198,19 @@ bool objPlayerMain(Obj* const pObj)
 }
 
 // ---------------------------------------------------------------- 描画
-void objPlayerDisp(Obj* const pObj, u8* dispAddr)
+void objPlayerDraw(Obj* const pObj, u8* drawAddr)
 {
     u8 ct = pObj->ct;
 
     switch (pObj->step) {
     default: //case OBJ_PLAYER_STEP_NORMAL: case OBJ_PLAYER_STEP_DEMO:
-        dispAddr--;
+        drawAddr--;
         if (ct) {
             printReady();
         }
         ct &= 1;
         if (!ct) {
-            vVramDraw3x3(dispAddr, sPlayer);
+            vVramDraw3x3(drawAddr, sPlayer);
             // 炎
             static const u16 tab1[] = {
                 VATB_CODE(2, 0, 0, 0xf1),
@@ -221,10 +232,10 @@ void objPlayerDisp(Obj* const pObj, u8* dispAddr)
                 VATB_CODE(2, 0, 0, 0xff),
                 VATB_CODE(6, 0, 0, 0xff),
             };
-            dispAddr += VVRAM_WIDTH * 2 + 1;
-            vVramDraw1x1(dispAddr, tab2[rand8() & 0x07]);
-            dispAddr += VVRAM_WIDTH;
-            vVramDraw1x1(dispAddr, tab1[rand8() & 0x07]);
+            drawAddr += VVRAM_WIDTH * 2 + 1;
+            vVramDraw1x1(drawAddr, tab2[rand8() & 0x07]);
+            drawAddr += VVRAM_WIDTH;
+            vVramDraw1x1(drawAddr, tab1[rand8() & 0x07]);
         }
         break;
     case OBJ_PLAYER_STEP_DEAD:

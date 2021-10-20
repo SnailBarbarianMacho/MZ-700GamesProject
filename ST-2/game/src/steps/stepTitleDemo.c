@@ -57,19 +57,19 @@ void stepTitleDemoMain(u16 stepCounter)
 #include "../../cg/Title_Hyphen.h"
 #include "../../cg/Title_2.h"
 
-void stepTitleDrawTitleS(const u8* dispAddr)
+void stepTitleDrawTitleS(const u8* drawAddr)
 {
-    vVramDrawRectTransparent(dispAddr, sTitle_S,      W8H8(CG_TITLE_S_WIDTH, CG_TITLE_S_HEIGHT));
+    vVramDrawRectTransparent(drawAddr, sTitle_S,      W8H8(CG_TITLE_S_WIDTH, CG_TITLE_S_HEIGHT));
 }
-void stepTitleDrawTitleT(const u8* dispAddr)
+void stepTitleDrawTitleT(const u8* drawAddr)
 {
-    vVramDrawRectTransparent(dispAddr, sTitle_T,      W8H8(CG_TITLE_T_WIDTH, CG_TITLE_T_HEIGHT));
+    vVramDrawRectTransparent(drawAddr, sTitle_T,      W8H8(CG_TITLE_T_WIDTH, CG_TITLE_T_HEIGHT));
 }
-void stepTitleDrawTitleHyphen(const u8* dispAddr)
+void stepTitleDrawTitleHyphen(const u8* drawAddr)
 {
-    vVramDrawRectTransparent(dispAddr, sTitle_Hyphen, W8H8(CG_TITLE_HYPHEN_WIDTH, CG_TITLE_HYPHEN_HEIGHT));
+    vVramDrawRectTransparent(drawAddr, sTitle_Hyphen, W8H8(CG_TITLE_HYPHEN_WIDTH, CG_TITLE_HYPHEN_HEIGHT));
 }
-void stepTitleDrawTitle2(const u8* dispAddr)
+void stepTitleDrawTitle2(const u8* drawAddr)
 {
-    vVramDrawRectTransparent(dispAddr, sTitle_2,      W8H8(CG_TITLE_2_WIDTH, CG_TITLE_2_HEIGHT));
+    vVramDrawRectTransparent(drawAddr, sTitle_2,      W8H8(CG_TITLE_2_WIDTH, CG_TITLE_2_HEIGHT));
 }

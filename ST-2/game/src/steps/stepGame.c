@@ -27,7 +27,7 @@
 static bool sbPause;
 #endif
 
-static u8 sStageDispTimer;
+static u8 sStageDrawTimer;
 
 // ---------------------------------------------------------------- 初期化
 void stepGameInit()
@@ -43,14 +43,14 @@ void stepGameInit()
 #else
         stgInit(stepScoreTableGetLoopCt());
 #endif
-        objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDisp, nullptr);
+        objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDraw, nullptr);
         sysSetStepCounter(1000);
     } else {
         sdSetEnabled(true);
     }
 
     stgSubInit();
-    sStageDispTimer = 100;
+    sStageDrawTimer = 100;
 }
 
 
@@ -75,8 +75,8 @@ void stepGameMain(u16 stepCounter)
     }
 
     // ---------------- ゲーム モードでの挙動. ステージ数表示
-    if (sStageDispTimer) {
-        sStageDispTimer--;
+    if (sStageDrawTimer) {
+        sStageDrawTimer--;
         static const u8 strStage[] = { CHAR_S, CHAR_T, CHAR_A, CHAR_G, CHAR_E, 0, };
         printSetAddr((u8*)VVRAM_TEXT_ADDR(16, 8));
         printString(strStage);

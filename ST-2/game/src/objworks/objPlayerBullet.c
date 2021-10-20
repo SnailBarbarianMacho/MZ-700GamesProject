@@ -81,7 +81,7 @@ bool objPlayerBulletMain(Obj* const pObj)
 //  112～  8
 #pragma disable_warning 85
 #pragma save
-static void drawBullet(u8* dispAddr) __z88dk_fastcall __naked
+static void drawBullet(u8* drawAddr) __z88dk_fastcall __naked
 {
 }
 #pragma restore
@@ -89,7 +89,7 @@ static void drawBullet(u8* dispAddr) __z88dk_fastcall __naked
 
 #pragma disable_warning 85  // pObj 未使用
 #pragma save
-void objPlayerBulletDisp(Obj* const pObj, u8* dispAddr)
+void objPlayerBulletDraw(Obj* const pObj, u8* drawAddr)
 {
     STATIC_ASSERT(3 <  OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1,                                  Asm1); // ※1 を修正
     STATIC_ASSERT(1 == OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT2 - OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1, Asm2); // ※2 を修正
@@ -115,7 +115,7 @@ __asm
     inc     L                       // ※4
     ld      E, (HL)
 
-    pop     HL                      // dispAddr
+    pop     HL                      // drawAddr
 
     // TEXT
     ld      (HL), B

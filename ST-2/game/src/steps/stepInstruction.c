@@ -28,13 +28,13 @@ void stepInstructionInit()
     objInit();
     scoreResetLevel();// ちゃんとリセットしておかないと, デモ プレイでどんどんレベルアップしていく!
     {
-        Obj* const pPlayer = objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDisp, nullptr);
+        Obj* const pPlayer = objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDraw, nullptr);
         pPlayer->step          = OBJ_PLAYER_STEP_DEMO;
         pPlayer->uGeo.geo8.xh  = 5;
         pPlayer->uGeo.geo8.sxl = 0x20;
     }
     {
-        Obj* const pEnemy = objCreateEnemy(objEnemyInit3_1, objEnemyMainDemo3_1, objEnemyDisp3_1, nullptr);
+        Obj* const pEnemy = objCreateEnemy(objEnemyInit3_1, objEnemyMainDemo3_1, objEnemyDraw3_1, nullptr);
         pEnemy->uGeo.geo8.xh = 33;
         pEnemy->uGeo.geo8.yh = 5;
     }
@@ -53,19 +53,19 @@ void stepInstructionMain(u16 stepCounter)
 #include "../../text/keypause.h"
     s16 ct = INST_CT - stepCounter;
     static struct s_Tab {
-        u8* const dispAddr;
+        u8* const drawAddr;
         u8* const str;
         u8  ctOffset;
     } const tab[] = {
         { (u8*)VVRAM_TEXT_ADDR(10, 2), str_keyassign, 0 },
         { (u8*)VVRAM_TEXT_ADDR(4,  5), str_keymove,   40 },
         { (u8*)VVRAM_TEXT_ADDR(4,  9), str_keyshot,  110 },
-        { (u8*)VVRAM_TEXT_ADDR(4, 11), str_keypause, 150 },
-        { (u8*)VVRAM_TEXT_ADDR(4, 13), str_keyjoy,   190 },
+        { (u8*)VVRAM_TEXT_ADDR(4, 11), str_keyjoy,   150 },
+        { (u8*)VVRAM_TEXT_ADDR(4, 13), str_keypause, 190 },
         { nullptr, nullptr, 0 },
     };
-    for (const struct s_Tab* pTab = tab; pTab->dispAddr; pTab++) {
-        printSetAddr(pTab->dispAddr);
+    for (const struct s_Tab* pTab = tab; pTab->drawAddr; pTab++) {
+        printSetAddr(pTab->drawAddr);
         printStringWithLength(pTab->str, ct - pTab->ctOffset);
     }
 
@@ -73,7 +73,7 @@ void stepInstructionMain(u16 stepCounter)
     Obj* const pPlayer = objGetInUsePlayer();
     if (ct == (33 - 4) * 8) { // 停止して弾を撃つ
         pPlayer->uGeo.geo8.sxl = 0x00;
-        objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDisp, pPlayer);
+        objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, pPlayer);
     }
 
     // -------- 次のステップへ

@@ -19,7 +19,7 @@
 void objItemInit(Obj* const pObj, Obj* const pParent);
 void objPlayerInit(Obj* const pObj, Obj* const pParent);
 bool objPlayerMain(Obj* const pObj);
-void objPlayerDisp(Obj* const pObj, u8* dispAddr);
+void objPlayerDraw(Obj* const pObj, u8* drawAddr);
 
 // ---------------------------------------------------------------- ユーティリティ
 /** プレーヤーを通常状態にします */

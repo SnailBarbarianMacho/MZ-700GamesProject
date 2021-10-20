@@ -13,8 +13,8 @@
 void objExplosionInit(Obj* const pObj, Obj* const pParent);
 void objExplosionPlayerInit(Obj* const pObj, Obj* const pParent);
 bool objExplosionMain(Obj* const pObj);
-void objExplosionDisp(Obj* const pObj, u8* dispAddr);
-void objExplosionPlayerDisp(Obj* const pObj, u8* dispAddr);
+void objExplosionDraw(Obj* const pObj, u8* drawAddr);
+void objExplosionPlayerDraw(Obj* const pObj, u8* drawAddr);
 
 
 #endif // EXPLOSION_H_INCLUDED

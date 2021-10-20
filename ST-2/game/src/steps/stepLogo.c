@@ -64,7 +64,6 @@ static const u8 imageData[] = {
     0xcd, 0x10, 0x11, 0x0a,
 };
 
-#define ADDR_TMP_STACK  (VVRAM_TMP_WORK + 0) // スタックを保存するアドレス
 #define ADDR_TMP_SRC    (VVRAM_TMP_WORK + 2) // 転送元を保存するアドレス
 #define ADDR_TMP_DST    (VVRAM_TMP_WORK + 4) // 転送先を保存するアドレス
 #define LOGO_WIDTH  4               // 寸法(chara)
@@ -77,114 +76,124 @@ static const u8 imageData[] = {
 // -------------------------------- ロゴ転送
 /**
  * VBLANK で同期をもってロゴを表示します.
- * @param bDisp == false なら表示しません
+ * @param bDraw == false なら表示しません
  */
 #pragma disable_warning 85
 #pragma save
-void logoTrans(const bool bDisp) __z88dk_fastcall __naked
+void logoTrans(const bool bDraw) __z88dk_fastcall __naked
 {
 __asm
     // ---------------- 準備
-    ld      (#ADDR_TMP_STACK), SP   // スタック ポインタを保存
-    BANK_VRAM_IO                // バンク切替
+    ld      (LOGO_TRANS_SP_RESTORE + 1), SP// SP を保存(自己書換)
+    BANK_VRAM_IO                        // バンク切替
+    dec     L                           // -1/0 = 表示しない/表示する
+    jp      z, LOGO_TRANS_DRAW
 
-    // ---------------- 転送準備
-    ld      D, L                // 0 / 1 = しない/表示する
+    // -------------------------------- 表示しない(0x43で表示する)
+    // -------- 転送準備
+    ld      SP, #(VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y) + 4)
+    ld      B, LOGO_HEIGHT              // outer loop
+    exx
+        ld      DE, 0x4343              // DE = 0x4343 表示しない時の文字
+        //ld      DE, 0xffff// TEST
+        ld      HL, DE                  // HL = 0x4343
+    exx
 
+    // -------- VBLANK を待ちます
+    ld      HL, #MIO_8255_PORTC         // VBLANK 待ち用 8255 ポート C
+    ld      A, H                        // 最上位 bit を立てる
+LOGO_TRANS_ERASE_VBLANK_1:              // V表示中 ならばループ
+    and     A, (HL)
+    jp      m, LOGO_TRANS_ERASE_VBLANK_1
+LOGO_TRANS_ERASE_VBLANK_0:              // VBLANK ならばループ
+    or      A, (HL)                     // 7
+    jp      p, LOGO_TRANS_ERASE_VBLANK_0// 10/10
+    // この時点で 0 ライン目は既に H表示中で 10～27 cycles 経過
+
+    // -------- 消去
+    // 消すときはラスタのことは考えないでいいので気楽に処理します
+LOGO_TRANS_ERASE_LOOP:
+    exx                                 // 4
+      push  HL                          // 11 計11 次の HBLANK を待つ
+      push  DE                          // 11 計22
+    exx                                 // 4  計26
+    ld      HL, #(VRAM_WIDTH + 4)       // 10 計46 1行下へ移動
+    add     HL, SP                      // 11 計57
+    ld      SP, HL                      // 6  計63 HBLANK を抜ける
+    djnz    B, LOGO_TRANS_ERASE_LOOP    // 13/8
+    jp      LOGO_TRANS_END
+
+    // -------------------------------- 表示する
+LOGO_TRANS_DRAW:
+    // -------- 転送準備
     ld      HL, #_imageData
     ld      (#ADDR_TMP_SRC), HL
     ld      HL, #(VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y) + 4)
     ld      (#ADDR_TMP_DST), HL
-    ld      B, LOGO_HEIGHT      // outer loop
-
+    ld      B, LOGO_HEIGHT              // outer loop
     exx
-        ld      B, 8            // inner loop
-        ld      DE, 0x4343      // 表示しない時の文字
-        ld      HL, DE
+      ld    B, 8                        // inner loop
+      ld    SP, (#ADDR_TMP_SRC)
+      pop   DE
+      pop   HL
+      ld    (#ADDR_TMP_SRC), SP
+      ld    SP, (#ADDR_TMP_DST)
     exx
 
-    ld      A, D
-    or      A
-    jp      z, LOGO_INIT_END
+    // -------- VBLANK を待ちます
+    ld      HL, #MIO_8255_PORTC         // VBLANK 待ち用 8255 ポート C
+    ld      A, H                        // 最上位 bit を立てる
+LOGO_TRANS_DRAW_VBLANK_1:               // V表示中 ならばループ
+    and     A, (HL)
+    jp      m, LOGO_TRANS_DRAW_VBLANK_1
+LOGO_TRANS_DRAW_VBLANK_0:               // VBLANK ならばループ
+    or      A, (HL)                     // 7
+    jp      p, LOGO_TRANS_DRAW_VBLANK_0 // 10/10
+    // この時点で 0 ライン目は既に H表示中で 10～27 cycles 経過
+    // ※VBLANK 立ち上がり時の HBLANK に注意
+    // - 実機:     立下がって HBLANK が始まる
+    // - EmuZ-700: 立ち上がって HBLANK が終わる
 
-    exx
-        ld      SP, (#ADDR_TMP_SRC)
-        pop     DE
-        pop     HL
-        ld      (#ADDR_TMP_SRC), SP
-        ld      SP, (#ADDR_TMP_DST)
-    exx
-LOGO_INIT_END:
+    // -------- ライン待ち
+    ld      H, #(LOGO_POS_Y * 8)        // ライン待ちループ
+    jr      LOGO_TRANS_DRAW_LINE0 + 3   // 最初の 1 ラインは VRAM にはアクセスしない(EmuZ-700 対策)
 
-    // ----------------
-    // V-Blank を待ちます. 既に V-Blank 中ならばそのまま行っちゃいます
-    // 8255 ポート C bit 7 == 0 ならば, ブランキング中
-    ld      HL, #MIO_8255_PORTC // 8255 ポート C
-    xor     A
-WAIT_BLANK_1:                   // V 表示中
-    and     (HL)
-    jp      m, WAIT_BLANK_1
-WAIT_BLANK_0:
-    or      (HL)                //
-    jp      p, WAIT_BLANK_0     // V ブランキング中
-    // この時点で 0 ライン目は既に表示中
+LOGO_TRANS_DRAW_LINE0:
+      ld    A, (#VRAM_TEXT)             //  13 次の HBLANK まで待つ
+      ld    E, 10                       //  7            計7
+LOGO_TRANS_DRAW_LINE1:
+        dec E                           //  4 * 10 =  40 計47
+        jp  nz, LOGO_TRANS_DRAW_LINE1   // 10 * 10 = 100 計147 HBLANK を抜ける
+      dec   H                           // 4             計151
+      jp    nz, LOGO_TRANS_DRAW_LINE0   // 10            計161
+    // この時点で LOGO_POS_Y * 8 ライン目は H表示中
 
-    ld      H, LOGO_POS_Y * 8 - 1    // ライン待ちループ
-WAIT_LINE:
-    ld      A, (VRAM_TEXT)      // 次の H ブランクまで待つ
-    // 56 クロック以上待つ
-    ld      E, 10               // 7
-WAIT_LOOP:
-    dec     E                   // 4  * 10 = 40
-    jp      nz, WAIT_LOOP       // 10 * 10 = 100
-    dec     H                   // 4
-    jp      nz, WAIT_LINE       // 10   7 + 40 + 100 + 4 + 10 = 161
-
-    // ---------------- 表示しない
-    dec     D                   // 4
-    jp      z, LOGO_LOOP0       // 10
-LOGO_ERASE_LOOP0:
-    exx                         // 4
-LOGO_ERASE_LOOP1:
-        push    HL              // 11
-        push    DE              // 11  4 + 10 + 4 + 11 + 11 = 40 間に合った!
-        ld      (#ADDR_TMP_SRC), SP // 20
-        ld      (#ADDR_TMP_SRC), SP // 20
-        ld      SP, (#ADDR_TMP_DST) // 20
-        djnz    B, LOGO_ERASE_LOOP1 // 13/8
-        ld      B, 8            // 7
-    exx                         // 4
-    ld      HL, VRAM_WIDTH      // 10
-    add     HL, SP              // 11
-    ld      (#ADDR_TMP_DST), HL // 16
-    ld      SP, HL              // 6
-    djnz    B, LOGO_ERASE_LOOP0 // 13/8
-    jp      LOGO_END
-    // ---------------- 表示する
-    // H ブランク期間(63 クロック以内に描画しないといけない)
-LOGO_LOOP0:
-    exx                         // 4
-LOGO_LOOP1:
-        push    HL              // 11
-        push    DE              // 11  4 + 10 + 4 + 11 + 11 = 40 間に合った!
-        ld      SP, (#ADDR_TMP_SRC) // 20
-        pop     DE              // 10
-        pop     HL              // 10
-        ld      (#ADDR_TMP_SRC), SP // 20
-        ld      SP, (#ADDR_TMP_DST) // 20
-        djnz    B, LOGO_LOOP1   // 13/8
-        ld      B, 8            // 7
-    exx                         // 4
-    ld      HL, 40              // 10
-    add     HL, SP              // 11
-    ld      (#ADDR_TMP_DST), HL // 16
-    ld      SP, HL              // 6
-    djnz    B, LOGO_LOOP0       // 13/8
+    // -------- 表示します
+LOGO_TRANS_DRAW_LOOP0:
+    exx                                 // 4
+LOGO_TRANS_DRAW_LOOP1:
+      push  HL                          // 11 計11 次の HBLANK を待つ
+      // 間に 52 clock 迄の処理なら崩れない
+      push  DE                          // 11 計22
+      ld    SP, (#ADDR_TMP_SRC)         // 20 計42
+      pop   DE                          // 10 計52
+      pop   HL                          // 10 計62
+      ld    (#ADDR_TMP_SRC), SP         // 20 計82 HBLANK を抜ける
+      ld    SP, (#ADDR_TMP_DST)         // 20      転送先アドレスを戻す
+      djnz  B, LOGO_TRANS_DRAW_LOOP1    // 13/8
+      ld    B, 8                        //  7
+    exx                                 //  4
+    ld      HL, VRAM_WIDTH              // 10      転送先アドレスを1行下へ移動
+    add     HL, SP                      // 11
+    ld      (#ADDR_TMP_DST), HL         // 16
+    ld      SP, HL                      //  6
+    djnz    B, LOGO_TRANS_DRAW_LOOP0    // 13/8
 
     // ---------------- 後始末
-LOGO_END:
+LOGO_TRANS_END:
     BANK_RAM                    // バンク切替
-    ld      SP, (#ADDR_TMP_STACK)// スタック ポインタを復活
+LOGO_TRANS_SP_RESTORE:
+    ld      SP, #0x0000         // SP を復帰
     ret
 __endasm;
 }
@@ -219,7 +228,7 @@ void stepLogoInit()
     scoreSetDisabled();
 
     objInit();
-    sysSetStepCounter(700);
+    sysSetStepCounter(500);
     sdSetEnabled(true);
 
     // サウンドの初期化はここではやらない. 一瞬音がなってしまうので
@@ -230,22 +239,35 @@ void stepLogoInit()
 }
 
 // ---------------------------------------------------------------- メイン
+static void wait()
+{
+    __asm
+    ld      B, #0
+WAIT_LOOP:
+    ex      (SP), HL    // とにかく, ちょっと時間のかかる命令をウエイトに入れておく
+    ex      (SP), HL
+    djnz    B, WAIT_LOOP
+    __endasm;
+}
+
+
 void stepLogoMain(u16 stepCounter)
 {
-    logoTrans((100 < stepCounter) && (stepCounter < 600));
+    logoTrans((100 < stepCounter) && (stepCounter < 400));
+
+    sdMake(0x0000);
 
     vramSetTransDisabled();
     starsSetDisabled();
     scoreSetDisabled();
 
-    if ((stepCounter < 600) && (200 <= stepCounter) && (stepCounter & 1)) {
-        sdMake(sFreq);
-        sFreq += 60;
-    } else {
-        sdMake(0x0000);
-    }
-
     if (stepCounter == 0) {
         sysSetStep(stepTitleDemoInit, stepTitleDemoMain);
+    }
+    wait();
+
+    if ((stepCounter < 400) && (100 <= stepCounter)) {
+        sdMake(sFreq);
+        sFreq += 60;
     }
 }

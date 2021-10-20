@@ -24,6 +24,6 @@ u16 objItemGetNrObtainedItems();
 // ---------------------------------------------------------------- 初期化, メイン, 描画
 void objItemInit(Obj* const pObj, Obj* const pParent);
 bool objItemMain(Obj* const pObj);
-void objItemDisp(Obj* const pObj, u8* dispAddr);
+void objItemDraw(Obj* const pObj, u8* drawAddr);
 
 #endif // OBJ_ITEM_H_INCLUDED

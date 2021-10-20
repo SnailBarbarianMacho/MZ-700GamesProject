@@ -73,7 +73,7 @@
 #define FITNESS_5_1 1200
 #define FITNESS_5_2 2000
 #define FITNESS_5_3 3000
-#define FITNESS_8_1 700
+#define FITNESS_8_1 1000
 #define FITNESS_8_2 5000
 #define FITNESS_8_3 33000
 
@@ -228,11 +228,11 @@ static void overhangDeadCheck3(Obj* const pObj) __z88dk_fastcall
         // アイテムの生成
         u8 nrItems = pObj->uObjWork.enemy.nrItems;
         for (u8 i = (rand8() % nrItems) + nrItems; i != 0; i--) {
-            if (!objCreateItem(objItemInit, objItemMain, objItemDisp, pObj)) { break; }
+            if (!objCreateItem(objItemInit, objItemMain, objItemDraw, pObj)) { break; }
         }
 
         // 爆発, スコア, 敵減
-        objCreateEtc(objExplosionInit, objExplosionMain, objExplosionDisp, pObj);
+        objCreateEtc(objExplosionInit, objExplosionMain, objExplosionDraw, pObj);
         scoreAdd(pObj->uObjWork.enemy.score);
         sdSetSeSequencer(seDead3, SD_SE_PRIORITY_2, SE_DEAD3_CT);
         pObj->uGeo.geo.sx = 0;// 移動停止
@@ -254,17 +254,17 @@ static void deadCheck458(Obj* const pObj) __z88dk_fastcall
         // アイテムの生成
         u8 nrItems = pObj->uObjWork.enemy.nrItems;
         for (u8 i = (rand8() % nrItems) + nrItems; i != 0; i--) {
-            if (!objCreateItem(objItemInit, objItemMain, objItemDisp, pObj)) { break; }
+            if (!objCreateItem(objItemInit, objItemMain, objItemDraw, pObj)) { break; }
         }
          // 撃ち返し!
         if (pObj->uObjWork.enemy.bulletMode == BULLET_MODE_FIRE_ON_DEAD) {
-            objCreateEnemyBullet(objEnemyBulletInit, objEnemyBulletMain, objEnemyBulletDisp, pObj);
+            objCreateEnemyBullet(objEnemyBulletInit, objEnemyBulletMain, objEnemyBulletDraw, pObj);
         }
         // スコア処理
         u16 score = pObj->uObjWork.enemy.score;
         scoreAdd(score);
         if (100 <= score) { // 1000 点以上はスコアを表示
-            objCreateEtc(objScoreInit, objScoreMain, objScoreDisp, pObj);
+            objCreateEtc(objScoreInit, objScoreMain, objScoreDraw, pObj);
         }
         if (pObj->uGeo.geo.w == 8) {
             pObj->ct = 120;
@@ -295,7 +295,7 @@ static bool dead45(Obj* const pObj) __z88dk_fastcall
 {
     pObj->ct--;
     if ((pObj->ct & 3) == 0) {
-        objCreateEtc(objExplosionInit, objExplosionMain, objExplosionDisp, pObj);
+        objCreateEtc(objExplosionInit, objExplosionMain, objExplosionDraw, pObj);
     }
     if (pObj->ct == 0) {
         stgDecrementEnemies();
@@ -329,7 +329,7 @@ static void createEnemyBullet(Obj* const pObj) __z88dk_fastcall
     if (pObj->uObjWork.enemy.ct & tab[stgGetNrEnemies()]) {
         return;
     }
-    objCreateEnemyBullet(objEnemyBulletInit, objEnemyBulletMain, objEnemyBulletDisp, pObj);
+    objCreateEnemyBullet(objEnemyBulletInit, objEnemyBulletMain, objEnemyBulletDraw, pObj);
 }
 
 // ---------------------------------------------------------------- メイン サブ関数(移動系)
@@ -552,7 +552,7 @@ bool objEnemyMainDemo3_1(Obj* const pObj)
     // -------- 死亡チェック
     if (pObj->fitness == 0) {
         // 爆発, スコア, 敵減
-        objCreateEtc(objExplosionInit, objExplosionMain, objExplosionDisp, pObj);
+        objCreateEtc(objExplosionInit, objExplosionMain, objExplosionDraw, pObj);
         return false;
     }
     return true;
@@ -646,7 +646,7 @@ static void objEnemyBullet1(Obj* const pObj) __z88dk_fastcall
 {
     if (pObj->uObjWork.enemy.animCt & 0x3f) { return; }
     for (u8 i = 0; i < 16; i++) {
-        Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDisp, pObj);
+        Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDraw, pObj);
         if (pBullet) {
             u8 a = i * 16;
             pBullet->uGeo.geo.sx = cos(a) * 1;
@@ -660,7 +660,7 @@ static void objEnemyBullet2(Obj* const pObj) __z88dk_fastcall
     u8 animCt = pObj->uObjWork.enemy.animCt & 0x7f;
     if (50 < animCt) { return; }
 
-    Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDisp, pObj);
+    Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDraw, pObj);
     if (pBullet) {
         u8 a = - animCt * 16;
         pBullet->uGeo.geo.sx = cos(a);
@@ -682,7 +682,7 @@ static void objEnemyBullet3(Obj* const pObj) __z88dk_fastcall
     u8  a = atan2(dxdy) - 10;
 
     for (u8 i = 3; i != 0; i--, a += 10) {
-        Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDisp, pObj);
+        Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDraw, pObj);
         if (pBullet) {
             pBullet->uGeo.geo.sx = cos(a) * 2;
             pBullet->uGeo.geo.sy = sin(a) * 2;
@@ -696,7 +696,7 @@ static void objEnemyBullet4(Obj* const pObj) __z88dk_fastcall
     if (animCt & 0x07) { return; }
 
     for (u8 i = 4; i != 0; i--, animCt += 0x40) {
-        Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDisp, pObj);
+        Obj* const pBullet = objCreateEnemyBullet(objEnemyBulletInitWithoutVelocity, objEnemyBulletMain, objEnemyBulletDraw, pObj);
         if (pBullet) {
             pBullet->uGeo.geo.sx = cos(animCt) * 2;
             pBullet->uGeo.geo.sy = sin(animCt) * 2;
@@ -768,45 +768,45 @@ static const u8 coreTextTab[] = {
     0xf7, 0xf9, 0xfa, 0xfb,
     0xf7, 0xfb, 0xfd, 0xfe,
     0xfc, 0xfd, 0xfe, 0xff, };
-void objEnemyDisp3_1(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw3_1(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         ((u8*)sEnemy3_1)[4] = coreTextTab[(pObj->uObjWork.enemy.animCt >> 2) & 0x0f];
-        vVramDraw3x3(dispAddr, sEnemy3_1);
+        vVramDraw3x3(drawAddr, sEnemy3_1);
     }
 }
-void objEnemyDisp3_2(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw3_2(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {0x62, 0x02};
         ((u8*)sEnemy3_2)[13] = tab[(pObj->uObjWork.enemy.animCt >> 3) & 1];
-        vVramDraw3x3(dispAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_2);
+        vVramDraw3x3(drawAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_2);
     }
 }
-void objEnemyDisp3_3(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw3_3(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {0x04, 0x14, 0x24, 0x34, 0x44, 0x54, 0x64, 0x74};
         ((u8*)sEnemy3_3)[13] = tab[pObj->uObjWork.enemy.animCt & 7];
-        vVramDraw3x3(dispAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_3);
+        vVramDraw3x3(drawAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_3);
     }
 }
-void objEnemyDisp3_4(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw3_4(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         ((u8*)sEnemy3_4)[4] = coreTextTab[rand8() & 0x0f];
-        vVramDraw3x3(dispAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_4);
+        vVramDraw3x3(drawAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_4);
     }
 }
-void objEnemyDisp3_5(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw3_5(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {0x00, 0x00, 0x00, 0x20, };
         ((u8*)sEnemy3_5)[13] = tab[(pObj->uObjWork.enemy.animCt >> 2) & 3];
-        vVramDraw3x3(dispAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_5);
+        vVramDraw3x3(drawAddr, pObj->bHit ? sEnemyDamage_3 : sEnemy3_5);
     }
 }
-void objEnemyDisp3_6(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw3_6(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {
@@ -815,10 +815,10 @@ void objEnemyDisp3_6(Obj* const pObj, u8* dispAddr)
             0x40, 0x40, 0x40, 0x40,
             0x40, 0x40, 0x00, 0x40, };
         ((u8*)sEnemy3_6)[13] = tab[pObj->uObjWork.enemy.animCt & 0x0f];
-        vVramDraw3x3(dispAddr, pObj->bHit ? sEnemyDamage_3_6 : sEnemy3_6);
+        vVramDraw3x3(drawAddr, pObj->bHit ? sEnemyDamage_3_6 : sEnemy3_6);
     }
 }
-void objEnemyDisp4_1(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw4_1(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {
@@ -830,10 +830,10 @@ void objEnemyDisp4_1(Obj* const pObj, u8* dispAddr)
         ((u8*)sEnemy4_1)[ 6] = *p++;
         ((u8*)sEnemy4_1)[ 9] = *p++;
         ((u8*)sEnemy4_1)[10] = *p;
-        vVramDraw4x4(dispAddr, pObj->bHit ? sEnemyDamage_4 : sEnemy4_1);
+        vVramDraw4x4(drawAddr, pObj->bHit ? sEnemyDamage_4 : sEnemy4_1);
     }
 }
-void objEnemyDisp4_2(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw4_2(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = { 0x73, 0x63, 0x52, 0x42, 0x32, 0x42, 0x52, 0x63 };
@@ -842,10 +842,10 @@ void objEnemyDisp4_2(Obj* const pObj, u8* dispAddr)
         ((u8*)sEnemy4_2)[16 +  6] = c;
         ((u8*)sEnemy4_2)[16 +  9] = c;
         ((u8*)sEnemy4_2)[16 + 10] = c;
-        vVramDraw4x4(dispAddr, pObj->bHit ? sEnemyDamage_4 : sEnemy4_2);
+        vVramDraw4x4(drawAddr, pObj->bHit ? sEnemyDamage_4 : sEnemy4_2);
     }
 }
-void objEnemyDisp4_3(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw4_3(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {
@@ -859,11 +859,11 @@ void objEnemyDisp4_3(Obj* const pObj, u8* dispAddr)
         ((u8*)sEnemy4_3)[ 6] = *p++;
         ((u8*)sEnemy4_3)[ 9] = *p++;
         ((u8*)sEnemy4_3)[10] = *p;
-        vVramDraw4x4(dispAddr, pObj->bHit ? sEnemyDamage_4 : sEnemy4_3);
+        vVramDraw4x4(drawAddr, pObj->bHit ? sEnemyDamage_4 : sEnemy4_3);
     }
 }
 
-void objEnemyDisp5_1(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw5_1(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {
@@ -878,10 +878,10 @@ void objEnemyDisp5_1(Obj* const pObj, u8* dispAddr)
         ((u8*)sEnemy5_1)[12] = *p++;
         ((u8*)sEnemy5_1)[13] = *p++;
         ((u8*)sEnemy5_1)[17] = *p;
-        vVramDraw5x5(dispAddr, pObj->bHit ? sEnemyDamage_5 : sEnemy5_1);
+        vVramDraw5x5(drawAddr, pObj->bHit ? sEnemyDamage_5 : sEnemy5_1);
     }
 }
-void objEnemyDisp5_2(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw5_2(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {
@@ -894,10 +894,10 @@ void objEnemyDisp5_2(Obj* const pObj, u8* dispAddr)
         ((u8*)sEnemy5_2)[25 + 13] = c;
         ((u8*)sEnemy5_2)[25 + 17] = c;
         ((u8*)sEnemy5_2)[     12] = (rand8() & 0x0f) + 0xf0;
-        vVramDraw5x5(dispAddr, pObj->bHit ? sEnemyDamage_5 : sEnemy5_2);
+        vVramDraw5x5(drawAddr, pObj->bHit ? sEnemyDamage_5 : sEnemy5_2);
     }
 }
-void objEnemyDisp5_3(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw5_3(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         static const u8 tab[] = {
@@ -909,11 +909,11 @@ void objEnemyDisp5_3(Obj* const pObj, u8* dispAddr)
         ((u8*)sEnemy5_3)[25 +  4] = *p++;
         ((u8*)sEnemy5_3)[25 + 20] = *p++;
         ((u8*)sEnemy5_3)[25 + 24] = *p;
-        vVramDraw5x5(dispAddr, pObj->bHit ? sEnemyDamage_5 : sEnemy5_3);
+        vVramDraw5x5(drawAddr, pObj->bHit ? sEnemyDamage_5 : sEnemy5_3);
     }
 }
 
-static void objEnemyDisp8_1Anim(const u8 animCt) __z88dk_fastcall
+static void objEnemyDraw8_1Anim(const u8 animCt) __z88dk_fastcall
 {
     {
         const u8 atb = (animCt & 0x0c) ? 0x60 : 0x20;
@@ -935,23 +935,23 @@ static void objEnemyDisp8_1Anim(const u8 animCt) __z88dk_fastcall
     }
 }
 
-void objEnemyDisp8_1(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw8_1(Obj* const pObj, u8* drawAddr)
 {
     if (!(pObj->ct & 1)) {
         const u8* e = sEnemy8_1;
         if (pObj->bHit) {
             e = sEnemyDamage_8;
         }
-        objEnemyDisp8_1Anim(pObj->uObjWork.enemy.animCt);
-        vVramDrawRect(dispAddr, e, W8H8(8, 8));
+        objEnemyDraw8_1Anim(pObj->uObjWork.enemy.animCt);
+        vVramDrawRect(drawAddr, e, W8H8(8, 8));
     }
 }
-void objEnemyDisp8_2(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw8_2(Obj* const pObj, u8* drawAddr)
 {
     ((u8*)sEnemy8_1)[12] = CHAR_2;
-    objEnemyDisp8_1(pObj, dispAddr);
+    objEnemyDraw8_1(pObj, drawAddr);
 }
-void objEnemyDisp8_3(Obj* const pObj, u8* dispAddr)
+void objEnemyDraw8_3(Obj* const pObj, u8* drawAddr)
 {
     ((u8*)sEnemy8_1)[12] = CHAR_3;
     if (!(pObj->ct & 1)) { // 点滅
@@ -968,7 +968,7 @@ void objEnemyDisp8_3(Obj* const pObj, u8* dispAddr)
                 }
             }
         }
-        objEnemyDisp8_1Anim(pObj->uObjWork.enemy.animCt);
-        vVramDrawRect(dispAddr, e, W8H8(8, 8));
+        objEnemyDraw8_1Anim(pObj->uObjWork.enemy.animCt);
+        vVramDrawRect(drawAddr, e, W8H8(8, 8));
     }
 }

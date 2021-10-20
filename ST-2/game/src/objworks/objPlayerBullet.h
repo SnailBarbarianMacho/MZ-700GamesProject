@@ -12,6 +12,6 @@
 // ---------------------------------------------------------------- 初期化, メイン, 描画
 void objPlayerBulletInit(Obj* const pObj, Obj* const pParent);
 bool objPlayerBulletMain(Obj* const pObj);
-void objPlayerBulletDisp(Obj* const pObj, u8* dispAddr);
+void objPlayerBulletDraw(Obj* const pObj, u8* drawAddr);
 
 #endif // OBJ_ENEMY_H_INCLUDED

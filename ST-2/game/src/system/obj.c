@@ -91,6 +91,7 @@ static inline void objMainSub(Obj** ppObjInUse, Obj** ppObjFree)
         bool ret = pObj->mainFunc(pObj);
         Obj* const pObjNext = pObj->pNext;
         pObj->bHit = false;
+        // Obj をプールに格納します
         if (!ret) {
             /* objInUse から切り離し */
             Obj* const pObjPrev    = pObj->pPrev;
@@ -110,16 +111,15 @@ static inline void objMainSub(Obj** ppObjInUse, Obj** ppObjFree)
     }
 }
 
-// ---------------------------------------------------------------- システム(メインの描画)
+// ---------------------------------------------------------------- システム(描画)
 extern u8* funcPtr; // crt0
 
 // 表示アドレスを計算し,
-// disp() を呼び出し,
+// draw() を呼び出し,
 // 座標を移動します
-#define ADDR_TMP_STACK (VVRAM_TMP_WORK + 0) // スタックを保存するアドレス
 #pragma disable_warning 85          // pObj 未使用
 #pragma save
-static void moveDispSub(Obj* const pObj) __z88dk_fastcall __naked
+static void moveDrawSub(Obj* const pObj) __z88dk_fastcall __naked
 {
     STATIC_ASSERT(3 == OBJ_OFFSET_GEO8_XH,                        Asm1); // ※1 を修正
     STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH   - OBJ_OFFSET_GEO8_XH, Asm2); // ※2 を修正
@@ -128,75 +128,141 @@ static void moveDispSub(Obj* const pObj) __z88dk_fastcall __naked
 __asm
     ld      DE, HL                  // pObj 保存
 
-    // ---- disp addr x の計算
+    // --- draw addr x の計算
+    // HL += GEO8_XH
     inc     L                       // ※1
     inc     L                       // ※1
     inc     L                       // ※1
+    // C = VRAM_TEXT_ADDR(X, 0)
     ld      A, (HL)                 // pObj->uGeo.geo8.xh
     add     A, #(VVRAM_TEXT_ADDR(0, 0) & 0xff)
     ld      C, A
 
-    // ---- disp addr y の計算
+    // --- draw addr y の計算
+    // HL += GEO8_YH - GEO8_XH
     ld      A, L                                            // ※2
     add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※2
     ld      L, A                                            // ※2
+    // B = VRAM_TEXT_ADDR(0, Y) >> 8
 #if ((VVRAM_TEXT_ADDR(0, 0) >> 8) & 0xff) != 0
     ld      A, (HL)             // pObj->uGeo.geo8.yh
     add     A, #((VVRAM_TEXT_ADDR(0, 0) >> 8) & 0xff)
     ld      B, A
-#else
+#else // 仮想 VRAM が 0x0000 からある場合
     ld      B, (HL)
 #endif
 
-    // ----- disp() 呼び出し
+    // ---- pObj->draw(pObj, drawAddr);
+    // HL += DRAW_FUNC - GEL8_YH
     ld      A, L                                            // ※3
     add     A, #(OBJ_OFFSET_DRAW_FUNC - OBJ_OFFSET_GEO8_YH) // ※3
     ld      L, A                                            // ※3
 
+    // HL = (HL)
     ld      A, (HL)
     inc     L
     ld      H, (HL)
-    ld      L, A                    // HL = disp() のアドレス
-    push    BC                      // dispaddr
+    ld      L, A                    // HL = draw() のアドレス
+    // HL の指すアドレスに呼び出す
+    push    BC                      // drawAddr
     push    DE                      // pObj
     call    _funcPtr                // crt0 に, 「jp (HL)」 があります
     pop     HL                      // pObj
-    pop     BC                      // dispAddr (捨てる)
+    pop     BC                      // drawAddr (捨てる)
 
-    // ----- 座標加算
-    ld      (ADDR_TMP_STACK), SP    // 20
+    // ---- pObj->uGeo.geo.x += pObj->uGeo.geo.sx;
+    ld      (MOVE_DRAW_SUB_SP_RESTORE + 1), SP// 20 SP 保存(自己書換)
     ld      SP, HL                  //  6
-    pop     BC                      // 10 pObj->uGeo.geo.sx
-    pop     HL                      // 10 pObj->uGeo.geo.x
+    pop     BC                      // 10 BC = pObj->uGeo.geo.sx
+    pop     HL                      // 10 HL = pObj->uGeo.geo.x
     add     HL, BC                  // 11
     push    HL                      // 11
 
+    // ---- pObj->uGeo.geo.y += pObj->uGeo.geo.sy;
     inc     SP                      //  6 ※4
     inc     SP                      //  6 ※4
     inc     SP                      //  6 ※4
 
-    pop     BC                      // pObj->uGeo.geo.sy
-    pop     HL                      // pObj->uGeo.geo.y
+    pop     BC                      // BC = pObj->uGeo.geo.sy
+    pop     HL                      // HL = pObj->uGeo.geo.y
     add     HL, BC
     push    HL
-
-    ld      SP, (ADDR_TMP_STACK)
+MOVE_DRAW_SUB_SP_RESTORE:
+    ld      SP, #0x0000             // SP 復帰
     ret
 __endasm;
 }
 #pragma restore
 
-static inline void objMoveDisp(Obj* pObjInUse)
+#if 0 // C 版
+static inline void objMoveDraw(Obj* pObjInUse)
 {
     Obj* pObj = pObjInUse;
     while (pObj) {
-        void (*dispFunc)(Obj* const, u8*) = pObj->dispFunc;
-        if (dispFunc) {
-            moveDispSub(pObj);
+        void (*drawFunc)(Obj* const, u8*) = pObj->drawFunc;
+        if (drawFunc) {
+            moveDrawSub(pObj);
         }
         pObj = pObj->pNext;
     }
 }
+#else // ASM 版
+static void objMoveDraw(Obj* pObjInUse) __z88dk_fastcall __naked
+{
+    STATIC_ASSERT(3 <  OBJ_OFFSET_DRAW_FUNC                            , Asm1); // ※1 を修正
+    STATIC_ASSERT(3 < (OBJ_OFFSET_P_NEXT - (OBJ_OFFSET_DRAW_FUNC + 1)) , Asm2); // ※2 を修正
+__asm
+    // ---- while (pObj)
+    ld      A, H
+    or      A, L
+    ret     z
+OBJ_MOVE_DRAW_LOOP:
+    ld      C, L                                    // HL 保存
+
+    // ---- drawFunc = pObj->drawFunc;
+    // HL += DRAW_FUNC
+    ld      A, L
+    add     A, #OBJ_OFFSET_DRAW_FUNC                // ※1
+    ld      L, A
+
+    // DE = (HL)
+    ld      E, (HL)
+    inc     L
+    ld      D, (HL)
+
+    // ---- if (drawFunc) { moveDrawSub(pObj); }
+    // if (DE == 0) {goto LOOP_END }
+    ld      A, D
+    or      A, E
+    jr      z, OBJ_MOVE_DRAW_LOOP_END
+
+    // moveDrawSub(HL)
+    push    HL
+    ld      L, C                                    // HL 復帰
+    call    _moveDrawSub
+    pop     HL
+
+    // ---- pObj = pObj->pNext;
+OBJ_MOVE_DRAW_LOOP_END:
+    // HL += P_NEXT - DRAW_FUNC
+    ld      A, L
+    add     A, #(OBJ_OFFSET_P_NEXT - (OBJ_OFFSET_DRAW_FUNC + 1)) // ※2
+    ld      L, A
+
+    // HL = (HL)
+    ld      A, (HL)
+    inc     L
+    ld      H, (HL)
+    ld      L, A
+
+    // if (HL != 0) { goto DRAW_LOOP }
+    or      A, H
+    jp      nz, OBJ_MOVE_DRAW_LOOP
+    ret
+__endasm;
+}
+#endif
+
 
 // ---------------------------------------------------------------- システム(衝突判定)
 // 相互に衝突フラグが付きます
@@ -620,17 +686,17 @@ void objMain() __z88dk_fastcall
     objCollisionItem(); // プレーヤーとアイテム(アイテムのみフラグが立つ)
 
     // 移動と表示
-    objMoveDisp(spObjInUseItem);
-    objMoveDisp(spObjInUseEnemy);
-    objMoveDisp(spObjInUsePlayerBullet);
-    objMoveDisp(spObjInUsePlayer);
-    objMoveDisp(spObjInUseEnemyBullet);
-    objMoveDisp(spObjInUseEtc);
+    objMoveDraw(spObjInUseItem);
+    objMoveDraw(spObjInUseEnemy);
+    objMoveDraw(spObjInUsePlayerBullet);
+    objMoveDraw(spObjInUsePlayer);
+    objMoveDraw(spObjInUseEnemyBullet);
+    objMoveDraw(spObjInUseEtc);
 }
 
 
 // ---------------------------------------------------------------- 生成
-#define OBJ_CREATE(pObjFree, pObjInUse, initFunc, mainFunc, dispFunc, pParent)\
+#define OBJ_CREATE(pObjFree, pObjInUse, initFunc, mainFunc, drawFunc, pParent)\
     /* 未使用の Obj を探して切り離し */\
     Obj* pObj = pObjFree;           \
     if (!pObj) {                    \
@@ -650,7 +716,7 @@ void objMain() __z88dk_fastcall
                                     \
     /* 関数の登録と実行 */          \
     pObj->mainFunc = mainFunc;      \
-    pObj->dispFunc = dispFunc;      \
+    pObj->drawFunc = drawFunc;      \
     pObj->bHit     = false;         \
     if (initFunc) {                 \
         initFunc(pObj, pParent);    \
@@ -661,50 +727,50 @@ void objMain() __z88dk_fastcall
 Obj* objCreatePlayer(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreePlayer, spObjInUsePlayer, initFunc, mainFunc, dispFunc, pParent);
+    OBJ_CREATE(spObjFreePlayer, spObjInUsePlayer, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreatePlayerBullet(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreePlayerBullet, spObjInUsePlayerBullet, initFunc, mainFunc, dispFunc, pParent);
+    OBJ_CREATE(spObjFreePlayerBullet, spObjInUsePlayerBullet, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateEnemy(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeEnemy, spObjInUseEnemy, initFunc, mainFunc, dispFunc, pParent);
+    OBJ_CREATE(spObjFreeEnemy, spObjInUseEnemy, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateEnemyBullet(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeEnemyBullet, spObjInUseEnemyBullet, initFunc, mainFunc, dispFunc, pParent);
+    OBJ_CREATE(spObjFreeEnemyBullet, spObjInUseEnemyBullet, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateItem(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeItem, spObjInUseItem, initFunc, mainFunc, dispFunc, pParent);
+    OBJ_CREATE(spObjFreeItem, spObjInUseItem, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateEtc(
     void (*initFunc)(Obj* const, Obj* const),
     bool (*mainFunc)(Obj* const),
-    void (*dispFunc)(Obj* const, u8* dispAddr),
+    void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeEtc, spObjInUseEtc, initFunc, mainFunc, dispFunc, pParent);
+    OBJ_CREATE(spObjFreeEtc, spObjInUseEtc, initFunc, mainFunc, drawFunc, pParent);
 }
 
 

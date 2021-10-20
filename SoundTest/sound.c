@@ -69,7 +69,6 @@ static u8   sWaveLen1;
 static u8   sWaveLen2;
 
 // 一時的に使うワークエリア
-#define ADDR_TMP_STACK  0x100       // スタックを保存するアドレス
 #define ADDR_TMP_SP     0x100 + 10  // スタック ポインタの場所
 
 static const u8 sSound3AttTab[] = {
@@ -182,7 +181,7 @@ LABEL_SD_END:
 
 __asm
     // ---------------- 初期化
-    ld      (ADDR_TMP_STACK), SP        // スタック ポインタを保存
+    ld      (SD3_SP_RESTORE + 1), SP// SP を保存(自己書換)
     pop     HL                      // リターン アドレス(捨てる)
 
     SD3_INIT(_spMml0, _sWaveLen0, _sSdLen0, B)
@@ -210,9 +209,9 @@ SD3_LOOP:
 
 SD3_LOOP_END:
     // ---------------- 波形出力
-    ld      A, C                // 4
-    ld      (#MIO_8253_CTRL), A // 13
-    jp      SD3_LOOP            // 10
+    ld      A, C                    // 4
+    ld      (#MIO_8253_CTRL), A     // 13
+    jp      SD3_LOOP                // 10
 
 SD3_END:
     // ---------------- 後始末
@@ -224,7 +223,8 @@ SD3_END:
     ld      C, 0xe1
     out     (C), A  // 値はなんでもいい
 
-    ld      SP, (ADDR_TMP_STACK)    // スタック ポインタを復活
+SD3_SP_RESTORE:
+    ld      SP, #0x0000             // SP を復帰
     ret
 __endasm;
 }

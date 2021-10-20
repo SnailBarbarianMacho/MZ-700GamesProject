@@ -56,7 +56,7 @@ void stepTitleMain(u16 stepCounter)
 #include "../../text/titlepts.h"
     static const u8 strVersion[] = {
         CHAR_V, CHAR_CAPS, CHAR_E, CHAR_R, CHAR_PERIOD,
-        CHAR_0 + VER_MAJOR, CHAR_PERIOD, CHAR_0 + VER_MINOR, CHAR_PERIOD, 0
+        CHAR_0 + VER_MAJOR, CHAR_PERIOD, CHAR_0 + VER_MINOR0, CHAR_0 + VER_MINOR1, CHAR_PERIOD, 0
     };
 
     // -------- NWK Presents

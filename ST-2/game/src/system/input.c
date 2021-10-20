@@ -161,21 +161,24 @@ JLOOP_L_END:
     or      A, B                //      00UD_RLBA(負論理)
 
     // -------- ジョイスティックの読み取り(5) Select/Start の場合
-    or      A, 0xc0             //      11UD_RLBA
+#if 0    // V1.01 左右同時押しでポーズがかかりやすいので廃止
+    or      A, #0xc0            //      11UD_RLBA
     ld      C, A
-    and     A, 0x0c             //      0000_RL00
+    and     A, #0x0c            //      0000_RL00
     ld      A, C                //      11UD_RLBA
     jp      nz, JEND2           // 左右同時押し無し
                                 //  Play       Select     Play + Select
                                 //  1111_0011  1110_0011  1101_0011
-    and     A, 0x30             //  0011_0000  0010_0000  0001_0000
+    and     A, #0x30            //  0011_0000  0010_0000  0001_0000
     dec     A                   //  0010_1111  0001_1111  0000_1111
     add     A, A                //  0101_1110  0011_1110  0001_1110
     add     A, A                //  1011_1100  0111_1100  0011_1100
     or      A, B                //  1011_11BA  0111_11BA  0011_11BA(負論理)
 JEND2:
-    cpl     A                   //      SPUD_RLBA(静論理)
-
+    cpl     A                   //      SPUD_RLBA(正論理)
+#else
+    xor     A, #0x3f            //      00UD_RLBA(正論理)
+#endif
     // -------- ジョイスティック入力があったなら合成
     or      A, E
     ld      (#_sInput), A

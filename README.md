@@ -1,20 +1,33 @@
 # MZ-700 Game Projects
 
-* ある日唐突に MZ-700 で動くゲームを作ってみたくなったので作りました<br>
+* ある日唐突に MZ-700 で動くゲームを作ってみたくなったので, 作りました！<br>
   One day I suddenly wanted to make a game that runs on the MZ-700.
-  Nowadays, there are 8-bit cross-compilers and emulators. So I made it.
+  Nowadays, there are Z80 cross-compilers and emulators. So I made it.
 * 実行可能バイナリ (.mzt) は残してるので, ビルドしないで遊ぶことができます<br>
   I'm leaving the executable binaries (.mzt) so you can play without building.
-* EmuZ-700 エミュレータでしか動作確認してません<br>
-  I confirmed the operation only with the EmuZ-700 emulator.
+* EmuZ-700 エミュレータでしか動作確認してませんが, 多分実機でも動く...かな?<br>
+  I confirmed the operation only with the EmuZ-700 emulator. But I think it will work on the actual machine...maybe...
+* PCG-700 等の外付け PCG ハードウェアを使用している場合は, 無効化してください.<br>
+  HAL 研究所の製品ならば, GSW スイッチを OFF にします. 互換ハードウェアの場合, 取説に従ってください
+  If you are using third party PCG hardware(eg. HAL Lab. PCG-700), please disable it.<br>
+  For HAL Laboratory products, turn off the GSW switch. For compatible hardware, follow the instructions.
+* MZ-1500 の場合, リセットすると動かなくなるプログラムがあるかもしれません. その場合はロードし直してください.<br>
+  For the MZ-1500, some programs may stop working after resetting. Please reload.
+* MZ-700 に不可能はない! "MZ-700 has NO LIMIT!"
+
 
 # Features
 
 * 複数のサブ プロジェクトが中に入ってます<br>
   There are multiple subprojects inside.
 * **Test** <br>
-  コンパイラの動作テスト. 今はもう動かないかもしれません<br>
-  Compiler operation test. May not work anymore.
+  コンパイラの動作テスト. makefile はありません. バッチファイルで作ります. 今はもう動かないかもしれません<br>
+  Compiler operation test. There is no makefile, build it with a batch file. May not work anymore.
+* **Memory Dirtinizer** <br>
+  実機の電源投入時のように, メモリを「汚く」して, リセットします. makefile はありません. バッチファイルで作ります.<br>
+  Like when the power of the actual machine is turned on, it "dirts" the memory and resets it. There is no makefile. Make it with a batch file.
+  あまり役に立たないかもしれませんが, アセンブラを使った簡単なツールの作成の参考になります<br>
+  It may not be very useful, but it can be a reference for creating a simple tool using assembler.
 * **SoundTest** <br>
   三重和音サウンドテスト <br>
   3 chord sound test.<br>
@@ -26,13 +39,10 @@
 * 以後, 妻が許せばゲームを増やす予定<br>
   I'm planning to increase the number of games, if my wife allows it.
 
-# Do you want to play early? 手っ取り早く遊びたい人のガイド(for Windows)
-
-1. Set up the EmuZ-700 emulator and image ROMs.
-2. Download the .mzt file from this repository.
-
 # Requirement
 
+* 遊ぶだけなら, 必要なのはエミュレータ(or 実機)のみです
+  If you just want to play, you only need the emulator or the actual machine.
 * **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br>
   代表的な MZ-700 エミュレータ.<br>
   A typical MZ-700 emulator. <br>
@@ -87,11 +97,13 @@
 
 * This project is under [MIT license]<br>
   except deexo3.c (original by uniabis) is under [zlib license]
+* このプロジェクトの成果物のスクリーンショットや動画は, 私の承諾なしに, 自由に作成して配布できます<br>
+  Screenshots and videos of the deliverables of this project can be freely created and distributed without my consent.
 
 # Thanks to
 
-* MZ-700 ハードウェア資料を提供し, ビット マップのアルゴリズムを考え, EGC7 を作ってくれた 紅茶羊羹氏<br>
-  KochaYokan, who provided the MZ-700 hardware materials, considered the bitmap algorithm, and created EGC7.
+* MZ-700 ハードウェア資料を提供し, 様々なテクニックを考案し, EGC7 を作ってくれた 紅茶羊羹氏<br>
+  KochaYokan, who provided the MZ-700 hardware materials, devise various techniques, and created EGC7.
 * Exomizer を作ってくれた Magnus Lind 氏らと, その depacker を作ってくれた uniabis 氏<br>
   Magnus Lind and others who made the Exomizer and uniabis who made the depacker
 * 再現性の高いエミュレータ EmuZ-700 を作ってくれた TAKEDA, toshiya 氏<br>

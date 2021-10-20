@@ -271,8 +271,7 @@ static u8   sWaveLen1;
 static u8   sWaveLen2;
 
 // 一時的に使うワークエリア
-#define ADDR_TMP_STACK  (VVRAM_TMP_WORK + 0) // スタックを保存するアドレス
-#define ADDR_TMP_SP     (VVRAM_TMP_WORK + 10)// スタック ポインタの場所. 4段もあれば十分
+#define ADDR_TMP_SP     (VVRAM_TMP_WORK + 10)// SP の仮場所. 4段もあれば十分
 
 #pragma disable_warning 85
 #pragma save
@@ -382,7 +381,7 @@ LABEL_SD_END:
 
 __asm
     // ---------------- 初期化
-    ld      (ADDR_TMP_STACK), SP// スタック ポインタを保存
+    ld      (SD3_PLAY_SP_RESTORE + 1), SP// SP 保存(自己書換)
     pop     HL                  // リターン アドレス(捨てる)
 
     SD3_INIT(_spMml0, _sWaveLen0, _sSdLen0, B)
@@ -438,8 +437,8 @@ SD3_END:
     ld      (#MIO_8253_CTRL), A
 
     BANK_RAM                    // バンク切替
-
-    ld      SP, (ADDR_TMP_STACK)// スタック ポインタを復活
+SD3_PLAY_SP_RESTORE:
+    ld      SP, #0x0000         // SP 復活
     ld      L, H                // 戻値
     ret
 __endasm;

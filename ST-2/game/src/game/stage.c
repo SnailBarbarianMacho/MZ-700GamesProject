@@ -116,8 +116,14 @@ static const u8 sStageTab[] = {
 #if 1
 #if 1   // STAGE 1 3_2 が後半に登場.
     ST_BGM1,
+#if DEBUG
     E3_1(3), 0,
+    //E5_1(2), E5_2(2), E5_3(2), E4_1(1), E4_2(1), E4_3(1), E3_1(1), E3_2(1), E3_3(1), E3_4(1), E3_5(1), E3_6(1), 0,
+    //E8_1(1), 0,
     //ST_END,//TEST 即エンディング
+#else
+    E3_1(3), 0,
+#endif
     E3_1(4), 0,
     E3_1(5), 0,
     E3_1(6), 0,
@@ -412,27 +418,27 @@ u8 stgSubInit()
                 struct s_Tab {
                     void (*initFunc)(Obj* const, Obj* const);
                     bool (*mainFunc)(Obj* const);
-                    void (*dispFunc)(Obj* const, u8* dispAddr);
+                    void (*drawFunc)(Obj* const, u8* drawAddr);
                 } static const tab[] = {
-                    { objEnemyInit3_1, objEnemyMain3_1, objEnemyDisp3_1, },
-                    { objEnemyInit3_2, objEnemyMain3_2, objEnemyDisp3_2, },
-                    { objEnemyInit3_3, objEnemyMain3_3, objEnemyDisp3_3, },
-                    { objEnemyInit3_4, objEnemyMain3_4, objEnemyDisp3_4, },
-                    { objEnemyInit3_5, objEnemyMain3_5, objEnemyDisp3_5, },
-                    { objEnemyInit3_6, objEnemyMain3_6, objEnemyDisp3_6, },
-                    { objEnemyInit4_1, objEnemyMain4_1, objEnemyDisp4_1, },
-                    { objEnemyInit4_2, objEnemyMain4_2, objEnemyDisp4_2, },
-                    { objEnemyInit4_3, objEnemyMain4_3, objEnemyDisp4_3, },
-                    { objEnemyInit5_1, objEnemyMain5_1, objEnemyDisp5_1, },
-                    { objEnemyInit5_2, objEnemyMain5_2, objEnemyDisp5_2, },
-                    { objEnemyInit5_3, objEnemyMain5_3, objEnemyDisp5_3, },
-                    { objEnemyInit8_1, objEnemyMain8_1, objEnemyDisp8_1, },
-                    { objEnemyInit8_2, objEnemyMain8_2, objEnemyDisp8_2, },
-                    { objEnemyInit8_3, objEnemyMain8_3, objEnemyDisp8_3, },
+                    { objEnemyInit3_1, objEnemyMain3_1, objEnemyDraw3_1, },
+                    { objEnemyInit3_2, objEnemyMain3_2, objEnemyDraw3_2, },
+                    { objEnemyInit3_3, objEnemyMain3_3, objEnemyDraw3_3, },
+                    { objEnemyInit3_4, objEnemyMain3_4, objEnemyDraw3_4, },
+                    { objEnemyInit3_5, objEnemyMain3_5, objEnemyDraw3_5, },
+                    { objEnemyInit3_6, objEnemyMain3_6, objEnemyDraw3_6, },
+                    { objEnemyInit4_1, objEnemyMain4_1, objEnemyDraw4_1, },
+                    { objEnemyInit4_2, objEnemyMain4_2, objEnemyDraw4_2, },
+                    { objEnemyInit4_3, objEnemyMain4_3, objEnemyDraw4_3, },
+                    { objEnemyInit5_1, objEnemyMain5_1, objEnemyDraw5_1, },
+                    { objEnemyInit5_2, objEnemyMain5_2, objEnemyDraw5_2, },
+                    { objEnemyInit5_3, objEnemyMain5_3, objEnemyDraw5_3, },
+                    { objEnemyInit8_1, objEnemyMain8_1, objEnemyDraw8_1, },
+                    { objEnemyInit8_2, objEnemyMain8_2, objEnemyDraw8_2, },
+                    { objEnemyInit8_3, objEnemyMain8_3, objEnemyDraw8_3, },
                 };
                 const struct s_Tab* const pTab = &tab[p & 0x0f];
                 for (; n > 0; n--) {
-                    if (!objCreateEnemy(pTab->initFunc, pTab->mainFunc, pTab->dispFunc, nullptr)) { break; }
+                    if (!objCreateEnemy(pTab->initFunc, pTab->mainFunc, pTab->drawFunc, nullptr)) { break; }
                     sNrEnemies++;
                 }
             }

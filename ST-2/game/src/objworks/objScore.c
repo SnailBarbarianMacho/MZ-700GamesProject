@@ -31,9 +31,9 @@ bool objScoreMain(Obj* const pObj)
 }
 
 // ---------------------------------------------------------------- 描画
-void objScoreDisp(Obj* const pObj, u8* dispAddr)
+void objScoreDraw(Obj* const pObj, u8* drawAddr)
 {
     printSetAtb(VATB(7, 0, 0));
-    printSetAddr(dispAddr);
+    printSetAddr(drawAddr);
     printU16Left(pObj->uObjWork.score.score);
 }

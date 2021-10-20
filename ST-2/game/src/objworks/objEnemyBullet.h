@@ -13,7 +13,7 @@
 void objEnemyBulletInit(Obj* const pObj, Obj* const pParent);
 void objEnemyBulletInitWithoutVelocity(Obj* const pObj, Obj* const pParent);// 方向は外付けで決める
 bool objEnemyBulletMain(Obj* const pObj);
-void objEnemyBulletDisp(Obj* const pObj, u8* dispAddr);
+void objEnemyBulletDraw(Obj* const pObj, u8* drawAddr);
 
 // ---------------------------------------------------------------- ユーティリティ
 #if 0 // 当面使わない

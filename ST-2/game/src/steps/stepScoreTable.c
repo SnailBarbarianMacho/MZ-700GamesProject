@@ -46,19 +46,19 @@ void stepScoreTableMain(u16 stepCounter)
     if (ct == 80) {
         struct s_Tab {
             void (*initFunc)(Obj* const, Obj* const);
-            void (*dispFunc)(Obj* const, u8* dispAddr);
+            void (*drawFunc)(Obj* const, u8* drawAddr);
             s8      x, y;
         } const tab[] = {
-            { objEnemyInit3_1, objEnemyDisp3_1,  3,  4, },
-            { objEnemyInit3_2, objEnemyDisp3_2,  3,  8, },
-            { objEnemyInit3_3, objEnemyDisp3_3,  3, 12, },
-            { objEnemyInit3_4, objEnemyDisp3_4, 22,  4, },
-            { objEnemyInit3_5, objEnemyDisp3_5, 22,  8, },
-            { objEnemyInit3_6, objEnemyDisp3_6, 22, 12, },
+            { objEnemyInit3_1, objEnemyDraw3_1,  3,  4, },
+            { objEnemyInit3_2, objEnemyDraw3_2,  3,  8, },
+            { objEnemyInit3_3, objEnemyDraw3_3,  3, 12, },
+            { objEnemyInit3_4, objEnemyDraw3_4, 22,  4, },
+            { objEnemyInit3_5, objEnemyDraw3_5, 22,  8, },
+            { objEnemyInit3_6, objEnemyDraw3_6, 22, 12, },
             { nullptr, nullptr, 0, 0, },
         };
         for (const struct s_Tab* pTab = tab; pTab->initFunc; pTab++) {
-            Obj* pEnemy = objCreateEnemy(pTab->initFunc, objEnemyMainDemo3_1, pTab->dispFunc, nullptr);
+            Obj* pEnemy = objCreateEnemy(pTab->initFunc, objEnemyMainDemo3_1, pTab->drawFunc, nullptr);
             pEnemy->uGeo.geo8.xh = pTab->x;
             pEnemy->uGeo.geo8.yh = pTab->y;
         }
@@ -72,7 +72,7 @@ void stepScoreTableMain(u16 stepCounter)
 
     // -------- 説明の表示
     static struct s_Tab {
-        u8* const dispAddr;
+        u8* const drawAddr;
         u8* const str;
         u16 ctOffset;
     } const tab[] = {
@@ -86,8 +86,8 @@ void stepScoreTableMain(u16 stepCounter)
         { (u8*)VVRAM_TEXT_ADDR( 7, 20), str_tablevelup, 340 },
         { nullptr, nullptr, 0 },
     };
-    for (const struct s_Tab* pTab = tab; pTab->dispAddr; pTab++) {
-        printSetAddr(pTab->dispAddr);
+    for (const struct s_Tab* pTab = tab; pTab->drawAddr; pTab++) {
+        printSetAddr(pTab->drawAddr);
         printStringWithLength(pTab->str, ct - pTab->ctOffset);
     }
 

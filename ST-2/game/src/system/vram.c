@@ -18,9 +18,6 @@ static u16 s8253Ch1Ct; // 処理時間計測に使う
 #define _8253CH1CT (262 * 4)   // 8253のカウンタ. 1カウンタ1ライン. 262ラインで1フレーム
 
 // 一時的に使うワークエリア
-#define ADDR_TMP_STACK (VVRAM_TMP_WORK + 0)  // スタックを保存するアドレス
-#define ADDR_TMP_SRC   (VVRAM_TMP_WORK + 2)  // 転送元を保存するアドレス
-#define ADDR_TMP_DST   (VVRAM_TMP_WORK + 4)  // 転送先を保存するアドレス
 #define ADDR_TMP_SP    (VVRAM_TMP_WORK + 16) // 臨時スタックポインタ
 
 // ---------------------------------------------------------------- システム
@@ -85,16 +82,18 @@ __asm
     ret     z
 
     // ---------------- 準備
-    ld      (#ADDR_TMP_STACK), SP   // スタック ポインタを保存
-    BANK_VRAM_IO                    // バンク切替
+    ld      (VRAM_TRANS_SP_RESTORE + 1), SP// SP 保存(自己書換)
+    BANK_VRAM_IO                        // バンク切替
+__endasm;
 
-    // ---------------- タイマが 0 になるまで待つ
-    ld     HL, #MIO_8253_CH1
+__asm
+    // ---------------- デバッグ用タイマ
 #if DEBUG
+    ld     HL, #MIO_8253_CH1
+
     ld      C, (HL)
     ld      B, (HL)
     ld      (_s8253Ch1Ct), BC  // デバッグ時はポーリング前のタイマ値を保存します
-#endif
 
     // カウンタの再セット
     // 8253 チャンネル 1 のクロックは, 水平周期と同じ.
@@ -102,118 +101,136 @@ __asm
     ld     BC, #_8253CH1CT
     ld     (HL), C
     ld     (HL), B
+#endif
 __endasm;
 
 __asm
     // -------- アドレス初期化
     ld      HL, #VVRAM_TEXT_ADDR(0, 0)
-    ld      (#ADDR_TMP_SRC), HL     // 転送元アドレス
+    ld      (VRAM_TRANS_SRC_0 + 1), HL  // 転送元(自己書換)
     ld      HL, #VRAM_TEXT_ADDR(10, 0)
-    ld      (#ADDR_TMP_DST), HL     // 転送先アドレス
+    ld      (VRAM_TRANS_DST_0 + 1), HL  // 転送先(自己書換)
 
     // ----------------
     // V-Blank を待ちます. 既に V-Blank 中ならばそのまま行っちゃいます
     // 8253 ポート C bit 7 == 0 ならば, ブランキング中
-    //
+
     // VRAM 転送速度と画面リフレッシュ速度は同じなので,
     // 画面の乱れが少ないなら, 同期を待たなくてもいいようです
 #if 0
     ld      HL, #MIO_8255_PORTC
-    xor     A
 VRAM_BLANK_0:
-    or      (HL)
-    jp      p, VRAM_BLANK_0
+    ld      A, (HL)
+    rlca
+    jp      c, VRAM_BLANK_0             // V表示中なら待つ
 #endif
 
     // ----------------
     // 転送!
     // 10 バイト転送 x 4 で 1行分転送します
     // ---- loop
-    ld      A, VRAM_HEIGHT          // ループ カウンタ
+    ld      A, VRAM_HEIGHT              // ループ カウンタ
 VRAM_TRANS_LOOP:
+
     // ---- TEXT 1 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_0:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
-    ld      (#ADDR_TMP_SRC), SP
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_1 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_DST_0:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, 20                  // 転送先アドレスの移動
+    ld      HL, #20                     // 転送先アドレス移動
     add     HL, SP
-    ld      (#ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_1 + 1), HL  // 転送先(自己書換)
 
     // ---- TEXT 2 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_1:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
-    ld      (#ADDR_TMP_SRC), SP
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_2 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_DST_1:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, 20                  // 転送先アドレスの移動
+    ld      HL, #20                     // 転送先アドレス移動
     add     HL, SP
-    ld      (#ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_2 + 1), HL  // 転送先(自己書換)
 
     // ---- TEXT 3 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_2:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
-    ld      (#ADDR_TMP_SRC), SP
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_3 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_DST_2:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, 20                  // 転送先アドレスの移動
+    ld      HL, #20                     // 転送先アドレス移動
     add     HL, SP
-    ld      (#ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_3 + 1), HL  // 転送先(自己書換)
 
     // ---- TEXT 4 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_3:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
-    ld      HL, VVRAM_GAPX          // 転送元アドレスを, 仮想 ATB に移動
+    ld      HL, VVRAM_GAPX              // 転送元アドレスを, 仮想 ATB に移動
     add     HL, SP
-    ld      (#ADDR_TMP_SRC), HL
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_4 + 1), HL  // 転送元(自己書換)
+VRAM_TRANS_DST_3:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, 0x0800 - 20         // 転送先アドレスを, ATB に移動します
+    ld      HL, #(0x0800 - 20)          // 転送先アドレスを, ATB に移動します
     add     HL, SP
-    ld      (#ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_4 + 1), HL  // 転送先(自己書換)
 
     // ---- ATB 1 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_4:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
-    ld      (#ADDR_TMP_SRC), SP
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_5 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_DST_4:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, 20                  // 転送先アドレスの移動
+    ld      HL, #20                     // 転送先アドレス移動
     add     HL, SP
-    ld      (ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_5 + 1), HL  // 転送先(自己書換)
 
     // ---- ATB 2 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_5:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
-    ld      (#ADDR_TMP_SRC), SP
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_6 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_DST_5:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, 20                  // 転送先アドレスの移動
+    ld      HL, #20                     // 転送先アドレス移動
     add     HL, SP
-    ld      (#ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_6 + 1), HL  // 転送先(自己書換)
 
     // ---- ATB 3 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_6:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
-    ld      (#ADDR_TMP_SRC), SP
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_7 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_DST_6:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, 20                  // 転送先アドレスの移動
+    ld      HL, #20                     // 転送先アドレス移動
     add     HL, SP
-    ld      (#ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_7 + 1), HL  // 転送先(自己書換)
 
     // ---- ATB 4 番目の 10 bytes
-    ld      SP, (#ADDR_TMP_SRC)     // read
+VRAM_TRANS_SRC_7:
+    ld      SP, #0x0000                 // 転送元
     POP_10_BYTES_TO_REGISTERS()
     ld      HL, VVRAM_WIDTH - VRAM_WIDTH - VVRAM_GAPX - VRAM_WIDTH  // 転送元アドレスを, TEXT の次の行に移動
     add     HL, SP
-    ld      (#ADDR_TMP_SRC), HL
-    ld      SP, (#ADDR_TMP_DST)     // write
+    ld      (VRAM_TRANS_SRC_0 + 1), HL  // 転送元(自己書換)
+VRAM_TRANS_DST_7:
+    ld      SP, #0x0000                 // 転送先
     PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, -0x0800 + VRAM_WIDTH - 20    // 転送先アドレスを TEXT の次の行に移動します
+    ld      HL, #(-0x0800 + VRAM_WIDTH - 20) // 転送先アドレスを TEXT の次の行に移動します
     add     HL, SP
-    ld      (#ADDR_TMP_DST), HL
+    ld      (VRAM_TRANS_DST_0 + 1), HL  // 転送先(自己書換)
 
     // ---- loop end
     dec     A
@@ -223,7 +240,8 @@ __endasm;
 __asm
     // ---------------- 終了
     BANK_RAM                        // バンク切替
-    ld      SP, (#ADDR_TMP_STACK)   // スタック ポインタを復活
+VRAM_TRANS_SP_RESTORE:
+    ld      SP, #0x0000             // SP 復活
 
     jp      _vramClear // 仮想画面クリアして終了
 __endasm;
@@ -270,7 +288,7 @@ u16 vramDebugGetProcessTime()
 void vramClear() __z88dk_fastcall __naked
 {
 __asm
-    ld      (#ADDR_TMP_STACK), SP   // スタック ポインタを保存
+    ld      (VRAM_CLEAR_SP_RESTORE + 1), SP// SP 保存(自己書換)
 
     ld      B,  #VRAM_HEIGHT        // loop counter
     ld      DE, 0x0000
@@ -285,8 +303,8 @@ VVRAM_CLEAR_LOOP:
     add     HL, SP
     ld      SP, HL
     djnz    B, VVRAM_CLEAR_LOOP
-
-    ld      SP, (#ADDR_TMP_STACK)   // スタック ポインタを復活
+VRAM_CLEAR_SP_RESTORE:
+    ld      SP, #0000               // SP 復活
     ret
 __endasm;
 }
@@ -294,11 +312,11 @@ __endasm;
 // ---------------------------------------------------------------- 塗りつぶし(fill)
 #pragma disable_warning 85
 #pragma save
-void vVramFillRect(const u8* const dispAddr, const u16 wh, const u16 code) __naked
+void vVramFillRect(const u8* const drawAddr, const u16 wh, const u16 code) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     HL                      // dispAddr
+    pop     HL                      // drawAddr
     pop     BC                      // wh
     pop     DE                      // code
     ld      A, C                    // h
@@ -369,7 +387,7 @@ __endasm;
 void vramFill(const u16 code) __z88dk_fastcall __naked
 {
 __asm
-    ld      (#ADDR_TMP_STACK), SP   // スタック ポインタを保存
+    ld      (VRAM_FILL_SP_RESTORE + 1), SP// SP 保存(自己書換)
     BANK_VRAM_IO                    // バンク切替
 
     // -------- 画面クリアします
@@ -389,18 +407,19 @@ RVRAM_ATB_FILL_LOOP:
     djnz    B, RVRAM_ATB_FILL_LOOP
 
     BANK_RAM                        // バンク切替
-    ld      SP, (#ADDR_TMP_STACK)   // スタック ポインタを復活
+VRAM_FILL_SP_RESTORE:
+    ld      SP, #0x0000             // SP 復活
     ret
 __endasm;
 }
 #pragma restore
 
 // ---------------------------------------------------------------- 描画(draw)(任意の矩形)
-void vVramDrawRect(const u8* const dispAddr, const u8* const srcAddr, const u16 wh) __naked
+void vVramDrawRect(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
     pop     BC                      // wh
 
@@ -458,11 +477,11 @@ __endasm;
 }
 
 
-void vVramDrawRectTransparent(const u8* const dispAddr, const u8* const srcAddr, const u16 wh) __naked
+void vVramDrawRectTransparent(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
     pop     BC                      // wh
 
@@ -517,16 +536,16 @@ __endasm;
 }
 
 
-void vramDrawRect(const u8* const dispAddr, const u8* const srcAddr, const u16 wh) __naked
+void vramDrawRect(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked
 {
 __asm
-    ld      (#ADDR_TMP_STACK), SP   // VRAM を切り替えるので, スタック ポインタを保存
+    ld      (VRAM_DRAW_RECT_SP_RESTORE + 1), SP   // VRAM を切り替えるので, SP 保存(自己書換)
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
     pop     BC                      // wh
 
-    ld      SP, #(ADDR_TMP_SP)      // 臨時スタックポインタ
+    ld      SP, #ADDR_TMP_SP        // 臨時スタックポインタ
     ld      A, C                    // h 保存
     BANK_VRAM_IO                    // バンク切替 C 破壊
     ld      C, A                    // h 復帰
@@ -584,18 +603,19 @@ RVRAM_DRAW_RECT_ATB_LOOP_Y:
 
     // -------- 終了
     BANK_RAM                        // バンク切替
-    ld      SP, (#ADDR_TMP_STACK)   // スタック ポインタを復活
+VRAM_DRAW_RECT_SP_RESTORE:
+    ld      SP, #0x0000             // SP 復帰
     ret
 __endasm;
 }
 
 
 // ---------------------------------------------------------------- 描画(draw)(1x1)
-void vVramDraw1x1(const u8* const dispAddr, const u16 code) __naked
+void vVramDraw1x1(const u8* const drawAddr, const u16 code) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     HL                      // dispAddr
+    pop     HL                      // drawAddr
     pop     DE                      // code
 
     // TEXT
@@ -619,11 +639,11 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(1x3)
-void vVramDraw1x3(const u8* const dispAddr, const u8* const srcAddr) __naked
+void vVramDraw1x3(const u8* const drawAddr, const u8* const srcAddr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
 
     // TEXT
@@ -650,11 +670,11 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(3x3)
-void vVramDraw3x3(const u8* const dispAddr, const u8* const srcAddr) __naked
+void vVramDraw3x3(const u8* const drawAddr, const u8* const srcAddr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
 
     // TEXT
@@ -710,7 +730,7 @@ __asm
 __endasm;
 }
 
-void vVramDraw3x3Transparent(const u8* const dispAddr, const u8* const srcAddr) __naked
+void vVramDraw3x3Transparent(const u8* const drawAddr, const u8* const srcAddr) __naked
 {
 
 // HL: source
@@ -765,7 +785,7 @@ label:
 
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
 
     ld      C, #(0x00 | (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)))
@@ -794,11 +814,11 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(4x4)
-void vVramDraw4x4(const u8* const dispAddr, const u8* const srcAddr) __naked
+void vVramDraw4x4(const u8* const drawAddr, const u8* const srcAddr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
     ld      BC, 0x04ff              // BC は ldi 命令でデクリメントするが, B は変化しない
 
@@ -878,11 +898,11 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(5x5)
-void vVramDraw5x5(const u8* const dispAddr, const u8* const srcAddr) __naked
+void vVramDraw5x5(const u8* const drawAddr, const u8* const srcAddr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
     ld      BC, 0x05ff              // BC は ldi 命令でデクリメントするが, B は変化しない
 
@@ -994,7 +1014,7 @@ __endasm;
 }
 
 #if 0 //今回は使ってない
-void vVramDraw5x5Transparent(const u8* const dispAddr, const u8* const srcAddr) __naked
+void vVramDraw5x5Transparent(const u8* const drawAddr, const u8* const srcAddr) __naked
 {
 
 // HL: source
@@ -1043,7 +1063,7 @@ label:
 
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // dispAddr
+    pop     DE                      // drawAddr
     pop     HL                      // srcAddr
 
     ld      BC, #(0x0500 | (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)))

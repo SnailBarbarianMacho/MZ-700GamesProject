@@ -121,34 +121,34 @@ bool objItemMain(Obj* const pObj)
 #pragma disable_warning 85  // pObj 未使用
 #pragma save
 #if 0   // C 版
-void objItemDisp(Obj* const pObj, u8* dispAddr)
+void objItemDraw(Obj* const pObj, u8* drawAddr)
 {
     switch (pObj->uGeo.geo8.yl / 0x40) {
         case 0:
-            *(dispAddr) = 0x0c;
-            *(dispAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))) = 0x06;
+            *(drawAddr) = 0x0c;
+            *(drawAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))) = 0x06;
             break;
         case 1:
-            *(dispAddr)       = 0x36;
-            *(dispAddr+0x100) = 0x36;
-            *(dispAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))      ) = 0x06;
-            *(dispAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))+0x100) = 0x60;
+            *(drawAddr)       = 0x36;
+            *(drawAddr+0x100) = 0x36;
+            *(drawAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))      ) = 0x06;
+            *(drawAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))+0x100) = 0x60;
             break;
         case 2:
-            *(dispAddr)       = 0x3a;
-            *(dispAddr+0x100) = 0x3a;
-            *(dispAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))      ) = 0x60;
-            *(dispAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))+0x100) = 0x06;
+            *(drawAddr)       = 0x3a;
+            *(drawAddr+0x100) = 0x3a;
+            *(drawAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))      ) = 0x60;
+            *(drawAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))+0x100) = 0x06;
             break;
         case 3:
-            *(dispAddr)       = 0x3e;
-            *(dispAddr+0x100) = 0x3e;
-            *(dispAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))      ) = 0x60;
-            *(dispAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))+0x100) = 0x06;
+            *(drawAddr)       = 0x3e;
+            *(drawAddr+0x100) = 0x3e;
+            *(drawAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))      ) = 0x60;
+            *(drawAddr + (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))+0x100) = 0x06;
             break;
     }
 #else   // ASM 版
-void objItemDisp(Obj* const pObj, u8* dispAddr) __naked
+void objItemDraw(Obj* const pObj, u8* drawAddr) __naked
 {
 STATIC_ASSERT(3 <= OBJ_OFFSET_GEO8_YL,                                  Asm1); // ※1 を修正
 STATIC_ASSERT(4 <= OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL, Asm2); // ※2 を修正
@@ -163,7 +163,7 @@ __asm
     ld      A, (DE)                     // A = yl
 
     and     A, 0xc0                     // A = 0x00, 0x40, 0x80, 0xc0
-    jr      z, OBJ_ITEM_DISP_1          // A = 0x00 の場合は別ルーチン
+    jr      z, OBJ_ITEM_DRAW_1          // A = 0x00 の場合は別ルーチン
 
     rlca                                // A = 0x00, 0x80, 0x01, 0x81
     rlca                                // A = 0x00, 0x01, 0x02, 0x03
@@ -191,7 +191,7 @@ __asm
     ld      E, (HL)
 
     // ---- 描画
-    pop     HL                          // dispAddr
+    pop     HL                          // drawAddr
 
     ld      (HL), B
     inc     H
@@ -211,7 +211,7 @@ __asm
     ret
 
     // 1x1 のみの場合の描画
-OBJ_ITEM_DISP_1:
+OBJ_ITEM_DRAW_1:
     // ---- step から ATB を選ぶ
     ld      A, E                                                        // ※2
     add     A, #(OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL)   // ※2
@@ -225,7 +225,7 @@ OBJ_ITEM_DISP_1:
     ld      D, (HL)                     // D = ATB
 
     // ---- 描画
-    pop     HL                      // dispAddr
+    pop     HL                      // drawAddr
     ld      (HL), CHAR_L
     ld      A, L
     add     A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))

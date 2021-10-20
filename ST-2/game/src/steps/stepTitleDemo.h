@@ -15,9 +15,9 @@ void stepTitleDemoInit();
 void stepTitleDemoMain(u16 stepCounter);
 
 // ---------------------------------------------------------------- タイトル表示
-void stepTitleDrawTitleS(     const u8* dispAddr);
-void stepTitleDrawTitleT(     const u8* dispAddr);
-void stepTitleDrawTitleHyphen(const u8* dispAddr);
-void stepTitleDrawTitle2(     const u8* dispAddr);
+void stepTitleDrawTitleS(     const u8* drawAddr);
+void stepTitleDrawTitleT(     const u8* drawAddr);
+void stepTitleDrawTitleHyphen(const u8* drawAddr);
+void stepTitleDrawTitle2(     const u8* drawAddr);
 
 #endif  // STEP_TITLE_H_INCLUDED
