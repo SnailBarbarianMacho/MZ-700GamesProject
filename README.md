@@ -25,7 +25,7 @@
   Compiler operation test. There is no makefile, build it with a batch file. May not work anymore.
 * **Memory Dirtinizer** <br>
   実機の電源投入時のように, メモリを「汚く」して, リセットします. makefile はありません. バッチファイルで作ります.<br>
-  Like when the power of the actual machine is turned on, it "dirts" the memory and resets it. There is no makefile. Make it with a batch file.
+  Like when the power of the actual machine is turned on, it "dirts" the memory and resets it. There is no makefile. Make it with a batch file.<br>
   あまり役に立たないかもしれませんが, アセンブラを使った簡単なツールの作成の参考になります<br>
   It may not be very useful, but it can be a reference for creating a simple tool using assembler.
 * **SoundTest** <br>
