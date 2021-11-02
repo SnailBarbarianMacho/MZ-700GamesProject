@@ -35,22 +35,7 @@ static u16 s8253Ch1Ct; // 処理時間計測に使う
     push    BC  \
     push    DE  \
     push    HL
-#define PUSH_DE_40_BYTES() \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
-    push    DE \
+#define PUSH_DE_10_BYTES() \
     push    DE \
     push    DE \
     push    DE \
@@ -67,7 +52,7 @@ __asm;
     ld      L, A
     ld      (_s8253Ch1Ct), HL
 #endif
-    jp      _vramClear // 仮想画面クリアして終了
+    jp      _vvramClear // 仮想画面クリアして終了
 __endasm;
 }
 
@@ -243,7 +228,7 @@ __asm
 VRAM_TRANS_SP_RESTORE:
     ld      SP, #0x0000             // SP 復活
 
-    jp      _vramClear // 仮想画面クリアして終了
+    jp      _vvramClear // 仮想画面クリアして終了
 __endasm;
 }
 
@@ -285,7 +270,7 @@ u16 vramDebugGetProcessTime()
 #endif
 
 // ---------------------------------------------------------------- クリア
-void vramClear() __z88dk_fastcall __naked
+void vvramClear() __z88dk_fastcall __naked
 {
 __asm
     ld      (VRAM_CLEAR_SP_RESTORE + 1), SP// SP 保存(自己書換)
@@ -294,11 +279,17 @@ __asm
     ld      DE, 0x0000
     ld      SP, #VVRAM_TEXT_ADDR(VRAM_WIDTH, 0)
 VVRAM_CLEAR_LOOP:
-    PUSH_DE_40_BYTES()              // TEXT
+    PUSH_DE_10_BYTES()              // TEXT
+    PUSH_DE_10_BYTES()              // TEXT
+    PUSH_DE_10_BYTES()              // TEXT
+    PUSH_DE_10_BYTES()              // TEXT
     ld      HL, #(VRAM_WIDTH + VVRAM_GAPX + VRAM_WIDTH)
     add     HL, SP
     ld      SP, HL
-    PUSH_DE_40_BYTES()              // ATB
+    PUSH_DE_10_BYTES()              // ATB
+    PUSH_DE_10_BYTES()              // ATB
+    PUSH_DE_10_BYTES()              // ATB
+    PUSH_DE_10_BYTES()              // ATB
     ld      HL, #(VVRAM_WIDTH - VVRAM_GAPX)
     add     HL, SP
     ld      SP, HL
@@ -386,25 +377,38 @@ __endasm;
 #pragma save
 void vramFill(const u16 code) __z88dk_fastcall __naked
 {
+    // 10byte 単位で TEXT->ATB と書いていきます.
+    // 1/60 sec でクリアされます.
 __asm
     ld      (VRAM_FILL_SP_RESTORE + 1), SP// SP 保存(自己書換)
     BANK_VRAM_IO                    // バンク切替
 
-    // -------- 画面クリアします
-    ld      B,  VRAM_HEIGHT         // loop counter
-    ld      D,  L                   // ディスプレイコード
-    ld      E,  L
-    ld      SP, #VRAM_TEXT_ADDR(0, VRAM_HEIGHT)
-RVRAM_TEXT_FILL_LOOP:
-    PUSH_DE_40_BYTES()
-    djnz    B, RVRAM_TEXT_FILL_LOOP
-    ld      B,  VRAM_HEIGHT         // loop counter
-    ld      D,  H                   // ATB
-    ld      E,  H
-    ld      SP, #VRAM_ATB_ADDR(0, VRAM_HEIGHT)
-RVRAM_ATB_FILL_LOOP:
-    PUSH_DE_40_BYTES()
-    djnz    B, RVRAM_ATB_FILL_LOOP
+    ld      BC, HL                  // ATB + TEXT
+    ld      SP, #VRAM_TEXT_ADDR(10, 0)
+    ld      A,  VRAM_HEIGHT * 4     // loop counter
+
+VRAM_FILL_LOOP:
+        // TEXT の消去
+        ld      D, C                    // TEXT
+        ld      E, C                    // TEXT
+        PUSH_DE_10_BYTES()
+
+        ld  HL, #(10 + VRAM_ATB - VRAM_TEXT)
+        add HL, SP
+        ld  SP, HL
+
+        // ATB の消去
+        ld      D, B                    // ATB
+        ld      E, B                    // ATB
+        PUSH_DE_10_BYTES()
+
+        ld  HL, #(20 + VRAM_TEXT - VRAM_ATB)
+        add HL, SP
+        ld  SP, HL
+
+        // ループ末端
+        dec A
+        jr  nz, VRAM_FILL_LOOP
 
     BANK_RAM                        // バンク切替
 VRAM_FILL_SP_RESTORE:

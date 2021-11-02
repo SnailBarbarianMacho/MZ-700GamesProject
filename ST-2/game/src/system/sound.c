@@ -8,16 +8,19 @@
 #include "../../../../src-common/hard.h"
 #include "addr.h"
 #include "vram.h"
+#include "math.h"
+#include "../game/bgm.h"
+#include "../game/se.h"
 #include "sound.h"
 
-
+// ---------------------------------------------------------------- 変数, マクロ
 #define NR_SE_SEQUENCERS 4
 
-static u16  (*sBgmMain)(u16);                   // サウンド BGM シーケンサ
-static u16    sBgmCt;                           // サウンド BGM シーケンサ カウンタ
-static u8     sSePri;                           // サウンド SE 優先順位
-static void (*sSeMains[NR_SE_SEQUENCERS])(u8);  // サウンド SE シーケンサ
-static u8     sSeCts[NR_SE_SEQUENCERS];         // サウンド SE シーケンサ カウンタ
+u16  (*_bgmMain)(u16);                   // サウンド BGM シーケンサ
+u16    _bgmCt;                           // サウンド BGM シーケンサ カウンタ
+u8     _sePri;                           // サウンド SE 優先順位
+void (*_seMains[NR_SE_SEQUENCERS])(u8);  // サウンド SE シーケンサ
+u8     _seCts[NR_SE_SEQUENCERS];         // サウンド SE シーケンサ カウンタ
 
 // ---------------------------------------------------------------- システム(初期化)
 // -------- sd1 音程テーブル
@@ -79,10 +82,10 @@ __endasm;
 
 void sdInit()
 {
-    sBgmMain  = nullptr;
-    sSePri    = 0xff;
+    _bgmMain  = nullptr;
+    _sePri    = 0xff;
     for (u8 i = 0; i < NR_SE_SEQUENCERS; i++) {
-        sSeMains[i] = nullptr;
+        _seMains[i] = nullptr;
     }
     sdInitSub();
 }
@@ -91,9 +94,9 @@ void sdInit()
 // ---------------------------------------------------------------- システム(メイン)
 void sdBgmMain()
 {
-    u16 (*main)(u16) = sBgmMain;
+    u16 (*main)(u16) = _bgmMain;
     if (main) {
-        sBgmCt = main(sBgmCt);
+        _bgmCt = main(_bgmCt);
     }
 }
 void sdSeMain()
@@ -101,20 +104,20 @@ void sdSeMain()
     // SE シーケンサ
     u8 i = 0;
     for (; i < NR_SE_SEQUENCERS; i++) {
-        void (*main)(u8) = sSeMains[i];
+        void (*main)(u8) = _seMains[i];
         if (main) {
-            u8 ct = sSeCts[i];
+            u8 ct = _seCts[i];
             ct--;
             main(ct);
             if (ct == 0) {
-                sSeMains[i] = nullptr;
-                sSePri  = 0xff;       // 鳴り終わったらシーケンサー優先度をリセットする
+                _seMains[i] = nullptr;
+                _sePri  = 0xff;       // 鳴り終わったらシーケンサー優先度をリセットする
                 sdMake(0x0000);       // 音は止める
             } else {
                 // 優先順位の低いシーケンサーは削除
-                sSeCts[i] = ct;
+                _seCts[i] = ct;
                 for (i++; i < NR_SE_SEQUENCERS; i++) {
-                    sSeMains[i] = nullptr;
+                    _seMains[i] = nullptr;
                 }
                 break;
             }
@@ -154,28 +157,26 @@ __endasm;
 }
 #pragma restore
 
+
 // ---------------------------------------------------------------- サウンド シーケンサ
-void sdSetBgmSequencer(void (*init)(), u16 (*main)(u16))
+void sdPlayBgm(const u8 bgm) __z88dk_fastcall
 {
-    sBgmMain = main;
-    sBgmCt   = 0;
-    if (init) { init(); }
+    const BgmSequencerDesc* const pTab = bgmGetSequencerDesc(bgm);
+    _bgmMain = pTab->main;
+    _bgmCt   = 0;
+    if (pTab->init) { pTab->init(); }
 }
 
-void sdSetSeSequencer(void (*main)(u8), const u8 priority, const u8 ct)
+void sdPlaySe(const u8 se) __z88dk_fastcall
 {
-    if (priority <= sSePri) {
-        sSePri = priority;
-        sSeMains[priority] = main;
-        sSeCts[priority] = ct;
+    const SeSequencerDesc* const pTab = seGetSequencerDesc(se);
+    u8 priority = pTab->priority;
+    if (priority <= _sePri) {
+        _sePri = priority;
+        _seMains[priority] = pTab->main;
+        _seCts[priority] = pTab->ct;
     }
 }
-
-u8 sdGetSePriority()
-{
-    return sSePri;
-}
-
 
 // ---------------------------------------------------------------- 音を鳴らす(任意波長)
 #pragma disable_warning 85
@@ -260,15 +261,15 @@ __endasm;
 #pragma restore
 
 // ---------------------------------------------------------------- 音を鳴らす(三重和音)
-static u16* spMml0;     // サウンド データへのポインタ
-static u16* spMml1;
-static u16* spMml2;
-static u8   sSdLen0;    // 音長カウンタ初期値(8bit)
-static u8   sSdLen1;
-static u8   sSdLen2;
-static u8   sWaveLen0;  // 波長初期値(8bit)
-static u8   sWaveLen1;
-static u8   sWaveLen2;
+static u16* _pMml0;     // サウンド データへのポインタ
+static u16* _pMml1;
+static u16* _pMml2;
+static u8   _sdLen0;    // 音長カウンタ初期値(8bit)
+static u8   _sdLen1;
+static u8   _sdLen2;
+static u8   _sdWaveLen0;  // 波長初期値(8bit)
+static u8   _sdWaveLen1;
+static u8   _sdWaveLen2;
 
 // 一時的に使うワークエリア
 #define ADDR_TMP_SP     (VVRAM_TMP_WORK + 10)// SP の仮場所. 4段もあれば十分
@@ -384,9 +385,9 @@ __asm
     ld      (SD3_PLAY_SP_RESTORE + 1), SP// SP 保存(自己書換)
     pop     HL                  // リターン アドレス(捨てる)
 
-    SD3_INIT(_spMml0, _sWaveLen0, _sSdLen0, B)
-    SD3_INIT(_spMml1, _sWaveLen1, _sSdLen1, D)
-    SD3_INIT(_spMml2, _sWaveLen2, _sSdLen2, E)
+    SD3_INIT(__pMml0, __sdWaveLen0, __sdLen0, B)
+    SD3_INIT(__pMml1, __sdWaveLen1, __sdLen1, D)
+    SD3_INIT(__pMml2, __sdWaveLen2, __sdLen2, E)
     pop     HL                  // L= キャンセル可能フラグ
 
     ld      SP, #ADDR_TMP_SP
@@ -413,9 +414,9 @@ SD3_CANCEL_ENABLE:
 SD3_LOOP:
     ld      C, #MIO_8253_CH0_MODE0  // 7
 
-    SD3_MAIN(_spMml0, _sWaveLen0, _sSdLen0, H, L, B,        ,       , SD3_SD_LEN_END0, SD3_SD_WAVE_PULSE0, SD3_SD_WAVE_LEN0, SD3_SD_END0)
-    SD3_MAIN(_spMml1, _sWaveLen1, _sSdLen1, B, C, D, push HL, pop HL, SD3_SD_LEN_END1, SD3_SD_WAVE_PULSE1, SD3_SD_WAVE_LEN1, SD3_SD_END1)
-    SD3_MAIN(_spMml2, _sWaveLen2, _sSdLen2, D, E, E, push HL, pop HL, SD3_SD_LEN_END2, SD3_SD_WAVE_PULSE2, SD3_SD_WAVE_LEN2, SD3_SD_END2)
+    SD3_MAIN(__pMml0, __sdWaveLen0, __sdLen0, H, L, B,        ,       , SD3_SD_LEN_END0, SD3_SD_WAVE_PULSE0, SD3_SD_WAVE_LEN0, SD3_SD_END0)
+    SD3_MAIN(__pMml1, __sdWaveLen1, __sdLen1, B, C, D, push HL, pop HL, SD3_SD_LEN_END1, SD3_SD_WAVE_PULSE1, SD3_SD_WAVE_LEN1, SD3_SD_END1)
+    SD3_MAIN(__pMml2, __sdWaveLen2, __sdLen2, D, E, E, push HL, pop HL, SD3_SD_LEN_END2, SD3_SD_WAVE_PULSE2, SD3_SD_WAVE_LEN2, SD3_SD_END2)
 
 SD3_LOOP_END:
     // ---------------- 波形出力

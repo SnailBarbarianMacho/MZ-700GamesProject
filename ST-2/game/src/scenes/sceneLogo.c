@@ -1,5 +1,5 @@
 /**
- * ロゴ ステップ
+ * ロゴ シーン
  * @author Snail Barbarian Macho (NWK)
  */
 
@@ -13,9 +13,11 @@
 #include "../system/obj.h"
 #include "../game/stars.h"
 #include "../game/score.h"
-#include "stepTitleDemo.h"
-#include "stepLogo.h"
+#include "../game/gameMode.h"
+#include "sceneTitleDemo.h"
+#include "sceneLogo.h"
 
+// ---------------------------------------------------------------- 変数, マクロ
 static const u8 imageData[] = {
     // cos1_inv1_atb1_score41
     0x96, 0xdc, 0x36, 0x36,
@@ -69,62 +71,65 @@ static const u8 imageData[] = {
 #define LOGO_WIDTH  4               // 寸法(chara)
 #define LOGO_HEIGHT 5               // 寸法(chara)
 #define LOGO_POS_X  18              // 表示位置の X[0, 39](chara)
-#define LOGO_POS_Y  6               // 表示位置の Y[1, 22](chara) だけど, 何故か 8 位が限界
+#define LOGO_POS_Y  6               // 表示位置の Y[1, 22](chara)  下過ぎると他の処理のせいで表示が間に合わなくなる
 
-// もっと下に表示出来る筈ですが, 上手く行かない. 謎
+#define LOGO_TIME     350
+#define LOGO_TIME_ON  300
+#define LOGO_TIME_OFF 70
 
-// -------------------------------- ロゴ転送
+#define SYS_SCENE_WORK_FREQ 0
+
+// ---------------------------------------------------------------- ロゴ転送
 /**
  * VBLANK で同期をもってロゴを表示します.
  * @param bDraw == false なら表示しません
  */
 #pragma disable_warning 85
 #pragma save
-void logoTrans(const bool bDraw) __z88dk_fastcall __naked
+void logoTrans(bool bDisp) __z88dk_fastcall __naked
 {
 __asm
     // ---------------- 準備
     ld      (LOGO_TRANS_SP_RESTORE + 1), SP// SP を保存(自己書換)
     BANK_VRAM_IO                        // バンク切替
-    dec     L                           // -1/0 = 表示しない/表示する
-    jp      z, LOGO_TRANS_DRAW
 
-    // -------------------------------- 表示しない(0x43で表示する)
+    // -------------------------------- 非表示(bDisp == 0)
+    ld      A, L
+    and     A, A
+    jp      nz, LOGO_TRANS_DISP
+
     // -------- 転送準備
-    ld      SP, #(VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y) + 4)
-    ld      B, LOGO_HEIGHT              // outer loop
-    exx
-        ld      DE, 0x4343              // DE = 0x4343 表示しない時の文字
-        //ld      DE, 0xffff// TEST
-        ld      HL, DE                  // HL = 0x4343
-    exx
+    ld      BC, #((LOGO_HEIGHT << 8) | 0x43)// outer loop + text
+    ld      DE, #(VRAM_WIDTH - 3)       // 改行
 
     // -------- VBLANK を待ちます
     ld      HL, #MIO_8255_PORTC         // VBLANK 待ち用 8255 ポート C
     ld      A, H                        // 最上位 bit を立てる
-LOGO_TRANS_ERASE_VBLANK_1:              // V表示中 ならばループ
+LOGO_TRANS_NDRAW_VBLANK_1:              // V表示中 ならばループ
     and     A, (HL)
-    jp      m, LOGO_TRANS_ERASE_VBLANK_1
-LOGO_TRANS_ERASE_VBLANK_0:              // VBLANK ならばループ
+    jp      m, LOGO_TRANS_NDRAW_VBLANK_1
+LOGO_TRANS_NDRAW_VBLANK_0:              // VBLANK ならばループ
     or      A, (HL)                     // 7
-    jp      p, LOGO_TRANS_ERASE_VBLANK_0// 10/10
-    // この時点で 0 ライン目は既に H表示中で 10～27 cycles 経過
+    jp      p, LOGO_TRANS_NDRAW_VBLANK_0 // 10/10
+    // 消す場合は, 描画タイミングはゆるく, 行単位で待つ必要はありません
+    ld      HL, #VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y)
 
-    // -------- 消去
-    // 消すときはラスタのことは考えないでいいので気楽に処理します
-LOGO_TRANS_ERASE_LOOP:
-    exx                                 // 4
-      push  HL                          // 11 計11 次の HBLANK を待つ
-      push  DE                          // 11 計22
-    exx                                 // 4  計26
-    ld      HL, #(VRAM_WIDTH + 4)       // 10 計46 1行下へ移動
-    add     HL, SP                      // 11 計57
-    ld      SP, HL                      // 6  計63 HBLANK を抜ける
-    djnz    B, LOGO_TRANS_ERASE_LOOP    // 13/8
+    // -------- 描画します
+LOGO_TRANS_NDRAW_LOOP:
+    ld      (HL), C
+    inc     L
+    ld      (HL), C
+    inc     L
+    ld      (HL), C
+    inc     L
+    ld      (HL), C
+    add     HL, DE
+    djnz    B, LOGO_TRANS_NDRAW_LOOP
+
     jp      LOGO_TRANS_END
 
-    // -------------------------------- 表示する
-LOGO_TRANS_DRAW:
+    // -------------------------------- 表示(bDisp == 1)
+LOGO_TRANS_DISP:
     // -------- 転送準備
     ld      HL, #_imageData
     ld      (#ADDR_TMP_SRC), HL
@@ -149,10 +154,8 @@ LOGO_TRANS_DRAW_VBLANK_1:               // V表示中 ならばループ
 LOGO_TRANS_DRAW_VBLANK_0:               // VBLANK ならばループ
     or      A, (HL)                     // 7
     jp      p, LOGO_TRANS_DRAW_VBLANK_0 // 10/10
-    // この時点で 0 ライン目は既に H表示中で 10～27 cycles 経過
-    // ※VBLANK 立ち上がり時の HBLANK に注意
-    // - 実機:     立下がって HBLANK が始まる
-    // - EmuZ-700: 立ち上がって HBLANK が終わる
+    // この時点で 0 ライン目は既に 10～27 cycles 経過
+    // 実機と EmuZ-700 では異なる
 
     // -------- ライン待ち
     ld      H, #(LOGO_POS_Y * 8)        // ライン待ちループ
@@ -160,15 +163,15 @@ LOGO_TRANS_DRAW_VBLANK_0:               // VBLANK ならばループ
 
 LOGO_TRANS_DRAW_LINE0:
       ld    A, (#VRAM_TEXT)             //  13 次の HBLANK まで待つ
-      ld    E, 10                       //  7            計7
+      ld    E, 8                        //  7            計7
 LOGO_TRANS_DRAW_LINE1:
-        dec E                           //  4 * 10 =  40 計47
-        jp  nz, LOGO_TRANS_DRAW_LINE1   // 10 * 10 = 100 計147 HBLANK を抜ける
-      dec   H                           // 4             計151
-      jp    nz, LOGO_TRANS_DRAW_LINE0   // 10            計161
+        dec E                           //  4 * 8 = 32   計39
+        jp  nz, LOGO_TRANS_DRAW_LINE1   // 10 * 8 = 80   計119 HBLANK を抜ける
+      dec   H                           // 4             計123
+      jp    nz, LOGO_TRANS_DRAW_LINE0   // 10            計133
     // この時点で LOGO_POS_Y * 8 ライン目は H表示中
 
-    // -------- 表示します
+    // -------- 描画します
 LOGO_TRANS_DRAW_LOOP0:
     exx                                 // 4
 LOGO_TRANS_DRAW_LOOP1:
@@ -199,46 +202,67 @@ __endasm;
 }
 #pragma restore
 
-u16 sFreq;
+
+/** ロゴの属性領域を書き換えます */
+static void drawLogoAtb(u8* data) __z88dk_fastcall
+{
+    // 余り VRAM ウエイトのことも考えずに気軽に ATB を書く
+__asm
+    BANK_VRAM_IO                        // バンク切替
+    // HL = data
+    ld      DE, #(VRAM_ATB_ADDR(LOGO_POS_X, LOGO_POS_Y))
+    ld      BC, #0x05ff                 // B 値がいじられないように C には大きな値を
+DRAW_LOGO_ATB_LOOP:
+        ldi
+        ldi
+        ldi
+        ldi
+        ld   (DRAW_LOGO_ATB_HL_RESTORE + 1), HL // HL 保管(自己書換) ※スタックは使えない...
+        ld   HL, #(VRAM_WIDTH - 4)
+        add  HL, DE
+        ld   DE, HL
+DRAW_LOGO_ATB_HL_RESTORE:
+        ld   HL, #0000                  // HL 復帰
+    djnz    B, DRAW_LOGO_ATB_LOOP
+    BANK_RAM                            // バンク切替
+__endasm;
+}
 
 // ---------------------------------------------------------------- 初期化
-void stepLogoInit()
+void sceneLogoInit()
 {
 #if DEBUG
     scoreSetStepString(nullptr);
 #endif
-    vramFill(VATB_CODE(0, 0, 0, 0x00));
-    static const u8 logoData[] = {
-        0x43, 0x43, 0x43, 0x43,
-        0x43, 0x43, 0x43, 0x43,
-        0x43, 0x43, 0x43, 0x43,
-        0x43, 0x43, 0x43, 0x43,
-        0x43, 0x43, 0x43, 0x43,
-
+    // VRAM の下準備
+    vramFill(VATB_CODE(0, 7, 1, 0x43));
+    static const u8 data[] = {
         0x87, 0x87, 0x87, 0x87,
         0x87, 0x87, 0x87, 0x87,
         0x85, 0x85, 0x86, 0x86,
         0x85, 0x85, 0x86, 0x86,
         0x87, 0x87, 0x87, 0x87,
     };
-    vramDrawRect((u8*)VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y), logoData, W8H8(LOGO_WIDTH, LOGO_HEIGHT));
+    drawLogoAtb(data);
 
+    // 色々と表示を停止します
     vramSetTransDisabled();
     starsSetDisabled();
     scoreSetDisabled();
 
     objInit();
-    sysSetStepCounter(500);
+    sysSetSceneCounter(LOGO_TIME);
     sdSetEnabled(true);
+    gameSetMode(GAME_MODE_NORMAL);          // ゲーム モードを戻す
 
     // サウンドの初期化はここではやらない. 一瞬音がなってしまうので
     //sdMake(P2I14(0, 0x0000));
     //sdSetEnabled(true);    // これをやると一瞬音が鳴ってしまう
-
-    sFreq = 10;
+    sysSceneSetWork16(SYS_SCENE_WORK_FREQ, 10);
 }
 
 // ---------------------------------------------------------------- メイン
+/** チョイと待ちます */
 static void wait()
 {
     __asm
@@ -251,9 +275,12 @@ WAIT_LOOP:
 }
 
 
-void stepLogoMain(u16 stepCounter)
+
+void sceneLogoMain(u16 sceneCounter)
 {
-    logoTrans((100 < stepCounter) && (stepCounter < 400));
+    bool bOn = (sceneCounter < LOGO_TIME_ON) && (LOGO_TIME_OFF <= sceneCounter);
+
+    logoTrans(bOn);
 
     sdMake(0x0000);
 
@@ -261,13 +288,16 @@ void stepLogoMain(u16 stepCounter)
     starsSetDisabled();
     scoreSetDisabled();
 
-    if (stepCounter == 0) {
-        sysSetStep(stepTitleDemoInit, stepTitleDemoMain);
+    if (sceneCounter == 0) {
+        sysSetScene(sceneTitleDemoInit, sceneTitleDemoMain);
     }
     wait();
 
-    if ((stepCounter < 400) && (100 <= stepCounter)) {
-        sdMake(sFreq);
-        sFreq += 60;
+    if (bOn) {
+        u16 freq = sysSceneGetWork16(SYS_SCENE_WORK_FREQ);
+        sdMake(freq);
+        freq += 60;
+        sysSceneSetWork16(SYS_SCENE_WORK_FREQ, freq);
     }
+
 }

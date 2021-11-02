@@ -12,7 +12,7 @@
 #define HARD_H_INCLUDED
 // ---------------------------------------------------------------- VRAM
 #define VRAM_TEXT                   0xd000  /// テキストVRAM
-#define VRAM_ATB                    0xd800  /// アトリビュート VRAM
+#define VRAM_ATB                    0xd800  /// アトリビュート VRAM    (text から atb への移動は, set 3, H でもOK)
 // VRAM_WIDTH, VRAM_HEIGHT, VATB() VATB_CODE() マクロは vram.h にあります
 
 // ---------------------------------------------------------------- メモリマップド I/O

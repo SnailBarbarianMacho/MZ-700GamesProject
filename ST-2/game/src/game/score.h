@@ -1,6 +1,6 @@
 /**
- * スコア, ハイスコア, レベル, 残機
- * - 名前空間 SCORE_ または score
+ * スコア, ハイスコア, レベル, 残機, ゲームモード+ルール
+ * - 名前空間 SCORE_ および score
  *
  * @author Snail Barbarian Macho (NWK)
  */
@@ -10,18 +10,30 @@
 
 #include "../../../../src-common/common.h"
 
-#define SCORE_BONUS_SHIP_1 500    // 最初の残機が増える得点
-#define SCORE_BONUS_SHIP   1000   // 以降残機が増える得点
+// ---------------------------------------------------------------- private 変数. 直接触らない
+
+extern u16  _score;
+extern u8   _scoreLevel;
+extern bool _bScoreEnabled;
+extern u16  _scoreNrContinues;
+extern u16  _scoreNrMisses;
+#if DEBUG
+extern const u8* _scoreStepStr;
+#endif
+
+// ---------------------------------------------------------------- マクロ
+#define SCORE_BONUS_SHIP_1 500  //< 最初の残機が増える得点
+#define SCORE_BONUS_SHIP   1000 //< 以降残機が増える得点
 
 // ---------------------------------------------------------------- 初期化, メイン
 /** スコア等の初期化 */
-void scoreInit(void) __z88dk_fastcall;
+void scoreInit() __z88dk_fastcall;
 /** スコア等を描画します */
-void scoreMain(void) __z88dk_fastcall;
+void scoreMain() __z88dk_fastcall;
 
 // ---------------------------------------------------------------- 制御
 /** スコア等の描画を停止します. 次のフレームでは許可されます */
-void scoreSetDisabled()__z88dk_fastcall;
+inline void scoreSetDisabled() { _bScoreEnabled = false; }
 
 // ---------------------------------------------------------------- スタート, コンティニュー
 /** スコアを 0 点に初期化します. アトラクト モード時は初期化しません */
@@ -29,9 +41,14 @@ void scoreGameStart()__z88dk_fastcall;
 /** スコアを 0 点に初期化します */
 void scoreContinue()__z88dk_fastcall;
 /** コンティニュー回数 */
-u16 scoreGetNrContinues()__z88dk_fastcall;
+inline u16 scoreGetNrContinues() { return _scoreNrContinues; }
+/** ミス回数 */
+inline u16 scoreGetNrMisses() { return _scoreNrMisses; }
 
 // ---------------------------------------------------------------- スコア, ハイ スコア
+/** スコアを返します */
+inline u16 scoreGet() { return _score; }
+
 /** スコアを加算します. アトラクト モード時は加算しません
  * @return 残機が増えたなら true
  */
@@ -55,15 +72,15 @@ bool scoreDecrementLeft()__z88dk_fastcall;
  */
 void scoreAddSubLevel(const u8 subLevel)__z88dk_fastcall;
 /** レベルを返します */
-u8 scoreGetLevel()__z88dk_fastcall;
+inline u8 scoreGetLevel() { return _scoreLevel; }
 /** レベルをリセットします */
-void scoreResetLevel();
+inline void scoreResetLevel() { _scoreLevel = 1; }
+
 
 // ---------------------------------------------------------------- デバッグ
 #if DEBUG
-/** 現在のステップを表示します */
-void scoreSetStepString(const u8* const str)__z88dk_fastcall;
+/** 現在のシーンを表示します */
+inline void scoreSetStepString(const u8* const str) { _scoreStepStr = str; }
 #endif
-
 
 #endif // SCORE_H_INCLUDED

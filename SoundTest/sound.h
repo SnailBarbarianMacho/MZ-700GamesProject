@@ -125,7 +125,7 @@
 /** サウンド システムの初期化 */
 void soundInit() __z88dk_fastcall;
 /** サウンドの ON/OFF を制御します. 初期値は, false です.
- * ステップが変更されると自動で false になります
+ * シーンが変更されると自動で false になります
  */
 void sdSetEnabled(const bool bEnabled) __z88dk_fastcall __naked;
 

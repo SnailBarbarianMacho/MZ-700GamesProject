@@ -1,5 +1,5 @@
 /**
- * タイトル デモ ステップ
+ * タイトル デモ シーン
  * @author Snail Barbarian Macho (NWK)
  */
 
@@ -12,42 +12,41 @@
 #include "../system/math.h"
 #include "../system/obj.h"
 #include "../game/score.h"
-#include "stepTitle.h"
-#include "stepTitleDemo.h"
+#include "sceneTitle.h"
+#include "sceneTitleDemo.h"
 
-// -------------------------------- マクロ
+// ---------------------------------------------------------------- マクロ
 #define STEP_CT 120
 
-// -------------------------------- 文字列
-const u8 stepTitleDemoStrNwkPresents[] = {
+const u8 sceneTitleDemoStrNwkPresents[] = {
     CHAR_N, CHAR_W, CHAR_K, CHAR_SP,
     CHAR_P, CHAR_CAPS, CHAR_R, CHAR_E, CHAR_S, CHAR_E, CHAR_N, CHAR_T, CHAR_S, 0,
 };
 
 // ---------------------------------------------------------------- 初期化
-void stepTitleDemoInit()
+void sceneTitleDemoInit()
 {
     objInit();
 #if DEBUG
     static const u8 stepStr[] = {CHAR_T, CHAR_D, CHAR_E, CHAR_M, CHAR_O, 0};
     scoreSetStepString(stepStr);
 #endif
-    sysSetStepCounter(STEP_CT);
+    sysSetSceneCounter(STEP_CT);
 }
 
 // ---------------------------------------------------------------- メイン
-void stepTitleDemoMain(u16 stepCounter)
+void sceneTitleDemoMain(u16 sceneCounter)
 {
-    s16 ct = ((s16)STEP_CT - stepCounter) / 2 - 20;
-    printSetAddr((u8*)VVRAM_TEXT_ADDR(3, 2)); printStringWithLength(stepTitleDemoStrNwkPresents, ct);
+    s16 ct = ((s16)STEP_CT - sceneCounter) / 2 - 20;
+    printSetAddr((u8*)VVRAM_TEXT_ADDR(3, 2)); printStringWithLength(sceneTitleDemoStrNwkPresents, ct);
 
     // -------- タイトル表示
-    stepTitleDrawTitleS(     (u8*)VVRAM_TEXT_ADDR(clampS16(stepCounter - 10 +  7,  7, VRAM_WIDTH), 5));
-    stepTitleDrawTitleT(     (u8*)VVRAM_TEXT_ADDR(clampS16(stepCounter - 10 + 14, 14, VRAM_WIDTH), 5));
-    stepTitleDrawTitleHyphen((u8*)VVRAM_TEXT_ADDR(clampS16(stepCounter - 10 + 21, 21, VRAM_WIDTH), 8));
-    stepTitleDrawTitle2(     (u8*)VVRAM_TEXT_ADDR(clampS16(stepCounter - 10 + 26, 26, VRAM_WIDTH), 5));
-    if (stepCounter == 0)  {
-        sysSetStep(stepTitleInit, stepTitleMain);
+    sceneTitleDrawTitleS(     (u8*)VVRAM_TEXT_ADDR(clampS16(sceneCounter - 10 +  7,  7, VRAM_WIDTH), 5));
+    sceneTitleDrawTitleT(     (u8*)VVRAM_TEXT_ADDR(clampS16(sceneCounter - 10 + 14, 14, VRAM_WIDTH), 5));
+    sceneTitleDrawTitleHyphen((u8*)VVRAM_TEXT_ADDR(clampS16(sceneCounter - 10 + 21, 21, VRAM_WIDTH), 8));
+    sceneTitleDrawTitle2(     (u8*)VVRAM_TEXT_ADDR(clampS16(sceneCounter - 10 + 26, 26, VRAM_WIDTH), 5));
+    if (sceneCounter == 0)  {
+        sysSetScene(sceneTitleInit, sceneTitleMain);
     }
 }
 
@@ -57,19 +56,19 @@ void stepTitleDemoMain(u16 stepCounter)
 #include "../../cg/Title_Hyphen.h"
 #include "../../cg/Title_2.h"
 
-void stepTitleDrawTitleS(const u8* drawAddr)
+void sceneTitleDrawTitleS(const u8* drawAddr)
 {
     vVramDrawRectTransparent(drawAddr, sTitle_S,      W8H8(CG_TITLE_S_WIDTH, CG_TITLE_S_HEIGHT));
 }
-void stepTitleDrawTitleT(const u8* drawAddr)
+void sceneTitleDrawTitleT(const u8* drawAddr)
 {
     vVramDrawRectTransparent(drawAddr, sTitle_T,      W8H8(CG_TITLE_T_WIDTH, CG_TITLE_T_HEIGHT));
 }
-void stepTitleDrawTitleHyphen(const u8* drawAddr)
+void sceneTitleDrawTitleHyphen(const u8* drawAddr)
 {
     vVramDrawRectTransparent(drawAddr, sTitle_Hyphen, W8H8(CG_TITLE_HYPHEN_WIDTH, CG_TITLE_HYPHEN_HEIGHT));
 }
-void stepTitleDrawTitle2(const u8* drawAddr)
+void sceneTitleDrawTitle2(const u8* drawAddr)
 {
     vVramDrawRectTransparent(drawAddr, sTitle_2,      W8H8(CG_TITLE_2_WIDTH, CG_TITLE_2_HEIGHT));
 }

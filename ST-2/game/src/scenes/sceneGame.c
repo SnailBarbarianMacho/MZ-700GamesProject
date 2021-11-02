@@ -1,5 +1,5 @@
 /**
- * ゲーム ステップ
+ * ゲーム シーン
  * @author Snail Barbarian Macho (NWK)
  */
 
@@ -14,23 +14,26 @@
 #include "../system/obj.h"
 #include "../system/math.h"
 #include "../game/score.h"
+#include "../game/gameMode.h"
 #include "../game/stage.h"
 #include "../objworks/objPlayer.h"
 #include "../../cg/Pause.h"
-#include "stepStageClear.h"
-#include "stepEnding.h"
-#include "stepScoreTable.h"
-#include "stepGameOver.h"
-#include "stepGame.h"
+#include "sceneStageClear.h"
+#include "sceneEnding.h"
+#include "sceneScoreTable.h"
+#include "sceneGameOver.h"
+#include "sceneGame.h"
 
 #if DEBUG
 static bool sbPause;
 #endif
 
-static u8 sStageDrawTimer;
+// ---------------------------------------------------------------- 変数, マクロ
+//static u8 sStageDrawTimer;
+#define SYS_SCENE_WORK_DRAW_STAGE_TIMER   0 // STAGE 表示タイマ
 
 // ---------------------------------------------------------------- 初期化
-void stepGameInit()
+void sceneGameInit()
 {
 #if DEBUG
     sbPause = false;
@@ -41,21 +44,27 @@ void stepGameInit()
 #if DEBUG
         stgInit(0);// デバッグ時はいきなりラスボスとかあるので安全の為に最初の実表示
 #else
-        stgInit(stepScoreTableGetLoopCt());
+        stgInit(sceneScoreTableGetLoopCt());// アトラクトモード時はループします
 #endif
         objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDraw, nullptr);
-        sysSetStepCounter(1000);
+        sysSetSceneCounter(1000);
     } else {
+        // ゲームのルール上, スコア0点でクリアすることは不可能
+        if (scoreGet() == 0) {
+            stgInit(0);
+        }
         sdSetEnabled(true);
     }
 
     stgSubInit();
-    sStageDrawTimer = 100;
+    sysSceneSetWork(SYS_SCENE_WORK_DRAW_STAGE_TIMER, 100);
+
+    //sStageDrawTimer = 100;
 }
 
 
 // ---------------------------------------------------------------- メイン
-void stepGameMain(u16 stepCounter)
+void sceneGameMain(u16 sceneCounter)
 {
     // ---------------- アトラクト モードでの挙動. ステージ進行, タイマ減算処理
     if (!sysIsGameMode()) {
@@ -64,19 +73,19 @@ void stepGameMain(u16 stepCounter)
             switch (stgSubInit()) {
             default: break;
             case STG_STATUS_CLEAR:
-                sysSetStep(stepScoreTableInit, stepScoreTableMain);
+                sysSetScene(sceneScoreTableInit, sceneScoreTableMain);
                 return;
             }
         }
-        if (stepCounter == 0) { // 時間切れでのステップへ. プレーヤーは何度死んでもいい
-            sysSetStep(stepScoreTableInit, stepScoreTableMain);
+        if (sceneCounter == 0) { // 時間切れでのシーンへ. プレーヤーは何度死んでもいい
+            sysSetScene(sceneScoreTableInit, sceneScoreTableMain);
         }
         return;
     }
 
     // ---------------- ゲーム モードでの挙動. ステージ数表示
-    if (sStageDrawTimer) {
-        sStageDrawTimer--;
+    if (sysSceneGetWork(SYS_SCENE_WORK_DRAW_STAGE_TIMER)) {
+        sysSceneDecWork(SYS_SCENE_WORK_DRAW_STAGE_TIMER);
         static const u8 strStage[] = { CHAR_S, CHAR_T, CHAR_A, CHAR_G, CHAR_E, 0, };
         printSetAddr((u8*)VVRAM_TEXT_ADDR(16, 8));
         printString(strStage);
@@ -84,7 +93,12 @@ void stepGameMain(u16 stepCounter)
         printReady();
     }
 
-    // ---------------- ゲーム モードでの挙動. ポーズ, ステップ, コンティニュー, ステージ進行
+    // ---------------- キャラバン モード
+    if (gameIsCaravan()) {
+        gameDecCaravanTimer(); // 時間切れ検出は objPlayer で
+    }
+
+    // ---------------- ゲーム モードでの挙動. ポーズ, シーン, コンティニュー, ステージ進行
     Obj* const pPlayer = objGetInUsePlayer();
     if (pPlayer == nullptr) { return; }
 
@@ -98,18 +112,18 @@ void stepGameMain(u16 stepCounter)
                 break;
             case STG_STATUS_CLEAR:
                 objInitEnemyBullet();
-                sysSetStep(stepStageClearInit, stepStageClearMain);
+                sysSetScene(sceneStageClearInit, sceneStageClearMain);
                 return;
             case STG_STATUS_ENDING:
                 objInitEnemyBullet();
-                sysSetStep(stepEndingInit, stepEndingMain);
+                sysSetScene(sceneEndingInit, sceneEndingMain);
                 return;
             }
         }
 
         static const u8 mml0[] = { SD3_C3, 4, SD3_G3, 4, SD3_E3, 8, 0, };
 #if DEBUG
-        // デバッグ時ポーズ, ステップ動作, ゲーム中断
+        // デバッグ時ポーズ, シーン動作, ゲーム中断
         if (sbPause || (inputGetTrigger() & INPUT_MASK_P)) {
             sd3Play(mml0, mml0, mml0, false);
             while (true) {
@@ -120,16 +134,16 @@ void stepGameMain(u16 stepCounter)
                     sd3Play(mml0, mml0, mml0, false);
                     break;
                 }
-                if (inp & INPUT_MASK_B) {   // ステップ動作
+                if (inp & INPUT_MASK_B) {   // シーン動作
                     sbPause = true;
                     break;
                 }
                 if (inp & INPUT_MASK_S) {   // ゲーム中断
-                    sysSetGameMode(false);
-                    sysSetStep(stepGameOverInitWithoutReflectHiScore, stepGameOverMain);
+                    sysSetMode(false);
+                    sysSetScene(sceneGameOverInitWithoutReflectHiScore, sceneGameOverMain);
                     return;
                 }
-            }
+            } // while (true)
         }
 #else
         // リリース時ポーズ, ゲーム中断
@@ -144,11 +158,11 @@ void stepGameMain(u16 stepCounter)
                     break;
                 }
                 if (inp & INPUT_MASK_S) {   // ゲーム中断
-                    sysSetGameMode(false);
-                    sysSetStep(stepGameOverInitWithoutReflectHiScore, stepGameOverMain);
+                    sysSetMode(false);
+                    sysSetScene(sceneGameOverInitWithoutReflectHiScore, sceneGameOverMain);
                     return;
                 }
-            }
+            } // while (true)
         }
 #endif
         break;
@@ -156,11 +170,19 @@ void stepGameMain(u16 stepCounter)
         break;
     case OBJ_PLAYER_STEP_CONTINUE:
         if (pPlayer->ct == 0) {// カウントダウン 0 ならゲームオーバー
-            sysSetStep(stepGameOverInit, stepGameOverMain);
+            sysSetScene(sceneGameOverInit, sceneGameOverMain);
             return;
         } else if (inputGetTrigger() & INPUT_MASK_P) { // コンティニュー
             scoreContinue();
             objPlayerSetNormalStep(pPlayer);
         }
+        break;
+    case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル モード終了表示
+    case OBJ_PLAYER_STEP_END_CARAVAN:  // キャラバン モード終了表示
+        if (inputGetTrigger() & INPUT_MASK_P) { // ゲームオーバー
+            sysSetScene(sceneGameOverInit, sceneGameOverMain);
+            return;
+        }
+        break;
     } // switch (pPlayer->strp)
 }

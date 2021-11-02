@@ -46,6 +46,7 @@ void printPutc(const u8 c) __z88dk_fastcall __naked;
 /**
  * printString() と同じですが, 最大文字列の長さを指定できます.
  * - 制御コード(CHAR_CAPS 等)を除きます
+ * - スペースは含みます
  * @param len 制御コードを除いた文字数. 負の値も指定できます. 0 未満の場合, 表示されません
  */
 void printStringWithLength(const u8* const str, const s16 len) __naked;

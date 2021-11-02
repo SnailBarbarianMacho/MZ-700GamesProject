@@ -13,8 +13,8 @@
 #include "stars.h"
 
 // ------------------------------- 変数, マクロ, 構造体
-static bool sbStarsEnabled;
-static u8   sStarsCounter;
+bool _bStarsEnabled;
+u8   _starsCounter;
 
 #define NR_NEAR_STARS 10   // 最小 1
 #define NR_FAR_STARS  50   // 最小 1, 最大 合計 85 - 2 = 83
@@ -33,10 +33,10 @@ static Star* const StarsFar  = (Star*)ADDR_STARS;
 static Star* const StarsNear = (Star*)(ADDR_STARS + (NR_FAR_STARS + 1) * sizeof(Star));
 
 // ---------------------------------------------------------------- 初期化
-void starsInit(void) __z88dk_fastcall
+void starsInit()
 {
-    sbStarsEnabled = true;
-    sStarsCounter  = 0;
+    _bStarsEnabled = true;
+    _starsCounter  = 0;
 
     StarsNear[NR_NEAR_STARS].col = 0;
     StarsFar[NR_FAR_STARS].col = 0;
@@ -61,7 +61,7 @@ void starsInit(void) __z88dk_fastcall
 }
 
 // ---------------------------------------------------------------- メイン
-void starsMain(void) __z88dk_fastcall
+void starsMain()
 {
 //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 10)); printU8(StarsNear[0].col); printU8(StarsNear[0].x); printU8(StarsNear[0].y); printU8(StarsNear[1].col);
 //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 11)); printU16((u16)StarsFar); printU16((u16)StarsNear);
@@ -95,10 +95,10 @@ void starsMain(void) __z88dk_fastcall
 #else
 __asm
     // ---------------- 星の描画許可
-    ld      a, (#_sbStarsEnabled)
+    ld      a, (#__bStarsEnabled)
     and     a
     ld      a, 1
-    ld      (#_sbStarsEnabled), a
+    ld      (#__bStarsEnabled), a
     ret     z
 __endasm;
 
@@ -111,7 +111,7 @@ __endasm;
 
     // --------------- 遠景の星々(移動)
 __asm
-    ld      HL, #_sStarsCounter    // sStarsCounter++
+    ld      HL, #__starsCounter     // _starsCounter++
     ld      A, (HL)
     inc     A
     ld      (HL), A
@@ -242,7 +242,3 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 制御
-void starsSetDisabled() __z88dk_fastcall
-{
-    sbStarsEnabled = false;
-}

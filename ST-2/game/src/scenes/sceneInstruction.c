@@ -1,5 +1,5 @@
 /**
- * スコア テーブル ステップ
+ * スコア テーブル シーン
  * @author Snail Barbarian Macho (NWK)
  */
 
@@ -13,13 +13,14 @@
 #include "../objworks/objPlayer.h"
 #include "../objworks/objPlayerBullet.h"
 #include "../objworks/objEnemy.h"
-#include "stepGame.h"
-#include "stepInstruction.h"
+#include "sceneGame.h"
+#include "sceneInstruction.h"
 
+// ---------------------------------------------------------------- マクロ
 #define INST_CT 350
 
 // ---------------------------------------------------------------- 初期化
-void stepInstructionInit()
+void sceneInstructionInit()
 {
 #if DEBUG
     static const u8 stepStr[] = {CHAR_I, CHAR_N, CHAR_S, CHAR_T, 0};
@@ -39,11 +40,11 @@ void stepInstructionInit()
         pEnemy->uGeo.geo8.yh = 5;
     }
 
-    sysSetStepCounter(INST_CT);
+    sysSetSceneCounter(INST_CT);
 }
 
 // ---------------------------------------------------------------- メイン
-void stepInstructionMain(u16 stepCounter)
+void sceneInstructionMain(u16 sceneCounter)
 {
      // -------- 説明の表示
 #include "../../text/keyassign.h"
@@ -51,17 +52,17 @@ void stepInstructionMain(u16 stepCounter)
 #include "../../text/keyshot.h"
 #include "../../text/keyjoy.h"
 #include "../../text/keypause.h"
-    s16 ct = INST_CT - stepCounter;
+    s16 ct = INST_CT - sceneCounter;
     static struct s_Tab {
         u8* const drawAddr;
         u8* const str;
         u8  ctOffset;
     } const tab[] = {
-        { (u8*)VVRAM_TEXT_ADDR(10, 2), str_keyassign, 0 },
-        { (u8*)VVRAM_TEXT_ADDR(4,  5), str_keymove,   40 },
-        { (u8*)VVRAM_TEXT_ADDR(4,  9), str_keyshot,  110 },
-        { (u8*)VVRAM_TEXT_ADDR(4, 11), str_keyjoy,   150 },
-        { (u8*)VVRAM_TEXT_ADDR(4, 13), str_keypause, 190 },
+        { (u8*)VVRAM_TEXT_ADDR(10, 2), textKeyassign, 0 },
+        { (u8*)VVRAM_TEXT_ADDR(4,  5), textKeymove,   40 },
+        { (u8*)VVRAM_TEXT_ADDR(4,  9), textKeyshot,  110 },
+        { (u8*)VVRAM_TEXT_ADDR(4, 11), textKeyjoy,   150 },
+        { (u8*)VVRAM_TEXT_ADDR(4, 13), textKeypause, 190 },
         { nullptr, nullptr, 0 },
     };
     for (const struct s_Tab* pTab = tab; pTab->drawAddr; pTab++) {
@@ -76,9 +77,9 @@ void stepInstructionMain(u16 stepCounter)
         objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, pPlayer);
     }
 
-    // -------- 次のステップへ
-    if (stepCounter == 0)  {
+    // -------- 次のシーンへ
+    if (sceneCounter == 0)  {
         objInit();
-        sysSetStep(stepGameInit, stepGameMain);
+        sysSetScene(sceneGameInit, sceneGameMain);
     }
 }

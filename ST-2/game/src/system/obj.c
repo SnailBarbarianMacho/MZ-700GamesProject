@@ -9,22 +9,21 @@
 #include "vram.h"
 #include "sound.h"
 
-
-// -------------------------------- 変数
+// ---------------------------------------------------------------- 変数, マクロ
 // 未使用オブジェクト. 片方向リンク
-static Obj* spObjFreePlayer;
-static Obj* spObjFreePlayerBullet;
-static Obj* spObjFreeEnemy;
-static Obj* spObjFreeEnemyBullet;
-static Obj* spObjFreeItem;
-static Obj* spObjFreeEtc;
+Obj* _pObjFreePlayer;
+Obj* _pObjFreePlayerBullet;
+Obj* _pObjFreeEnemy;
+Obj* _pObjFreeEnemyBullet;
+Obj* _pObjFreeItem;
+Obj* _pObjFreeEtc;
 // 使用中のオブジェクト. 双方向リンク
-static Obj* spObjInUsePlayer;
-static Obj* spObjInUsePlayerBullet;
-static Obj* spObjInUseEnemy;
-static Obj* spObjInUseEnemyBullet;
-static Obj* spObjInUseItem;
-static Obj* spObjInUseEtc;
+Obj* _pObjInUsePlayer;
+Obj* _pObjInUsePlayerBullet;
+Obj* _pObjInUseEnemy;
+Obj* _pObjInUseEnemyBullet;
+Obj* _pObjInUseItem;
+Obj* _pObjInUseEtc;
 
 // 各 Obj の数. 多すぎるとエラー
 #define NR_OBJS_PLAYER          8
@@ -66,21 +65,21 @@ void objInit() __z88dk_fastcall
     }
 #endif
 
-    objInitSub((Obj*)OBJ_ADDR_PLAYER,        &spObjFreePlayer,       &spObjInUsePlayer,       NR_OBJS_PLAYER);
-    objInitSub((Obj*)OBJ_ADDR_PLAYER_BULLET, &spObjFreePlayerBullet, &spObjInUsePlayerBullet, NR_OBJS_PLAYER_BULLET);
-    objInitSub((Obj*)OBJ_ADDR_ENEMY,         &spObjFreeEnemy,        &spObjInUseEnemy,        NR_OBJS_ENEMY);
+    objInitSub((Obj*)OBJ_ADDR_PLAYER,        &_pObjFreePlayer,       &_pObjInUsePlayer,       NR_OBJS_PLAYER);
+    objInitSub((Obj*)OBJ_ADDR_PLAYER_BULLET, &_pObjFreePlayerBullet, &_pObjInUsePlayerBullet, NR_OBJS_PLAYER_BULLET);
+    objInitSub((Obj*)OBJ_ADDR_ENEMY,         &_pObjFreeEnemy,        &_pObjInUseEnemy,        NR_OBJS_ENEMY);
     objInitEnemyBullet();
     objInitItem();
-    objInitSub((Obj*)OBJ_ADDR_ETC,           &spObjFreeEtc,          &spObjInUseEtc,          NR_OBJS_ETC);
+    objInitSub((Obj*)OBJ_ADDR_ETC,           &_pObjFreeEtc,          &_pObjInUseEtc,          NR_OBJS_ETC);
 }
 
 void objInitEnemyBullet()
 {
-    objInitSub((Obj*)OBJ_ADDR_ENEMY_BULLET,  &spObjFreeEnemyBullet,  &spObjInUseEnemyBullet,  NR_OBJS_ENEMY_BULLET);
+    objInitSub((Obj*)OBJ_ADDR_ENEMY_BULLET,  &_pObjFreeEnemyBullet,  &_pObjInUseEnemyBullet,  NR_OBJS_ENEMY_BULLET);
 }
 void objInitItem()
 {
-    objInitSub((Obj*)OBJ_ADDR_ITEM,          &spObjFreeItem,         &spObjInUseItem,         NR_OBJS_ITEM);
+    objInitSub((Obj*)OBJ_ADDR_ITEM,          &_pObjFreeItem,         &_pObjInUseItem,         NR_OBJS_ITEM);
 }
 
 // ---------------------------------------------------------------- システム(メイン)
@@ -553,14 +552,14 @@ __endasm;
 static void objCollisionItem() __z88dk_fastcall
 {
     // プレーヤーは最大1個だけなので, ループは1重でいい
-    Obj* pObjPlayer = spObjInUsePlaye;
+    Obj* pObjPlayer = _pObjInUsePlaye;
     if (!pObjPlayer) {
         return;
     }
 
     s8 px = pObjPlayer->uGeo.geo8.xh;
     s8 py = pObjPlayer->uGeo.geo8.yh;
-    for (Obj* pObj = spObjInUseItem; pObj; pObj = pObj->pNext) {
+    for (Obj* pObj = _pObjInUseItem; pObj; pObj = pObj->pNext) {
         s8 c = pObj->uGeo.geo8.xh;
         if (c <  px) { continue; }
         c -= PLAYER_W;
@@ -579,8 +578,8 @@ static void objCollisionItem() __z88dk_fastcall __naked
     STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT  - OBJ_OFFSET_GEO_SX,  Asm3); // ※3 を修正
     STATIC_ASSERT(3 <  OBJ_OFFSET_STEP    - OBJ_OFFSET_GEO8_YH, Asm4); // ※4 を修正
 __asm
-    // if (!spObjInUsePlayer) { return; }
-    ld      HL, (_spObjInUsePlayer);
+    // if (!_pObjInUsePlayer) { return; }
+    ld      HL, (__pObjInUsePlayer);
     ld      A, H
     or      L
     ret     z
@@ -604,8 +603,8 @@ __asm
     and     A
     ret     nz
 
-    // if (!spObjInUseItem) { return; }
-    ld      HL, (_spObjInUseItem);
+    // if (!_pObjInUseItem) { return; }
+    ld      HL, (__pObjInUseItem);
     ld      A, H
     or      L
     ret     z
@@ -672,26 +671,26 @@ __endasm;
 void objMain() __z88dk_fastcall
 {
     // メイン
-    objMainSub(&spObjInUsePlayer,       &spObjFreePlayer);
-    objMainSub(&spObjInUsePlayerBullet, &spObjFreePlayerBullet);
-    objMainSub(&spObjInUseEnemy,        &spObjFreeEnemy);
-    objMainSub(&spObjInUseEnemyBullet,  &spObjFreeEnemyBullet);
-    objMainSub(&spObjInUseItem,         &spObjFreeItem);
-    objMainSub(&spObjInUseEtc,          &spObjFreeEtc);
+    objMainSub(&_pObjInUsePlayer,       &_pObjFreePlayer);
+    objMainSub(&_pObjInUsePlayerBullet, &_pObjFreePlayerBullet);
+    objMainSub(&_pObjInUseEnemy,        &_pObjFreeEnemy);
+    objMainSub(&_pObjInUseEnemyBullet,  &_pObjFreeEnemyBullet);
+    objMainSub(&_pObjInUseItem,         &_pObjFreeItem);
+    objMainSub(&_pObjInUseEtc,          &_pObjFreeEtc);
 
     // 衝突判定
-    objCollision(spObjInUsePlayer,       spObjInUseEnemy);       // プレーヤーと敵(相互にフラグが立つ)
-    objCollision(spObjInUsePlayer,       spObjInUseEnemyBullet); // プレーヤーと敵弾(相互にフラグが立つ)
-    objCollision(spObjInUsePlayerBullet, spObjInUseEnemy);       // プレーヤー弾と敵(相互にフラグが立つ)
+    objCollision(_pObjInUsePlayer,       _pObjInUseEnemy);       // プレーヤーと敵(相互にフラグが立つ)
+    objCollision(_pObjInUsePlayer,       _pObjInUseEnemyBullet); // プレーヤーと敵弾(相互にフラグが立つ)
+    objCollision(_pObjInUsePlayerBullet, _pObjInUseEnemy);       // プレーヤー弾と敵(相互にフラグが立つ)
     objCollisionItem(); // プレーヤーとアイテム(アイテムのみフラグが立つ)
 
     // 移動と表示
-    objMoveDraw(spObjInUseItem);
-    objMoveDraw(spObjInUseEnemy);
-    objMoveDraw(spObjInUsePlayerBullet);
-    objMoveDraw(spObjInUsePlayer);
-    objMoveDraw(spObjInUseEnemyBullet);
-    objMoveDraw(spObjInUseEtc);
+    objMoveDraw(_pObjInUseItem);
+    objMoveDraw(_pObjInUseEnemy);
+    objMoveDraw(_pObjInUsePlayerBullet);
+    objMoveDraw(_pObjInUsePlayer);
+    objMoveDraw(_pObjInUseEnemyBullet);
+    objMoveDraw(_pObjInUseEtc);
 }
 
 
@@ -730,7 +729,7 @@ Obj* objCreatePlayer(
     void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreePlayer, spObjInUsePlayer, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(_pObjFreePlayer, _pObjInUsePlayer, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreatePlayerBullet(
     void (*initFunc)(Obj* const, Obj* const),
@@ -738,7 +737,7 @@ Obj* objCreatePlayerBullet(
     void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreePlayerBullet, spObjInUsePlayerBullet, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(_pObjFreePlayerBullet, _pObjInUsePlayerBullet, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateEnemy(
     void (*initFunc)(Obj* const, Obj* const),
@@ -746,7 +745,7 @@ Obj* objCreateEnemy(
     void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeEnemy, spObjInUseEnemy, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(_pObjFreeEnemy, _pObjInUseEnemy, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateEnemyBullet(
     void (*initFunc)(Obj* const, Obj* const),
@@ -754,7 +753,7 @@ Obj* objCreateEnemyBullet(
     void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeEnemyBullet, spObjInUseEnemyBullet, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(_pObjFreeEnemyBullet, _pObjInUseEnemyBullet, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateItem(
     void (*initFunc)(Obj* const, Obj* const),
@@ -762,7 +761,7 @@ Obj* objCreateItem(
     void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeItem, spObjInUseItem, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(_pObjFreeItem, _pObjInUseItem, initFunc, mainFunc, drawFunc, pParent);
 }
 Obj* objCreateEtc(
     void (*initFunc)(Obj* const, Obj* const),
@@ -770,16 +769,8 @@ Obj* objCreateEtc(
     void (*drawFunc)(Obj* const, u8* drawAddr),
     Obj* const pParent)
 {
-    OBJ_CREATE(spObjFreeEtc, spObjInUseEtc, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(_pObjFreeEtc, _pObjInUseEtc, initFunc, mainFunc, drawFunc, pParent);
 }
 
 
 // ---------------------------------------------------------------- ユーティリティ
-Obj* objGetInUsePlayer()
-{
-    return spObjInUsePlayer;
-}
-Obj* objGetUserdEnemy()
-{
-    return spObjInUseEnemy;
-}

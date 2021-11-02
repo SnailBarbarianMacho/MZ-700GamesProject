@@ -84,7 +84,7 @@ u16 vramDebugGetProcessTime();
 
 // ---------------------------------------------------------------- クリア
 /** 仮想 VRAM をクリアします */
-void vramClear() __z88dk_fastcall __naked;
+void vvramClear() __z88dk_fastcall __naked;
 
 // ---------------------------------------------------------------- 塗りつぶし(fill)
 /**

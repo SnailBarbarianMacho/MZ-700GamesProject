@@ -11,12 +11,16 @@
 #include "../system/sound.h"
 #include "../system/math.h"
 #include "../game/score.h"
+#include "../game/se.h"
+#include "../game/gameMode.h"
 //#include <string.h> // memcpy() 使わない
 #include "objItem.h"
 
+
+
 // ---------------------------------------------------------------- 定数, 変数
-static u16 sNrGeneretedItems;
-static u16 sNrObtainedItems;
+u16 _objItemNrGenereted;
+u16 _objItemNrObtained;
 
 static const u8 sTab[] = {
     0x0c, 0x00,  0x36, 0x36,  0x3a, 0x3a,  0x3e, 0x3e,  // text table
@@ -29,15 +33,6 @@ static const u8 sTab[] = {
     0x07, 0x00,  0x07, 0x70,  0x70, 0x07,  0x70, 0x07,  // pObj->step == 7
 };
 #define SZ_TAB 0x40
-
-// ---------------------------------------------------------------- サウンド
-#define SE_GET_ITEM_CT     5
-
-// アイテム取得音
-static void seGetItem(u8 ct)
-{
-    sdMake((ct + 1) << 8);
-}
 
 // ---------------------------------------------------------------- システム
 void objItemInitTab()
@@ -52,19 +47,6 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- アイテム数
-void objItemInitStatistics()
-{
-    sNrGeneretedItems = 0;
-    sNrObtainedItems = 0;
-}
-u16 objItemGetNrGeneretedItems()
-{
-    return sNrGeneretedItems;
-}
-u16 objItemGetNrObtainedItems()
-{
-    return sNrObtainedItems;
-}
 
 // ---------------------------------------------------------------- 初期化
 #define ITEM_WIDTH  1
@@ -82,7 +64,7 @@ void objItemInit(Obj* const pObj, Obj* const pParent)
     pObj->step = STEP_HOP;
     pObj->ct   = rand8() & 0x0f; // 最大 4 キャラ分まで散らばる
     pObj->uObjWork.item.subLevel = rand8() % pParent->uObjWork.enemy.itemSubLevel + 1;
-    sNrGeneretedItems++;
+    _objItemNrGenereted++;
 }
 
 // ---------------------------------------------------------------- メイン
@@ -90,10 +72,14 @@ bool objItemMain(Obj* const pObj)
 {
     // アイテム ゲット処理
     if (pObj->bHit) {
-        scoreAddSubLevel(pObj->uObjWork.item.subLevel * 2);
+        u8 addSubLev = pObj->uObjWork.item.subLevel * 2;
+        if (gameIsCaravan()) {
+            addSubLev *= 2;
+        }
+        scoreAddSubLevel(addSubLev);
         scoreAdd(1);
-        sdSetSeSequencer(seGetItem, SD_SE_PRIORITY_2, SE_GET_ITEM_CT);
-        sNrObtainedItems++;
+        sdPlaySe(SE_GET_ITEM);
+        _objItemNrObtained++;
         return false;
     }
 

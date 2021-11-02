@@ -10,6 +10,11 @@
 
 #include "../../../../src-common/common.h"
 
+
+// ---------------------------------------------------------------- private 変数. 直接触らない
+extern u8 _input;
+extern u8 _inputTrg;
+
 // ---------------------------------------------------------------- マクロ
 // inputGet(), inputGetTrigger() 戻値のビット マスク. AM7J(..UDRLBA) 互換です
 #define INPUT_MASK_A 0x01   // A ボタン
@@ -29,8 +34,8 @@ void inputMain() __z88dk_fastcall __naked;
 
 // ---------------------------------------------------------------- 入力
 /** 入力生データを入手します. INPUT_MASK_XXXX の bitwise or */
-u8 inputGet()  __z88dk_fastcall;
+inline u8 inputGet() { return _input; }
 /** 入力 OFF->ON データを入手します. INPUT_MASK_XXXX の bitwise or */
-u8 inputGetTrigger()  __z88dk_fastcall;
+inline u8 inputGetTrigger() { return _inputTrg; }
 
 #endif // INPUT_H_INCLUDED

@@ -13,6 +13,8 @@
 #include "../system/math.h"
 #include "../game/score.h"
 #include "../game/stage.h"
+#include "../game/gameMode.h"
+#include "../game/se.h"
 #include "../../cg/Player.h"
 #include "../../cg/Nr0.h" // ‘コンティニュー用カウントダウン数字
 #include "../../cg/Nr1.h"
@@ -22,12 +24,14 @@
 #include "../../cg/Nr5.h"
 #include "../../cg/Nr6.h"
 #include "../../cg/Nr7.h"
+#include "../scenes/sceneGameMode.h"
+#include "../scenes/sceneEnding.h"
 #include "objExplosion.h"
 #include "objPlayerBullet.h"
 #include "objPlayer.h"
 
 // ---------------------------------------------------------------- 変数
-static u8   sRapidFireTimer;// 連射タイマー
+static u8   _objPlayerRapidFireTimer;// 連射タイマー
 
 // ---------------------------------------------------------------- マクロ
 #if DEBUG
@@ -47,26 +51,13 @@ static u8   sRapidFireTimer;// 連射タイマー
 #define PLAYER_W        1
 #define PLAYER_H        (CG_PLAYER_HEIGHT - 1)
 
-// ---------------------------------------------------------------- サウンド
-#define SE_PLAYER_DEAD_CT 48
-#define SE_CONTINUE_CT    10
-// 敵ダメージ音
-static void sePlayerDead(u8 ct)
-{
-    sdMake(((10 - (ct & 7)) << 10) + rand8());
-}
-static void seContinue(u8 ct)
-{
-    sdMake((ct & 1) ? 0x0000 : 0x0200);
-}
-
 // ---------------------------------------------------------------- 初期化
 #pragma disable_warning 85  // pParent 未使用
 #pragma save
 void objPlayerInit(Obj* const pObj, Obj* const pParent)
 {
     OBJ_INIT(pObj, PLAYER_X<<8, PLAYER_Y<<8, PLAYER_W, PLAYER_H, 0, 0);
-    sRapidFireTimer = 0;
+    _objPlayerRapidFireTimer = 0;
     pObj->offence   = 255;
     pObj->step      = OBJ_PLAYER_STEP_NORMAL;
     pObj->ct        = 0;
@@ -79,7 +70,7 @@ bool objPlayerMain(Obj* const pObj)
 {
     u8 inp = inputGet();
 
-    // アトラクト モードでの入力データフック
+    // -------- アトラクト モードでの入力データフック
     if (!sysIsGameMode()) {
         u8 attInp = pObj->uObjWork.player.attractInput;
         if (240 < rand8()) {
@@ -92,7 +83,7 @@ bool objPlayerMain(Obj* const pObj)
 
     switch (pObj->step) {
     default:// case OBJ_PLAYER_STEP_NORMAL:
-        // 移動
+        // -------- 移動
         {
             s8 sx = 0;
             s8 sy = 0;
@@ -112,7 +103,7 @@ bool objPlayerMain(Obj* const pObj)
             pObj->uGeo.geo8.syh = sy;
         }
 
-        // 画面はみ出し
+        // -------- 画面はみ出し
         if (pObj->uGeo.geo8.xh < 1) {
             pObj->uGeo.geo8.xh = 1;
         } else if (VRAM_WIDTH - 2 <= pObj->uGeo.geo8.xh) {
@@ -124,7 +115,7 @@ bool objPlayerMain(Obj* const pObj)
             pObj->uGeo.geo8.yh = VRAM_HEIGHT - CG_PLAYER_HEIGHT;
         }
 
-        // 無敵時間
+        // -------- 無敵時間
         if (pObj->ct) {
             pObj->ct--;
             if (pObj->ct == 0) {
@@ -133,32 +124,38 @@ bool objPlayerMain(Obj* const pObj)
         } else {
             if (pObj->bHit) {
 #if DEBUG_INVINCIBLE != 1// 死亡処理
-                pObj->uGeo.geo.w = 0;
+                pObj->uGeo.geo.w = 0; // 衝突判定を無くす
                 pObj->step = OBJ_PLAYER_STEP_DEAD;
                 pObj->ct   = CT_DEAD;
                 pObj->uGeo.geo.sx = 0;
                 pObj->uGeo.geo.sy = 0;
                 objCreateEtc(objExplosionPlayerInit, objExplosionMain, objExplosionPlayerDraw, pObj);
-                sdSetSeSequencer(sePlayerDead, SD_SE_PRIORITY_1, SE_PLAYER_DEAD_CT);
+                sdPlaySe(SE_PLAYER_DEAD);
 #endif
             }
         }
 
-        // 弾
+        // -------- 弾
         // 押しっぱなしでも連射しますが, 連打のほうが沢山弾が出ます
 #if RAPID_FIRE_PERIOD == 0
         objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, pObj);
 #else
         if (inp & INPUT_MASK_A) {
-            if (RAPID_FIRE_PERIOD <= sRapidFireTimer) {
+            if (RAPID_FIRE_PERIOD <= _objPlayerRapidFireTimer) {
                 objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, pObj);
-                sRapidFireTimer = 0;
+                _objPlayerRapidFireTimer = 0;
             }
-            sRapidFireTimer ++;
+            _objPlayerRapidFireTimer ++;
         } else {
-            sRapidFireTimer = RAPID_FIRE_PERIOD;
+            _objPlayerRapidFireTimer = RAPID_FIRE_PERIOD;
         }
 #endif
+
+        // -------- キャラバン モード
+        if (gameGetCaravanTimer() == 0) {
+            pObj->step = OBJ_PLAYER_STEP_END_CARAVAN;
+            pObj->ct = 0;
+        }
         break;
 
     case OBJ_PLAYER_STEP_DEAD:
@@ -168,15 +165,20 @@ bool objPlayerMain(Obj* const pObj)
             if (pObj->ct == 0) {
                 objPlayerSetNormalStep(pObj);
                 if (scoreDecrementLeft()) {
-                    pObj->step = OBJ_PLAYER_STEP_CONTINUE;
-                    pObj->ct   = CT_CONTINUE;
+                    if (gameGetMode() == GAME_MODE_SURVIVAL) {
+                        pObj->step = OBJ_PLAYER_STEP_END_SURVIVAL;
+                        pObj->ct   = 0;
+                    } else {
+                        pObj->step = OBJ_PLAYER_STEP_CONTINUE;
+                        pObj->ct   = CT_CONTINUE;
+                    }
                 }
             }
         }
         break;
 
-    case OBJ_PLAYER_STEP_CONTINUE:
-        if (pObj->ct != 0) {  // ゲーム オーバーへの画面遷移は stepGame でやる
+    case OBJ_PLAYER_STEP_CONTINUE:  // コンティニュー カウントダウン
+        if (pObj->ct != 0) {  // ゲーム オーバーへの画面遷移は sceneGame でやる
             if (inputGetTrigger() & INPUT_MASK_A) { // 時間短縮
                 pObj->ct = pObj->ct & 0xe0;
                 if (pObj->ct == 0) {
@@ -185,6 +187,10 @@ bool objPlayerMain(Obj* const pObj)
             }
             pObj->ct--;
         }
+        break;
+
+    case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル モード終了表示
+    case OBJ_PLAYER_STEP_END_CARAVAN:  // キャラバン モード終了表示
         break;
 
     case OBJ_PLAYER_STEP_DEMO:  // 外で制御
@@ -240,18 +246,39 @@ void objPlayerDraw(Obj* const pObj, u8* drawAddr)
         break;
     case OBJ_PLAYER_STEP_DEAD:
         break;
-    case OBJ_PLAYER_STEP_CONTINUE:
+    case OBJ_PLAYER_STEP_CONTINUE: // カウントダウン表示
         {
 #include "../../text/continue.h"
             printSetAddr((u8*)VVRAM_TEXT_ADDR(7, 8));
-            printString(str_continue);
+            printString(textContinue);
             static const u8* tab[] = { sNr0, sNr1, sNr2, sNr3, sNr4, sNr5, sNr6, sNr7};
             vVramDrawRectTransparent((u8*)VVRAM_TEXT_ADDR(18, 10), tab[pObj->ct / 32], W8H8(4, 4));
             if ((pObj->ct % 32) == 31) {
-                sdSetSeSequencer(seContinue, SD_SE_PRIORITY_1, SE_CONTINUE_CT);
+                sdPlaySe(SE_CONTINUE);
             }
         }
         break;
+    case OBJ_PLAYER_STEP_END_CARAVAN:  // キャラバン モード終了表示
+        sceneEndingDispMisses((u8*)VVRAM_TEXT_ADDR(12, 14));
+        // fall through
+    case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル モード終了表示
+        sceneEndingDispEnemies((u8*)VVRAM_TEXT_ADDR(12, 16));
+        pObj->uGeo.geo.w = 0; // 衝突判定を無くす
+        {
+#include "../../text/finish.h"
+#include "../../text/gameEnd.h"
+            sceneEndingDispFinish(VATB(7, 0, 0));
+            sceneGamePrintGameMode((u8*)VVRAM_TEXT_ADDR(16, 9), gameGetMode(), false);
+            printSetAddr((u8*)VVRAM_TEXT_ADDR(11, 20)); printString(textGameEnd);
+        }
+        if (pObj->ct == 0) {
+#define L   12
+#include "../../music/end.h"
+            sd3Play(mml0_0, mml1_0, mml2_0, true);
+            pObj->ct = 1;
+        }
+        break;
+
     }
 }
 
@@ -262,5 +289,5 @@ void objPlayerSetNormalStep(Obj* const pPlayer)
     pPlayer->uGeo.geo8.yh = PLAYER_Y;
     pPlayer->uGeo.geo8.w  = 0;
     pPlayer->step = OBJ_PLAYER_STEP_NORMAL;
-    pPlayer->ct   = CT_NORMAL;
+    pPlayer->ct   = gameIsCaravan() ? CT_NORMAL / 4 : CT_NORMAL;  // キャラバン モードは無敵時間が短い(無敵時の荒っぽい戦いを無くすため)
 }

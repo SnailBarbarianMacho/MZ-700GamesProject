@@ -1,0 +1,1 @@
+{col=2}{snake}{snake}{col=7} Select Game Mode {col=2}{snake}{snake}

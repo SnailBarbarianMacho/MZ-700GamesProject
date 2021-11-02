@@ -8,7 +8,7 @@
 * EmuZ-700 エミュレータでしか動作確認してませんが, 多分実機でも動く...かな?<br>
   I confirmed the operation only with the EmuZ-700 emulator. But I think it will work on the actual machine...maybe...
 * PCG-700 等の外付け PCG ハードウェアを使用している場合は, 無効化してください.<br>
-  HAL 研究所の製品ならば, GSW スイッチを OFF にします. 互換ハードウェアの場合, 取説に従ってください
+  HAL 研究所の製品ならば, GSW スイッチを OFF にします. 互換ハードウェアの場合, 取説に従ってください<br>
   If you are using third party PCG hardware(eg. HAL Lab. PCG-700), please disable it.<br>
   For HAL Laboratory products, turn off the GSW switch. For compatible hardware, follow the instructions.
 * MZ-1500 の場合, リセットすると動かなくなるプログラムがあるかもしれません. その場合はロードし直してください.<br>
@@ -25,8 +25,8 @@
   Compiler operation test. There is no makefile, build it with a batch file. May not work anymore.
 * **Memory Dirtinizer** <br>
   実機の電源投入時のように, メモリを「汚く」して, リセットします. makefile はありません. バッチファイルで作ります.<br>
-  Like when the power of the actual machine is turned on, it "dirts" the memory and resets it. There is no makefile. Make it with a batch file.<br>
   あまり役に立たないかもしれませんが, アセンブラを使った簡単なツールの作成の参考になります<br>
+  Like when the power of the actual machine is turned on, it "dirts" the memory and resets it. There is no makefile. Make it with a batch file.<br>
   It may not be very useful, but it can be a reference for creating a simple tool using assembler.
 * **SoundTest** <br>
   三重和音サウンドテスト <br>
@@ -45,10 +45,10 @@
   If you just want to play, you only need the emulator or the actual machine.
 * **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br>
   代表的な MZ-700 エミュレータ.<br>
-  A typical MZ-700 emulator. <br>
   モニター ROM イメージと日本版フォントイメージが必要です.<br>
-  Needs MZ-700 monitor ROM image and Japanese font image.<br>
   互換イメージがここから入手できます:<br>
+  A typical MZ-700 emulator. <br>
+  Needs MZ-700 monitor ROM image and Japanese font image.<br>
   Compatible images are available here: http://mzakd.cool.coocan.jp/starthp/mz700win.html
 * Windows 10 + Power Shell 7
 * **z88dk** https://github.com/z88dk/z88dk/wiki <br>

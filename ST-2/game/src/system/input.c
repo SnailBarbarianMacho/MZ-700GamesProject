@@ -10,16 +10,16 @@
 #include "print.h"//TEEST
 
 // ---------------------------------------------------------------- 変数
-static u8   sInput;                 // 入力生データ
-static u8   sInputOld;              // 入力生データ
-static u8   sInputTrig;             // 入力 OFF->ON エッジ データ
+u8          _input;                 // 入力生データ
+static u8   _inputOld;              // 入力生データ
+u8          _inputTrg;              // 入力 OFF->ON エッジ データ
 
 // ---------------------------------------------------------------- システム
 void inputInit() __z88dk_fastcall
 {
-    sInput     = 0;
-    sInputOld  = 0;
-    sInputTrig = 0;
+    _input    = 0;
+    _inputOld = 0;
+    _inputTrg = 0;
 }
 
 static const u8 sInputTab[] = {
@@ -37,14 +37,14 @@ static const u8 sInputTab[] = {
 void inputMain() __z88dk_fastcall __naked
 {
 __asm
-    ld      A, (#_sInput)
-    ld      (#_sInputOld), A
+    ld      A, (#__input)
+    ld      (#__inputOld), A
 
     BANK_VRAM_IO                // バンク切替
 
     ld      HL, #_sInputTab
     ld      DE, #MIO_8255_PORTA
-    ld      C,  0x00            // sInput
+    ld      C,  0x00            // _input
 
     // -------- write strobe
 STROBE_LOOP:
@@ -67,8 +67,8 @@ KEY_LOOP:
     and     A, E
     jp      nz, KEY_LOOP_END
     ld      A, (HL)
-    or      A, C                // sInput
-    ld      C, A                // sInput
+    or      A, C                // _input
+    ld      C, A                // _input
 KEY_LOOP_END:
     inc     HL
     djnz    B, KEY_LOOP
@@ -76,9 +76,9 @@ KEY_LOOP_END:
     jp      STROBE_LOOP
 
 STROBE_LOOP_END:
-    ld      A, C                // sInput
-    ld      (#_sInput), A
-    ld      E, A                // sInput 保存
+    ld      A, C                // _input
+    ld      (#__input), A
+    ld      E, A                // _input 保存
 
     // -------- ジョイスティックの読み取り(1) JA2 立下がり検出
     ld      HL, #MIO_ETC
@@ -181,29 +181,21 @@ JEND2:
 #endif
     // -------- ジョイスティック入力があったなら合成
     or      A, E
-    ld      (#_sInput), A
+    ld      (#__input), A
     ld      E, A
 
 JEND:
     BANK_RAM                    // バンク切替
 
-    // -------- sInputTrig = sInput & ~sInputOld;
-    ld      A, (#_sInputOld)
+    // -------- _inputTrg = _input & ~_inputOld;
+    ld      A, (#__inputOld)
     cpl     A                   // ビット反転
-    and     A, E                // sInput
+    and     A, E                // _input
 
-    ld      (#_sInputTrig), A
+    ld      (#__inputTrg), A
 
     ret
 __endasm;
 }
 
 // ---------------------------------------------------------------- 入力
-u8 inputGet() __z88dk_fastcall
-{
-    return sInput;
-}
-u8 inputGetTrigger() __z88dk_fastcall
-{
-    return sInputTrig;
-}

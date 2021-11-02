@@ -1,5 +1,5 @@
 /**
- * ステージ クリア ステップ
+ * ステージ クリア シーン
  * @author Snail Barbarian Macho (NWK)
  */
 
@@ -11,18 +11,18 @@
 #include "../system/sound.h"
 #include "../game/score.h"
 #include "../game/stage.h"
-#include "stepGame.h"
-#include "stepStageClear.h"
+#include "sceneGame.h"
+#include "sceneStageClear.h"
 
 // ---------------------------------------------------------------- 初期化
-void stepStageClearInit()
+void sceneStageClearInit()
 {
 #if DEBUG
     static const u8 stepStr[] = {CHAR_S, CHAR_C, CHAR_L, CHAR_R, 0};
     scoreSetStepString(stepStr);
 #endif
     sdSetEnabled(true);
-    sysSetStepCounter(100);
+    sysSetSceneCounter(100);
 }
 
 #if 0
@@ -56,12 +56,12 @@ static const u8* const strs[] = {
 #include "../../text/clear6.h"
 #include "../../text/clear7.h"
 #include "../../text/clear8.h"
-static const u8* const strs[] = { str_clear1, str_clear2, str_clear3, str_clear4, str_clear5, str_clear6, str_clear7, str_clear8, };
+static const u8* const strs[] = { textClear1, textClear2, textClear3, textClear4, textClear5, textClear6, textClear7, textClear8, };
 
 // ---------------------------------------------------------------- メイン
-void stepStageClearMain(u16 stepCounter)
+void sceneStageClearMain(u16 sceneCounter)
 {
-    if (stepCounter == 31) {
+    if (sceneCounter == 31) {
         u8  stgNr = stgGetStageNr() - 2; // ステージ番号は既に +1 されている ので stgNr は 0, 1, ...
         u16 bonus = ((stgNr / 2) + 1) * 100;
 
@@ -71,12 +71,12 @@ void stepStageClearMain(u16 stepCounter)
         stgNr = stgNr & 0x07;
         printSetAddr((u8*)VVRAM_TEXT_ADDR(14, 6)); printSetAtb(VATB(6, 0, 0)); printString(strs[stgNr]);
         printSetAddr((u8*)VVRAM_TEXT_ADDR(13, 8)); printSetAtb(VATB(7, 0, 0)); printString(str1); printU16Left(bonus); printString(str2);
-    } else if (stepCounter == 30) {
+    } else if (sceneCounter == 30) {
 #define L   10
 #include "../../music/clear.h"
         sd3Play(mml0_0, mml1_0, mml2_0, true);
 
-    } else if (stepCounter == 0)  {
-        sysSetStep(stepGameInit, stepGameMain);
+    } else if (sceneCounter == 0)  {
+        sysSetScene(sceneGameInit, sceneGameMain);
     }
 }

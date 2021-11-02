@@ -9,16 +9,18 @@
 #include "input.h"
 #include "vram.h"
 #include "sys.h"
-#include "../steps/stepTitle.h"
+#include "../game/bgm.h"
+#include "../scenes/sceneTitle.h"
 
 // ---------------------------------------------------------------- 変数
-static void (*sStepMainFunc)(u16 counter);     // ステップ メイン関数
-static u8   sSystemCt;              // システム カウンタ
-static u16  sStepCounter;           // ステップ カウンタ
-static bool sbGameMode;             // ゲームモード
+static void (*_sysSceneMainFunc)(u16 counter);     // シーン メイン関数
+u8      _sysCt;                 // システム カウンタ
+u16     _sysSceneCt;            // シーン カウンタ
+bool    _bSysGame;              // ゲームモード
+u8      _sysSceneWork[8];        // シーンが自由に使えるワーク
 
 // ---------------------------------------------------------------- システム
-void sysInit(void (*initFunc)(), void (*mainFunc)(u16))
+void sysInit()
 {
 #if DEBUG
     // ゴミで埋める
@@ -27,60 +29,43 @@ void sysInit(void (*initFunc)(), void (*mainFunc)(u16))
         *p = 0xff;
     }
 #endif
-    sbGameMode = false;
-    sysSetStep(initFunc, mainFunc);
+    _bSysGame = false;
 }
 
-void sysMain(void) __z88dk_fastcall
+void sysMain()
 {
     // ゲーム モードでないならば,
-    if (sbGameMode == false) {
+    if (_bSysGame == false) {
         u8 trg = inputGetTrigger();
         // 右ボタンでスキップ
         if (trg & INPUT_MASK_R) {
-            sStepCounter = 0;
+            _sysSceneCt = 0;
         }
         // タイトル画面以外でスタートでタイトルへ
         if (trg & INPUT_MASK_P) {
-            if (sStepMainFunc != stepTitleMain) {
+            if (_sysSceneMainFunc != sceneTitleMain) {
                 vramFill(0x0000);
-                sysSetStep(stepTitleInit, stepTitleMain);
+                sysSetScene(sceneTitleInit, sceneTitleMain);
                 return;
             }
         }
     }
 
-    sStepMainFunc(sStepCounter);
-    sStepCounter --;
-    sSystemCt ++;
-}
-
-u8 sysGetCounter() __z88dk_fastcall
-{
-    return sSystemCt;
+    _sysSceneMainFunc(_sysSceneCt);
+    _sysSceneCt --;
+    _sysCt ++;
 }
 
 // ---------------------------------------------------------------- ゲーム モード
-void sysSetGameMode(const bool bGameMode) __z88dk_fastcall
-{
-    sbGameMode = bGameMode;
-}
 
-bool sysIsGameMode() __z88dk_fastcall
+// ---------------------------------------------------------------- シーン
+void sysSetScene(void (*initFunc)(), void (*mainFunc)(u16))
 {
-    return sbGameMode;
-}
-
-// ---------------------------------------------------------------- ステップ
-void sysSetStep(void (*initFunc)(), void (*mainFunc)(u16))
-{
-    sStepMainFunc = mainFunc;
+    _sysSceneMainFunc = mainFunc;
     sdSetEnabled(false);
-    sdSetBgmSequencer(nullptr, nullptr);
+    sdPlayBgm(BGM_NONE);
+    for (int i = 0; i < sizeof(_sysSceneWork); i++) {
+        _sysSceneWork[i] = 0;
+    }
     initFunc();
-}
-
-void sysSetStepCounter(const u16 counter) __z88dk_fastcall
-{
-    sStepCounter  = counter;
 }

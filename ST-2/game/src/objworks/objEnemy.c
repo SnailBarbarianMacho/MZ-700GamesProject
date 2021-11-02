@@ -11,6 +11,8 @@
 #include "../system/math.h"
 #include "../game/score.h"
 #include "../game/stage.h"
+#include "../game/gameMode.h"
+#include "../game/se.h"
 #include "../../cg/Enemy3_1.h"
 #include "../../cg/Enemy3_2.h"
 #include "../../cg/Enemy3_3.h"
@@ -36,6 +38,9 @@
 #include "objEnemyBullet.h"
 #include "objScore.h"
 #include "objEnemy.h"
+
+// ---------------------------------------------------------------- 変数
+u16 _objEnemyNrKilled;
 
 // ---------------------------------------------------------------- マクロ
 #define INVINCIBLE_TIME 64
@@ -81,39 +86,6 @@
 #define H4_ITEM_SUB_LEVEL4_NR8(h, subLevel, nrItems) (((h) << 12) | ((subLevel) << 8) | (nrItems))
 
 
-// ---------------------------------------------------------------- サウンド
-#define SE_DEAD3_CT     20
-#define SE_DEAD45_CT    64
-#define SE_DEAD8_CT     128
-#define SE_DAMAGE_CT    3
-
-// 雑魚死亡音
-static void seDead3(u8 ct)
-{
-    static const u8 tab[SE_DEAD3_CT] = {
-        0x15, 0x1d, 0x1a, 0x1b, 0x1a, 0x13, 0x12, 0x12, 0x14, 0x13, 0x11, 0x12, 0x11, 0x0f, 0x0e, 0x0d, 0x07, 0x0b, 0x08, 0x05,
-    };
-    sdMake(tab[ct] << 10);
-}
-
-// 中ボス死亡音
-static void seDead45(u8 ct)
-{
-    sdMake((20 - (ct & 15)) << 10);
-}
-
-// ラスボス死亡音
-static void seDead8(u8 ct)
-{
-    sdMake((22 - (ct & 7)) << 10);
-}
-
-// 敵ダメージ音
-static void seDamage(u8 ct)
-{
-    sdMake((SE_DAMAGE_CT - ct + 1) << 7);
-}
-
 // ---------------------------------------------------------------- 初期化
 /**
  * @param hItem H4_ITEM_SUB_LEVEL4_NR8 マクロを使ってください
@@ -128,7 +100,7 @@ static void initEnemySub(Obj* const pObj, const u16 fitness, const u16 score, co
     pObj->fitness = fitness;
     pObj->uObjWork.enemy.score        = score;
     pObj->uObjWork.enemy.itemSubLevel = (hItem >> 8) & 0x0f;
-    pObj->uObjWork.enemy.nrItems      = hItem;
+    pObj->uObjWork.enemy.nrItems      = hItem + gameHard();
     pObj->uObjWork.enemy.ct           = rand8() & 0x1f;
     pObj->uObjWork.enemy.animCt       = rand8();
     pObj->uObjWork.enemy.dir          = 0;
@@ -234,7 +206,8 @@ static void overhangDeadCheck3(Obj* const pObj) __z88dk_fastcall
         // 爆発, スコア, 敵減
         objCreateEtc(objExplosionInit, objExplosionMain, objExplosionDraw, pObj);
         scoreAdd(pObj->uObjWork.enemy.score);
-        sdSetSeSequencer(seDead3, SD_SE_PRIORITY_2, SE_DEAD3_CT);
+        _objEnemyNrKilled++;
+        sdPlaySe(SE_ENEMY_DEAD3);
         pObj->uGeo.geo.sx = 0;// 移動停止
         pObj->uGeo.geo.sy = 0;// 移動停止
         pObj->uGeo.geo.w  = 0;// 衝突判定を止める
@@ -242,7 +215,7 @@ static void overhangDeadCheck3(Obj* const pObj) __z88dk_fastcall
         pObj->uObjWork.enemy.ct = 10;
         pObj->step = STEP_DEAD;
     } else if (pObj->bHit) {
-        sdSetSeSequencer(seDamage, SD_SE_PRIORITY_3, SE_DAMAGE_CT);// ダメージ音
+        sdPlaySe(SE_ENEMY_DAMAGE);
     }
 }
 static void deadCheck458(Obj* const pObj) __z88dk_fastcall
@@ -268,19 +241,20 @@ static void deadCheck458(Obj* const pObj) __z88dk_fastcall
         }
         if (pObj->uGeo.geo.w == 8) {
             pObj->ct = 120;
-            sdSetSeSequencer(seDead8, SD_SE_PRIORITY_0, SE_DEAD8_CT);
+            sdPlaySe(SE_ENEMY_DEAD8);
         } else {
             pObj->ct = 30;
-            sdSetSeSequencer(seDead45, SD_SE_PRIORITY_1, SE_DEAD45_CT);
+            sdPlaySe(SE_ENEMY_DEAD45);
         }
         pObj->uGeo.geo.sx = 0;// 移動停止
         pObj->uGeo.geo.sy = 0;// 移動停止
         pObj->uGeo.geo.w  = 0;// 衝突判定を止める
         pObj->step = STEP_DEAD;
     } else if (pObj->bHit) {
-        sdSetSeSequencer(seDamage, SD_SE_PRIORITY_3, SE_DAMAGE_CT);// ダメージ音
+        sdPlaySe(SE_ENEMY_DAMAGE);// ダメージ音
     }
 }
+
 // ---------------------------------------------------------------- メイン サブ関数(死亡処理)
 static bool dead3(Obj* const pObj) __z88dk_fastcall
 {
@@ -333,11 +307,60 @@ static void createEnemyBullet(Obj* const pObj) __z88dk_fastcall
 }
 
 // ---------------------------------------------------------------- メイン サブ関数(移動系)
+static void moveSlow(Obj* const pObj) __z88dk_fastcall
+{
+    pObj->uObjWork.enemy.ct = (rand8() & 0x1f) + 0x0f;
+
+    // 速度変化
+    s16 s;
+    s = (s16)rand8_sign() << 6; // 0xffc0, 0x0000, 0x0040
+    pObj->uGeo.geo.sx = s;
+    s = (s16)rand8_sign() << 6; // 0xffc0, 0x0000, 0x0040
+    pObj->uGeo.geo.sy = s;
+
+    // ガタガタ動かない様にする調整
+    pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x40;
+    pObj->uGeo.geo8.yl = (0 <= pObj->uGeo.geo8.syh) ? 0x00: -0x40;
+}
+
+static void moveFaster(Obj* const pObj) __z88dk_fastcall
+{
+    pObj->uObjWork.enemy.ct = (rand8() & 0xf) + 0x0c;
+
+    // 速度変化
+    volatile s16 s; // 何故か最適化に失敗する
+    s = (s16)rand8_sign() << 7; // 0xff80, 0x0000, 0x0080;
+    pObj->uGeo.geo.sx = s;
+    s = (s16)rand8_sign() << 7; // 0xff80, 0x0000, 0x0080;
+    pObj->uGeo.geo.sy = s;
+
+    // ガタガタ動かない様にする調整
+    pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x80;
+    pObj->uGeo.geo8.yl = (0 <= pObj->uGeo.geo8.syh) ? 0x00: -0x80;
+}
+
+// 最高速移動
+static void moveFastest(Obj* const pObj) __z88dk_fastcall
+{
+    pObj->uObjWork.enemy.ct = (rand8() & 0xf) + 0x07;
+    pObj->uGeo.geo8.sxl = 0;
+    pObj->uGeo.geo8.syl = 0;
+    pObj->uGeo.geo8.sxh = rand8_sign();
+    pObj->uGeo.geo8.syh = rand8_sign();
+}
+
 // 低速ランダム
 static void moveA(Obj* const pObj) __z88dk_fastcall
 {
     pObj->uObjWork.enemy.ct--;
     if (pObj->uObjWork.enemy.ct) { return; }
+
+    if (gameHard() && stgGetNrEnemies() == 1) { // ハードモードは高速
+        moveFaster(pObj);
+    } else {
+        moveSlow(pObj);
+    }
+#if 0
     pObj->uObjWork.enemy.ct = (rand8() & 0x1f) + 0x0f;
     // 速度変化
     volatile s16 s;
@@ -349,6 +372,7 @@ static void moveA(Obj* const pObj) __z88dk_fastcall
     // ガタガタ動かない様にする調整
     pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x40;
     pObj->uGeo.geo8.yl = (0 <= pObj->uGeo.geo8.syh) ? 0x00: -0x40;
+#endif
 
     // 弾を吐く
     switch (pObj->uObjWork.enemy.bulletMode) {
@@ -395,8 +419,13 @@ static void moveB(Obj* const pObj) __z88dk_fastcall
             0x0040,  -0x0040, // 8
         };
         const s16* p = &tab[dir * 2];
-        pObj->uGeo.geo.sx = *p; p++;
-        pObj->uGeo.geo.sy = *p;
+        if (gameHard() && stgGetNrEnemies() == 1) { // ハードモードは高速
+            pObj->uGeo.geo.sx = *p * 2; p++;
+            pObj->uGeo.geo.sy = *p * 2;
+        } else {
+            pObj->uGeo.geo.sx = *p; p++;
+            pObj->uGeo.geo.sy = *p;
+        }
     }
     // ガタガタ動かない様にする調整
     pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x40;
@@ -416,29 +445,13 @@ static void moveC(Obj* const pObj) __z88dk_fastcall
     pObj->uObjWork.enemy.ct--;
     if (pObj->uObjWork.enemy.ct) { return; }
     if (stgGetNrEnemies() != 1) {
-        pObj->uObjWork.enemy.ct = (rand8() & 0x1f) + 0x0f;
-        // 速度変化
-        volatile s16 s;
-        s = (s16)rand8_sign() << 6; // 0xffc0, 0x0000, 0x0040
-        pObj->uGeo.geo.sx = s;
-        s = (s16)rand8_sign() << 6; // 0xffc0, 0x0000, 0x0040
-        pObj->uGeo.geo.sy = s;
-
-        // ガタガタ動かない様にする調整
-        pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x40;
-        pObj->uGeo.geo8.yl = (0 <= pObj->uGeo.geo8.syh) ? 0x00: -0x40;
+        moveSlow(pObj);
     } else {
-        pObj->uObjWork.enemy.ct = (rand8() & 0xf) + 0x0c;
-        // 速度変化
-        volatile s16 s;
-        s = (s16)rand8_sign() << 7; // 0xff80, 0x0000, 0x0080
-        pObj->uGeo.geo.sx = s;
-        s = (s16)rand8_sign() << 7; // 0xff80, 0x0000, 0x0080
-        pObj->uGeo.geo.sy = s;
-
-        // ガタガタ動かない様にする調整
-        pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x80;
-        pObj->uGeo.geo8.yl = (0 <= pObj->uGeo.geo8.syh) ? 0x00: -0x80;
+        if (gameHard()) { // ハードモードは高速
+            moveFastest(pObj);
+        } else {
+            moveFaster(pObj);
+        }
     }
 }
 // 低速ランダム. 残り2機で倍速 残り1機で4倍速
@@ -449,36 +462,17 @@ static void moveD(Obj* const pObj) __z88dk_fastcall
     volatile s16 s;
     switch (stgGetNrEnemies()) {
     default:
-        pObj->uObjWork.enemy.ct = (rand8() & 0x1f) + 0x0f;
-        // 速度変化
-        s = (s16)rand8_sign() << 6; // 0xffc0, 0x0000, 0x0040
-        pObj->uGeo.geo.sx = s;
-        s = (s16)rand8_sign() << 6; // 0xffc0, 0x0000, 0x0040
-        pObj->uGeo.geo.sy = s;
-
-        // ガタガタ動かない様にする調整
-        pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x40;
-        pObj->uGeo.geo8.yl = (0 <= pObj->uGeo.geo8.syh) ? 0x00: -0x40;
+        moveSlow(pObj);
         break;
     case 2:
-        pObj->uObjWork.enemy.ct = (rand8() & 0xf) + 0x0c;
-        // 速度変化
-        s = (s16)rand8_sign() << 7; // 0xff80, 0x0000, 0x0080
-        pObj->uGeo.geo.sx = s;
-        s = (s16)rand8_sign() << 7; // 0xff80, 0x0000, 0x0080
-        pObj->uGeo.geo.sy = s;
-
-        // ガタガタ動かない様にする調整
-        pObj->uGeo.geo8.xl = (0 <= pObj->uGeo.geo8.sxh) ? 0x00: -0x80;
-        pObj->uGeo.geo8.yl = (0 <= pObj->uGeo.geo8.syh) ? 0x00: -0x80;
+        if (gameHard()) { // ハードモードは高速
+            moveFastest(pObj);
+        } else {
+            moveFaster(pObj);
+        }
         break;
     case 1:
-        pObj->uObjWork.enemy.ct = (rand8() & 0xf) + 0x07;
-        // 速度変化
-        pObj->uGeo.geo8.sxl = 0;
-        pObj->uGeo.geo8.syl = 0;
-        pObj->uGeo.geo8.sxh = rand8_sign();
-        pObj->uGeo.geo8.syh = rand8_sign();
+        moveFastest(pObj);
         break;
     }
 }
@@ -972,3 +966,5 @@ void objEnemyDraw8_3(Obj* const pObj, u8* drawAddr)
         vVramDrawRect(drawAddr, e, W8H8(8, 8));
     }
 }
+
+// ---------------------------------------------------------------- 倒した敵の数

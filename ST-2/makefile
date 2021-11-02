@@ -57,7 +57,7 @@ LFLAGS    :=\
 	-pragma-define:CLIB_EXIT_STACK_SIZE=0
 
 # Search pathes
-vpath %.c   $(GAME_DIR)/src $(GAME_DIR)/src/system $(GAME_DIR)/src/steps $(GAME_DIR)/src/game $(GAME_DIR)/src/objworks $(LOADER_DIR)
+vpath %.c   $(GAME_DIR)/src $(GAME_DIR)/src/system $(GAME_DIR)/src/scenes $(GAME_DIR)/src/game $(GAME_DIR)/src/objworks $(LOADER_DIR)
 vpath %.mid $(GAME_DIR)/music
 vpath %.txt $(GAME_DIR)/text
 
@@ -108,11 +108,11 @@ $(LOADER_DIR)/obj/%.o: %.c
 		--max-allocs-per-node200000 -o $@ -c $<
 
 $(GAME_DIR)/music/%.h: %.mid
-	@echo Generating music data...[$@]
+	@echo Generating music data from ... [$<]
 	@$(PHP) ../tools/midi2sd3mml.php $< $@
 
 $(GAME_DIR)/text/%.h: %.txt
-	@echo Generating text data...[$@]
+	@echo Generating text data from ... [$<]
 	@$(PHP) ../tools/text2c.php $< $@
 
 

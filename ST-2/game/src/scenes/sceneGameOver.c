@@ -1,5 +1,5 @@
 /**
- * ゲーム オーバー ステップ
+ * ゲーム オーバー シーン
  * @author Snail Barbarian Macho (NWK)
  */
 
@@ -9,38 +9,39 @@
 #include "../system/obj.h"
 #include "../game/score.h"
 #include "../game/stage.h"
-#include "stepLogo.h"
-#include "stepGameOver.h"
+#include "../game/bgm.h"
+#include "sceneLogo.h"
+#include "sceneGameOver.h"
 
 // ---------------------------------------------------------------- 初期化
-void stepGameOverInit()
+void sceneGameOverInit()
 {
     scoreReflectHiScore();
-    stepGameOverInitWithoutReflectHiScore();
+    sceneGameOverInitWithoutReflectHiScore();
 }
-void stepGameOverInitWithoutReflectHiScore() // 強制ゲームオーバー時は, ハイスコアへの反映は無し
+void sceneGameOverInitWithoutReflectHiScore() // 強制ゲームオーバー時は, ハイスコアへの反映は無し
 {
 #if DEBUG
     static const u8 stepStr[] = {CHAR_O, CHAR_V, CHAR_E, CHAR_R, 0};
     scoreSetStepString(stepStr);
 #endif
-    sysSetGameMode(false);
+    sysSetMode(false);
     objInit();
-    sysSetStepCounter(20);
-    sdSetBgmSequencer(nullptr, nullptr);
+    sysSetSceneCounter(20);
+    sdPlayBgm(BGM_NONE);
 }
 
 // ---------------------------------------------------------------- メイン
-void stepGameOverMain(u16 stepCounter)
+void sceneGameOverMain(u16 sceneCounter)
 {
     // -------- ゲームオーバー ジングル
-    if (stepCounter == 18) {
+    if (sceneCounter == 18) {
 #define L  8
 #include "../../music/ronin.h"
         sd3Play(mml0_0, mml1_0, mml2_0, true);
         sdSetEnabled(false);// 余計な音は全て停止
-    } else if (stepCounter == 0)  {
+    } else if (sceneCounter == 0)  {
         scoreResetLevel();
-        sysSetStep(stepLogoInit, stepLogoMain);
+        sysSetScene(sceneLogoInit, sceneLogoMain);
     }
 }

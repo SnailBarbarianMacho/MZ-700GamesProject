@@ -12,23 +12,23 @@
 #include "print.h"
 
 // ---------------------------------------------------------------- 変数
-static u8  vramPrintAtb = 0x70;
-static u8* vramPrintAddr  = (u8*)VVRAM_TEXT_ADDR(0, 0);
+static u8  _vramPrintAtb  = 0x70;
+static u8* _vramPrintAddr = (u8*)VVRAM_TEXT_ADDR(0, 0);
 
 // ---------------------------------------------------------------- 設定
 void printSetAtb(const u8 col) __z88dk_fastcall
 {
-    vramPrintAtb = col;
+    _vramPrintAtb = col;
 }
 
 void printSetAddr(u8* const addr) __z88dk_fastcall
 {
-    vramPrintAddr = addr;
+    _vramPrintAddr = addr;
 }
 
 void printAddAddr(u16 offset) __z88dk_fastcall
 {
-    vramPrintAddr += offset;
+    _vramPrintAddr += offset;
 }
 
 // ---------------------------------------------------------------- 表示(文字)
@@ -38,19 +38,19 @@ void printPutc(const u8 c) __z88dk_fastcall __naked
 {
 __asm
     ld      A, L                        // 引数 c
-    ld      HL, (#_vramPrintAddr);
+    ld      HL, (#__vramPrintAddr);
 
     // TEXT
     ld      (HL), A
     inc     L
-    ld      (#_vramPrintAddr), HL
+    ld      (#__vramPrintAddr), HL
 
     // ATB
     ld      A, #(VRAM_WIDTH + VVRAM_GAPX - 1)
     add     A, L
     ld      L, A
 
-    ld      A, (#_vramPrintAtb)
+    ld      A, (#__vramPrintAtb)
     ld      (HL),A
 
     ret
@@ -73,18 +73,18 @@ __asm
     and     A, A                        // (B - 1) < 0 ならば終了
     jp      m, PRINT_EXIT
     inc     BC
-    ld      DE, (#_vramPrintAddr)
+    ld      DE, (#__vramPrintAddr)
 
     // ---------------- HL' = ATB アドレス, C' = 色, B'DE 未使用
     exx
-        ld  HL, (#_vramPrintAddr)
+        ld  HL, (#__vramPrintAddr)
         ld  (VVRAM_TMP_WORK), HL             // 改行の為に現在位置を保存
 
         ld  A, #(VRAM_WIDTH + VVRAM_GAPX)
         add A, L
         ld  L, A
 
-        ld  A, (#_vramPrintAtb)
+        ld  A, (#__vramPrintAtb)
         ld  C, A
     exx
 
@@ -96,8 +96,8 @@ PRINT_LOOP:
     and     A
     jp      z, PRINT_END        // ジャンプ することが少ないので, jp でなく, jr を使う
 
-    // -------- 制御コードならばテーブル ジャンプ
-    cp      A, CHAR_SP          // 0xf0
+    // -------- 制御コードならばテーブル ジャンプ(スペースを除く)
+    cp      A, #(CHAR_SP)       // 0xf0
     jp      c, PRINT_DRAW_CHAR
 
     add     A, A                // a = e0, e2, ..., fe
@@ -136,7 +136,15 @@ PRINT_SPACE:
         inc L       // HL'++
     exx
     inc     E       // DE++
-    ret
+
+    // 文字数減算
+    dec     BC
+    ld      A, C
+    or      B
+    ret     nz
+    // call なかったことに
+    pop     BC
+    jr      PRINT_END
     // -------- カーソル右へ
 PRINT_MOVE_RIGHT:
     inc     HL
@@ -238,11 +246,11 @@ PRINT_LOOP_END:
     jp      PRINT_LOOP
 
 PRINT_END:
-    ld      (#_vramPrintAddr), DE   // 表示位置の更新
+    ld      (#__vramPrintAddr), DE   // 表示位置の更新
     exx
         ld  A, C
         and A, 0x77                 // 小文字ひらがなは解除
-        ld  (#_vramPrintAtb), A
+        ld  (#__vramPrintAtb), A
     //exx                           // 不要
 
     // スタックポインタを戻して ret
@@ -306,7 +314,7 @@ PRINT_U8R_10:
     exx
         ld  (HL), C
     exx
-    ld      (#_vramPrintAddr), HL   // 表示位置の更新
+    ld      (#__vramPrintAddr), HL   // 表示位置の更新
 
     ret
 __endasm;
@@ -348,11 +356,11 @@ INIT_VRAM_AND_CALC_BCD8:
     // break: BC
     // ---------------- HL' = ATB アドレス, C' = ATB
     exx
-        ld  HL, (#_vramPrintAddr)
+        ld  HL, (#__vramPrintAddr)
         ld  A, VRAM_WIDTH + VVRAM_GAPX
         add A, L
         ld  L, A
-        ld  A, (#_vramPrintAtb)
+        ld  A, (#__vramPrintAtb)
         ld  C, A
     exx
 
@@ -405,7 +413,7 @@ INIT_VRAM_AND_CALC_BCD8:
     adc     A, C    // ゼロならば z = 1
 
     // ---------------- HL = VRAM アドレス, C =CHAR_0
-    ld      HL, (#_vramPrintAddr)
+    ld      HL, (#__vramPrintAddr)
     ld      C, CHAR_0
     ret
 __endasm;
@@ -460,7 +468,7 @@ PRINT_U8L_10:
         ld  (HL), C
     exx
 
-    ld      (#_vramPrintAddr), HL   // 表示位置の更新
+    ld      (#__vramPrintAddr), HL   // 表示位置の更新
 
     ret
 __endasm;
@@ -556,7 +564,7 @@ PRINT_U16R_10:
         ld  (HL), C
     exx
 
-    ld      (#_vramPrintAddr), HL   // 表示位置の更新
+    ld      (#__vramPrintAddr), HL   // 表示位置の更新
 
     ret
 __endasm;
@@ -610,11 +618,11 @@ INIT_VRAM_AND_CALC_BCD16:
 
     // -------- HL' = ATB アドレス, C' = 色
     exx
-        ld  HL, (#_vramPrintAddr)
+        ld  HL, (#__vramPrintAddr)
         ld  A,  VRAM_WIDTH + VVRAM_GAPX
         add A, L
         ld  L, A
-        ld  A, (#_vramPrintAtb)
+        ld  A, (#__vramPrintAtb)
         ld  C, A
     exx
 
@@ -805,7 +813,7 @@ INIT_VRAM_AND_CALC_BCD16:
 
     // ---------------- HL = VRAM アドレス, B = 0, E = 0x0f
     ld      B, H    // H = 0 表示許可フラグ
-    ld      HL, (#_vramPrintAddr)
+    ld      HL, (#__vramPrintAddr)
     ld      E, 0x0f
     ret
 __endasm;
@@ -892,7 +900,7 @@ PRINT_U16L_10:
         ld  (HL), C
     exx
 
-    ld      (#_vramPrintAddr), HL   // 表示位置の更新
+    ld      (#__vramPrintAddr), HL   // 表示位置の更新
     ret
 __endasm;
 }
@@ -912,12 +920,12 @@ void printHex16(const u16 value) __z88dk_fastcall __naked
 {
 __asm
     // -------- HL' = ATB アドレス, C' = 色
-    ld      BC, (#_vramPrintAddr)
+    ld      BC, (#__vramPrintAddr)
     exx
-        ld  HL, (#_vramPrintAddr)
+        ld  HL, (#__vramPrintAddr)
         ld  BC, VRAM_WIDTH + VVRAM_GAPX
         add HL, BC
-        ld  A, (#_vramPrintAtb)
+        ld  A, (#__vramPrintAtb)
         ld  C, A
     exx
     // ---------------- 1000 の桁
@@ -945,7 +953,7 @@ __asm
     and     0x0f
     call    PRINT_HEX_1
 
-    ld      (#_vramPrintAddr), BC   // 表示位置の更新
+    ld      (#__vramPrintAddr), BC   // 表示位置の更新
     ret
 
     // ---------------- 1 文字表示

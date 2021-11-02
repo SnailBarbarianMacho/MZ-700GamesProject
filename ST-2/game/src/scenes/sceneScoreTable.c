@@ -1,5 +1,5 @@
 /**
- * スコア テーブル ステップ
+ * スコア テーブル シーン
  * @author Snail Barbarian Macho (NWK)
  */
 
@@ -11,27 +11,28 @@
 #include "../system/obj.h"
 #include "../game/score.h"
 #include "../objworks/objEnemy.h"
-#include "stepLogo.h"
-#include "stepTitleDemo.h"
-#include "stepScoreTable.h"
+#include "sceneLogo.h"
+#include "sceneTitleDemo.h"
+#include "sceneScoreTable.h"
 
 #define INST_CT 450
 
-static u8 sLoopCt = 0;
+// ---------------------------------------------------------------- 変数
+u8 _sceneScoreTableLoopCt = 0;  // 数回に1回ロゴループ, デモ時のステージ
 
 // ---------------------------------------------------------------- 初期化
-void stepScoreTableInit()
+void sceneScoreTableInit()
 {
 #if DEBUG
     static const u8 stepStr[] = {CHAR_T, CHAR_A, CHAR_B, CHAR_L, CHAR_E, 0};
     scoreSetStepString(stepStr);
 #endif
     objInit();
-    sysSetStepCounter(INST_CT);
+    sysSetSceneCounter(INST_CT);
 }
 
 // ---------------------------------------------------------------- メイン
-void stepScoreTableMain(u16 stepCounter)
+void sceneScoreTableMain(u16 sceneCounter)
 {
 #include "../../text/tabscore.h"
 #include "../../text/tab100.h"
@@ -42,7 +43,7 @@ void stepScoreTableMain(u16 stepCounter)
 #include "../../text/tab400.h"
 #include "../../text/tablevelup.h"
     // -------- 敵の表示
-    s16 ct = INST_CT - stepCounter;
+    s16 ct = INST_CT - sceneCounter;
     if (ct == 80) {
         struct s_Tab {
             void (*initFunc)(Obj* const, Obj* const);
@@ -76,14 +77,14 @@ void stepScoreTableMain(u16 stepCounter)
         u8* const str;
         u16 ctOffset;
     } const tab[] = {
-        { (u8*)VVRAM_TEXT_ADDR(12,  2), str_tabscore, 30 },
-        { (u8*)VVRAM_TEXT_ADDR( 7,  5), str_tab100, 100 },
-        { (u8*)VVRAM_TEXT_ADDR( 7,  9), str_tab150, 140 },
-        { (u8*)VVRAM_TEXT_ADDR( 7, 13), str_tab200, 180 },
-        { (u8*)VVRAM_TEXT_ADDR(26,  5), str_tab250, 220 },
-        { (u8*)VVRAM_TEXT_ADDR(26,  9), str_tab300, 260 },
-        { (u8*)VVRAM_TEXT_ADDR(26, 13), str_tab400, 300 },
-        { (u8*)VVRAM_TEXT_ADDR( 7, 20), str_tablevelup, 340 },
+        { (u8*)VVRAM_TEXT_ADDR(12,  2), textTabscore, 30 },
+        { (u8*)VVRAM_TEXT_ADDR( 7,  5), textTab100, 100 },
+        { (u8*)VVRAM_TEXT_ADDR( 7,  9), textTab150, 140 },
+        { (u8*)VVRAM_TEXT_ADDR( 7, 13), textTab200, 180 },
+        { (u8*)VVRAM_TEXT_ADDR(26,  5), textTab250, 220 },
+        { (u8*)VVRAM_TEXT_ADDR(26,  9), textTab300, 260 },
+        { (u8*)VVRAM_TEXT_ADDR(26, 13), textTab400, 300 },
+        { (u8*)VVRAM_TEXT_ADDR( 7, 20), textTablevelup, 340 },
         { nullptr, nullptr, 0 },
     };
     for (const struct s_Tab* pTab = tab; pTab->drawAddr; pTab++) {
@@ -91,20 +92,17 @@ void stepScoreTableMain(u16 stepCounter)
         printStringWithLength(pTab->str, ct - pTab->ctOffset);
     }
 
-    // -------- 次のステップへ
-    if (stepCounter == 0)  {
-        sLoopCt++;
-        if (4 < sLoopCt) {
-            sLoopCt = 0;
-            vramClear();// 仮想 VRAM の残像を消す
-            sysSetStep(stepLogoInit, stepLogoMain);
+    // -------- 次のシーンへ
+    if (sceneCounter == 0)  {
+        _sceneScoreTableLoopCt++;
+        if (4 < _sceneScoreTableLoopCt) {
+            _sceneScoreTableLoopCt = 0;
+            vvramClear();// 仮想 VRAM の残像を消す
+            sysSetScene(sceneLogoInit, sceneLogoMain);
         } else {
-            sysSetStep(stepTitleDemoInit, stepTitleDemoMain);
+            sysSetScene(sceneTitleDemoInit, sceneTitleDemoMain);
         }
     }
 }
 
 // ---------------------------------------------------------------- デモ ループ カウンタ
-u8 stepScoreTableGetLoopCt() {
-    return sLoopCt;
-}

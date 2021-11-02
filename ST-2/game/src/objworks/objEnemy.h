@@ -9,6 +9,9 @@
 #include "../../../../src-common/common.h"
 #include "../system/obj.h"
 
+// ---------------------------------------------------------------- private 変数. 直接触らない
+extern u16 _objEnemyNrKilled;
+
 // ---------------------------------------------------------------- 初期化
 void objEnemyInit3_1(Obj* const pObj, Obj* const pParent);
 void objEnemyInit3_2(Obj* const pObj, Obj* const pParent);
@@ -61,5 +64,11 @@ void objEnemyDraw5_3(Obj* const pObj, u8* drawAddr);
 void objEnemyDraw8_1(Obj* const pObj, u8* drawAddr);
 void objEnemyDraw8_2(Obj* const pObj, u8* drawAddr);
 void objEnemyDraw8_3(Obj* const pObj, u8* drawAddr);
+
+// ---------------------------------------------------------------- 倒した敵の数
+/** 倒した敵の数を初期化します */
+inline void objEnemyInitStatistics() { _objEnemyNrKilled = 0; }
+/** 倒した敵の数を返します */
+inline u16 objEnemyGetNrKilled() { return _objEnemyNrKilled; }
 
 #endif // OBJ_ENEMY_H_INCLUDED

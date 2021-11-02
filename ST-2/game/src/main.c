@@ -12,14 +12,16 @@
 #include "system/sound.h"
 #include "system/obj.h"
 #include "system/math.h"
-#include "steps/stepLogo.h"
+#include "scenes/sceneLogo.h"
 #include "game/stars.h"
 #include "game/score.h"
+#include "game/gameMode.h"
 #include "objworks/objItem.h"
 
 void main() __naked
 {
-    sysInit(stepLogoInit, stepLogoMain);
+    sysInit();
+    sysSetScene(sceneLogoInit, sceneLogoMain);
     inputInit();
     vramInit();
     sdInit();
@@ -28,6 +30,7 @@ void main() __naked
     scoreInit();
     starsInit();
     objItemInitTab();
+    gameSetMode(GAME_MODE_NORMAL);
     while (1)
     {
         sdSeMain(); // サウンドは 1 フレームに 2 回呼ぶ. 最初は SE→BGMの順, 2回目はその逆

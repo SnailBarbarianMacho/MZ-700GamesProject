@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 /**
- * テキスト文字列をディスプレイ コードの配列に変換
+ * テキスト文字列をディスプレイ コードの配列に変換し
  *
  * 使えるタグは,
  *   {sp}{lf}{lf2}
@@ -30,7 +30,7 @@ if (count($argv) != 3)
     exit(1);
 }
 $inTextFilename = $argv[1];
-$outCFilename   = $argv[2];
+$outFilename   = $argv[2];
 
 if (file_exists($inTextFilename) === false) {
     fwrite(STDERR, "file not found[$inTextFilename]\n");
@@ -238,7 +238,7 @@ optimizeAtb($arr, '0x40', 'CHAR_COL4');
 optimizeAtb($arr, '0x50', 'CHAR_COL5');
 optimizeAtb($arr, '0x60', 'CHAR_COL6');
 optimizeAtb($arr, '0x70', 'CHAR_COL7');
-outData($inText, $outCFilename, $arr);
+outData($inText, $outFilename, $arr);
 
 // -------------------------------- 引数を持つタグの処理関数
 function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, array &$arr): bool
@@ -352,7 +352,7 @@ function optimizeAtb(array &$arr, string $value, string $out): void
 
 
 // -------------------------------- 出力
-function outData(string $inText, string $outCFilename, array $arr): void
+function outData(string $inText, string $outFilename, array $arr): void
 {
     // 安全のために 256 文字に抑えておく
     if (256 <= count($arr)) {
@@ -366,7 +366,7 @@ function outData(string $inText, string $outCFilename, array $arr): void
     foreach ($textArr as $t) {
         $outStr .= '// ' . $t . "\n";
     }
-    $outStr .= 'static const u8 str_' . pathinfo($outCFilename, PATHINFO_FILENAME) . "[] = { \n    ";
+    $outStr .= 'static const u8 text' . ucfirst(pathinfo($outFilename, PATHINFO_FILENAME)) . "[] = { \n    ";
     foreach ($arr as $c) {
         $outStr .= $c . ', ';
         if (($c === 'CHAR_LF') || ($c === 'CHAR_LF2')) {
@@ -374,5 +374,12 @@ function outData(string $inText, string $outCFilename, array $arr): void
         }
     }
     $outStr .= "\n    0, };";
-    file_put_contents($outCFilename, $outStr);
+    file_put_contents($outFilename, $outStr);
+
+    //$macro = strtoupper(ltrim(strtolower(preg_replace('/[A-Z]/', '_\0', $outFilename)), '_')) . "_INCLUDED";// camelCase を SNAKE_CASE に
+    //$outStr  = "#ifndef $macro\n";
+    //$outStr .= "#define $macro\n";
+    //$outStr .= "extern u8 text" . $outFilename . "[];\n";
+    //$outStr .= "#endif // $macro\n";
+    //file_put_contents($outFilename . ".h", $outStr);
 }

@@ -1,6 +1,6 @@
 /**
  * サウンド
- * - 名前空間 SD_, SDM_, SD3_ または sd
+ * - 名前空間 SD_, SD1_, SD3_ または sd
  * - 階層図<pre>
  * +-------------+-----------+-----------+
  * | sound       |           |           |
@@ -200,6 +200,10 @@
 #define SD_SE_PRIORITY_2 2
 #define SD_SE_PRIORITY_3 3  // 最も低い SE 優先順位
 
+// ---------------------------------------------------------------- private 変数. 直接触らない
+extern u16  (*_bgmMain)(u16);
+extern u16  _bgmCt;
+extern u8   _sePri;
 
 // ---------------------------------------------------------------- システム
 /** サウンド システムの初期化 */
@@ -211,39 +215,24 @@ void sdSeMain();
 
 /** サウンドの ON/OFF を制御します. 初期値は, false です.
  * - false だと全ての音声が鳴りません
- * - ステップが変更されると自動で false になります
+ * - シーンが変更されると自動で false になります
  */
 void sdSetEnabled(const bool bEnabled) __z88dk_fastcall __naked;
 
 // ---------------------------------------------------------------- サウンド シーケンサ
-/** BGM シーケンサをセットします
- * @param init 初期化関数
- *   - nullptr 可
- * @param main メイン関数. 1 フレームに複数回呼ばれます
- *   - nullptr 可
- *   - 引数は 16 bit カウンタ. 変数として使えます. 初期値 0
- *   - 戻値も 16 bit カウンタ
- *   - sdMake() で音を鳴らしてください
- *   - ステップが変更されると自動で nullptr になります
+/** BGM を鳴らします.
+ * - シーンが変更されると自動で SD_BGM_NONE になります
+ * @param bgm BGM_XXXX を指定します.
  */
-void sdSetBgmSequencer(void (*init)(), u16 (*main)(u16));
+void sdPlayBgm(const u8 bgm) __z88dk_fastcall;
 
-/** SE(効果音) シーケンサをセットします
- * @param main シーケンサ関数. 1 フレームに複数回呼ばれます
- *   - nullptr 可
- *   - 引数はカウント ダウン カウンタ
- *   - sdPlay() で音を鳴らしてください
- *   - シーケンサが削除される条件:
- *     - カウント ダウン カウンタが 0
- *     - 優先順位の高いシーケンサが稼働してると終了します
- * @param priority 優先度(SD_SE_PRIORITY_XXXX)
- * @param ct       カウント ダウン カウンタ初期値
+/** SE を鳴らします.
+ * @param bgm SE_XXXX を指定します.
  */
-void sdSetSeSequencer(void (*main)(u8), const u8 priority, const u8 ct);
+void sdPlaySe(const u8 se) __z88dk_fastcall;
 
 /** 現在の SE(効果音) プライオリティを返します */
-u8 sdGetSePriority();
-
+inline u8 sdGetSePriority() { return _sePri; }
 
 // ---------------------------------------------------------------- 音を鳴らす
 /**

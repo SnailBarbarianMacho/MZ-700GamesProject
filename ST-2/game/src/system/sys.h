@@ -10,38 +10,57 @@
 
 #include "../../../../src-common/common.h"
 
+// ---------------------------------------------------------------- private 変数. 直接触らない
+extern u8   _sysCt;
+extern u16  _sysSceneCt;
+extern bool _bSysGame;
+extern u8   _sysSceneWork[8];
+
 // ---------------------------------------------------------------- システム
-/** システムの初期化を行います
- * - 引数は @see sysSetStep() を参照してください
- */
-void sysInit(void (*initFunc)(), void (*mainFunc)(u16));
+/** システムの初期化を行います */
+void sysInit();
 
 /** 毎フレームの最初に呼んでください */
-void sysMain(void) __z88dk_fastcall;
+void sysMain();
 
 /** 毎フレーム + 1 されるシステム カウンタを返します */
-u8 sysGetCounter() __z88dk_fastcall;
+inline u8 sysGetCounter() { return _sysCt; }
 
-// ---------------------------------------------------------------- ゲーム モード
-/** ゲーム モードをセットします. 初期値:false */
-void sysSetGameMode(const bool bGameMode) __z88dk_fastcall;
-/** 現在ゲームモードかセットします */
-bool sysIsGameMode() __z88dk_fastcall;
+// ---------------------------------------------------------------- ゲーム モード(アトラクトorゲーム)
+/** ゲーム モードをセットします(false/true = アトラクト/ゲーム). 初期値:false */
+inline void sysSetMode(const bool bGame) { _bSysGame = bGame; }
+/** 現在アトラクト モード(false)かゲーム モード(true)かを返します */
+inline bool sysIsGameMode() { return _bSysGame; }
 
-// ---------------------------------------------------------------- ステップ
-/** ステップを設定します
+// ---------------------------------------------------------------- シーン
+/** シーンを設定します
  * - サウンドはオフ (sdSetEnabled(false)) となります
- * - stepMain 系関数内からのみ呼んでください.
+ * - シーンの Main 関数内からのみ呼んでください.
  *   オブジェクトからは呼んでは行けません(無限ループになります)
- * @param initFunc ステップ初期化関数
+ * @param initFunc シーン初期化関数
  * @param mainFunc 毎フレーム呼ばれる関数.
- * - 引数はステップカウンタで, 0 になったら次のステップへ移るようにしてください
+ * - 引数はシーンカウンタで, 0 になったら次のシーンへ移るようにしてください
  */
-void sysSetStep(void (*initFunc)(), void (*mainFunc)(u16));
+void sysSetScene(void (*initFunc)(), void (*mainFunc)(u16));
+
 /**
- * ステップ カウンタを設定します.
- * 通常 sysSetStep() 内の initFunc() の中で呼ばれます
+ * シーン カウンタを設定します.
+ * 通常 sysSetScene() 内の initFunc() の中で呼ばれます
  */
-void sysSetStepCounter(const u16 counter) __z88dk_fastcall;
+inline void sysSetSceneCounter(const u16 counter) { _sysSceneCt  = counter; }
+
+/** 各シーンで自由に使えるワークを返します */
+inline u8 sysSceneGetWork(const u8 nr) { return _sysSceneWork[nr]; }
+/** 各シーンで自由に使えるワークをセットします */
+inline void sysSceneSetWork(const u8 nr, const u8 val) { _sysSceneWork[nr] = val; }
+/** 各シーンで自由に使えるワークを + 1 します */
+inline u8 sysSceneIncWork(const u8 nr) { return ++_sysSceneWork[nr]; }
+/** 各シーンで自由に使えるワークを + 1 します */
+inline u8 sysSceneDecWork(const u8 nr) { return --_sysSceneWork[nr]; }
+
+/** 各シーンで自由に使えるワークを返します(16bit版) */
+inline u16  sysSceneGetWork16(const u8 nr) { return ((u16*)_sysSceneWork)[nr]; }
+inline void sysSceneSetWork16(const u8 nr, u16 val) { ((u16*)_sysSceneWork)[nr] = val; }
+
 
 #endif // SYS_H_INCLUDED

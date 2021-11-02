@@ -79,11 +79,11 @@ typedef struct s_Obj // 構造体の大きさは 2 のべき乗であること!
     //    drawAddr は, x, y から計算されるアドレスです
     void (*drawFunc)(struct s_Obj* const, u8* drawAddr);
 
-    // ---- フラグ, 体力, 攻撃力, ステップ, カウンタ
+    // ---- フラグ, 体力, 攻撃力, シーン, カウンタ
     bool    bHit;           // 衝突検出
     u16     fitness;        // 体力
     u8      offence;        // 攻撃力 ヒットすると体力を減らしていく
-    u8      step;           // 汎用ステップ
+    u8      step;           // 汎用シーン
     u8      ct;             // 汎用カウンタ
 
     // ---- システム管理
@@ -132,6 +132,14 @@ typedef struct s_Obj // 構造体の大きさは 2 のべき乗であること!
 #define OBJ_OFFSET_WORK_PLAYER_BULLET_ATB1   26
 #define OBJ_OFFSET_WORK_PLAYER_BULLET_ATB2   27
 #define OBJ_OFFSET_WORK_ITEM_SUB_LEVEL       24
+
+// ---------------------------------------------------------------- private 変数. 直接触らない
+extern Obj* _pObjInUsePlayer;
+extern Obj* _pObjInUsePlayerBullet;
+extern Obj* _pObjInUseEnemy;
+extern Obj* _pObjInUseEnemyBullet;
+extern Obj* _pObjInUseItem;
+extern Obj* _pObjInUseEtc;
 
 // ---------------------------------------------------------------- システム
 /**
@@ -225,9 +233,9 @@ Obj* objCreateEtc(
 
 // ---------------------------------------------------------------- ユーティリティ
 /** 使用中のプレーヤー オブジェクトを返します. nullptr もありえます */
-Obj* objGetInUsePlayer();
+inline Obj* objGetInUsePlayer() { return _pObjInUsePlayer; }
 /** 使用中の敵オブジェクトを返します. nullptr もありえます */
-Obj* objGetUserdEnemy();
+inline Obj* objGetUserdEnemy() { return _pObjInUseEnemy; }
 
 
 #endif // OBJ_H_INCLUDED

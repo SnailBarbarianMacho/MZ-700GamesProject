@@ -1,14 +1,14 @@
 /**
- * ゲーム ステップ
+ * ロゴ シーン
  * @author Snail Barbarian Macho (NWK)
  */
-#ifndef STEP_GAME_H_INCLUDED
-#define STEP_GAME_H_INCLUDED
+#ifndef SCENE_LOGO_H_INCLUDED
+#define SCENE_LOGO_H_INCLUDED
 
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- 初期化, メイン
-void stepGameInit();
-void stepGameMain(u16 stepCounter);
+void sceneLogoInit();
+void sceneLogoMain(u16 sceneCounter);
 
-#endif  // STEP_GAME_H_INCLUDED
+#endif  // SCENE_TITLE_H_INCLUDED
