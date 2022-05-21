@@ -11,6 +11,10 @@
   HAL 研究所の製品ならば, GSW スイッチを OFF にします. 互換ハードウェアの場合, 取説に従ってください<br>
   If you are using third party PCG hardware(eg. HAL Lab. PCG-700), please disable it.<br>
   For HAL Laboratory products, turn off the GSW switch. For compatible hardware, follow the instructions.
+* MZ-1R12(SRAM メモリ カード), MZ-1E05(FDD I/F), MZ-1E14(QD I/F) を装着している場合, 起動しない場合があります. <br>
+  原因は不明です. その場合は, これらを切り離してください.
+  If MZ-1R12 (SRAM memory card), MZ-1E05 (FDD I/F), MZ-1E14 (QD I/F) is installed, it may not start.<br>
+  The cause is unknown. In that case, disconnect them.
 * MZ-1500 の場合, リセットすると動かなくなるプログラムがあるかもしれません. その場合はロードし直してください.<br>
   For the MZ-1500, some programs may stop working after resetting. Please reload.
 * MZ-700 に不可能はない! "MZ-700 has NO LIMIT!"
@@ -32,6 +36,9 @@
   三重和音サウンドテスト <br>
   3 chord sound test.<br>
   https://www.youtube.com/watch?v=Qs5GZ-hzjp4
+* **SoundTest2** <br>
+  三重和音サウンドテスト2 (波形合成改良版) <br>
+  3 chord sound test.<br>
 * **ST-2** <br>
   習作 縦シュー<br>
   Study shooting game.<br>
