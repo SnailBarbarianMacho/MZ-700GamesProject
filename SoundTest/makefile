@@ -20,7 +20,7 @@ sound.o: sound.c sound.h
 $(OUTFILE).bin: $(OBJS) $(CRT0)
 	@echo Linking ... [$@]
 	@$(CC) +mz -mz80 -o $@ $(OBJS) -crt0$(CRT0) -zorg=$(ORG)
-	@php $(TOOLS)/makeMzt.php $@ $(PROG_NAME) $(ORG) $(ORG) $(OUTFILE).mzt
+	@php $(TOOLS)/make_mzt.php $@ $(PROG_NAME) $(ORG) $(ORG) $(OUTFILE).mzt
 
 %.o: %.c
 	@echo Compiling ... [$<]

@@ -9,20 +9,26 @@
 #include "sound.h"
 
 #define ADDR_SD3_ATT_TAB 0x0000
+#define SZ_SD3_ATT_TAB   0x0040
 
 // -------------------------------- システム
 void soundInit() __z88dk_fastcall
 {
+    STATIC_ASSERT(SD3_C2 <= 255.0, SOUND_LENGTH_OVERFLOW); // 低音のループが 255 を越える
+    STATIC_ASSERT(SD3_G4 >  30.0,  SOUND_LENGTH_UNDERLOW); // 高音のループが 30  以下
+
 __asm
     // -------- 減衰テーブルの作成 -アドレスは 0x100 単位に作ってアクセスしやすいようにします
     // 減衰テーブルのコピー
     ld      HL, _sSound3AttTab
-    ld      DE, ADDR_SD3_ATT_TAB
-    ld      BC, 0x40
+    ld      DE, #ADDR_SD3_ATT_TAB
+    ld      BC, #SZ_SD3_ATT_TAB
     ldir
-    // 残りは 0x01 で埋める
-    ld      A,  0x01
-    ld      B,  0xc0
+    // 残りはテーブル最後の値で埋める
+    ld      E, #SZ_SD3_ATT_TAB - 1
+    ld      A, (DE)
+    inc     E
+    ld      B, #(0x100 - SZ_SD3_ATT_TAB)
 SOUND_INIT_ATT_TAB:
     ld      (DE), A
     inc     E
@@ -58,16 +64,6 @@ __endasm;
 
 
 // -------------------------------- 三重和音サウンド
-static u16* spMml0;     // サウンド データへのポインタ
-static u16* spMml1;
-static u16* spMml2;
-static u8   sSdLen0;    // 音長カウンタ初期値(8bit)
-static u8   sSdLen1;
-static u8   sSdLen2;
-static u8   sWaveLen0;  // 波長初期値(8bit)
-static u8   sWaveLen1;
-static u8   sWaveLen2;
-
 // 一時的に使うワークエリア
 #define ADDR_TMP_SP     0x100 + 10  // スタック ポインタの場所
 
@@ -82,139 +78,121 @@ static const u8 sSound3AttTab[] = {
 #pragma save
 void sd3Play(const u8* mml0, const u8* mml1, const u8* mml2) __naked
 {
-    // 初期化
-    // HL' BC' DE' = 音長カウンタ = 0x0000 (マクロの外で設定)
-    // B D E       = 波長カウンタ
-#define SD3_INIT(pMml, waveLen, sdLen, waveLenCtReg) \
-    pop     HL                      ; HL = MML\
-    ; ---- 波長初期値, カウンタ\
-    ld      A, (HL)                 ; A = 波長\
-    ld      (waveLen), A            ; 波長初期値\
-    ld      waveLenCtReg, A         ; 波長カウンタ\
-    inc     HL                      \
-    ; ---- 音長初期値\
-    ld      A, (HL)                 ; A = 音長\
-    ld      (sdLen), A              \
-    inc     HL                      \
-    ; ---- MML ポインタ\
-    ld      (pMml), HL              ; HL = MML
+    //                        <------->減衰 att
+    // --+                    +-------+                    +-------+
+    //   |                    |       |                    |       |
+    //   +--------------------+       +--------------------+       +----- ... -----
+    //   <----------------------------> 波長 wave_len (8bit)
+    //   <-------------------- 音長 sd_len (16bit) ---------------------- ... ----->
 
-    // メイン
-    // HL' BC' DE' = 音長カウンタ = 0x0000 (マクロの外で設定)
-    // B D E       = 波長カウンタ
-    // C = 8253 出力データ(MIO_8253_CH0_MODE0 or MIO_8253_CH0_MODE3)
-    // H = ADDR_SD3_ATT_TAB の上位 8 bit
-    // L 破壊
-#define SD3_MAIN(pMml, waveLen, sdLen, sdLenRegH, sdLenRegL, waveLenCtReg, pushHL, popHL, LABEL_SD_LEN_END, LABEL_SD_WAVE_PULSE, LABEL_SD_WAVE_LEN, LABEL_SD_END) \
-    ; ---------------- sound length 音長 \
-    ; ---- 音長カウンタ -- \
-    exx                             ;  4\
-        inc sdLenRegH##sdLenRegL    ;  6\
-        ld  A, (sdLen)              ; 13\
-        cp  A, sdLenRegH            ;  4\
-        jp  nz, LABEL_SD_LEN_END    ; 10 if (sound length == 0) { read next MML }\
-            pushHL                  ; 11 / 0\
-            ld  HL, (pMml)          ; 16\
-    ;---- 波長初期値\
-            ld  A, (HL)             ;  7 A = 波長初期値\
-            and A                   ;  4\
-            jp  z, SD3_END       ; 10 if (A == 0) goto end \
-            ld  (waveLen), A        ; 13\
-            inc HL                  ;  4\
-    ;---- 音長初期値\
-            ld  A, (HL)             ;  7 A = 音長初期値\
-            ld  (sdLen), A          ; 13\
-            inc HL                  ;  6\
-    ;---- MML\
-            ld  (pMml), HL          ; 16 HL = MML\
-            popHL                   ; 10\
-    ;---- 音長カウンタ\
-            ld sdLenRegH##sdLenRegL, 0x0000; 10\
-    ;---- 波長カウンタは初期化しません\
-    exx                             ;  4\
-    jp      LABEL_SD_END            ; 10 / 0\
-    ;\
-LABEL_SD_LEN_END:\
-        ld  A, sdLenRegH            ;  4 音長カウンタ 上位 8bit\
-    exx                             ;  4\
-    ; ---------------- wave length 波長 \
-    ; ---- if (waveLenReg <= sound3AttTab[A]) { C = MIO_8253_CH0_MODE3; }\
-    ld      L, A                    ;  4 HL = sound3 att table\
-    ld      A, (HL);                ;  7 offset is self-modify\
-    cp      A, waveLenCtReg         ;  4\
-    jp      c, LABEL_SD_WAVE_PULSE  ; 10  (if A > WaveLenCtReg) .. \
-        ld  C, MIO_8253_CH0_MODE3   ;  7\
-;\
-LABEL_SD_WAVE_PULSE:\
-    ; ---- wave length Loop\
-    dec     waveLenCtReg            ;  4\
-    jp      nz, LABEL_SD_WAVE_LEN   ; 10\
-        ld  A, (waveLen)            ; 13\
-        ld  waveLenCtReg, A         ;  4\
-    ;\
-LABEL_SD_WAVE_LEN:\
-    ;\
+    // -------------------------------- 初期化マクロ
+    // スタックより MML を読みだす
+    // @param sd_ct_reg_h, sd_ct_reg_l: HL'  BC'  DE' 音長カウンタ(減衰テーブル検索の為に, インクリメント カウンタになってます)
+    // @param wave_ct_reg:              B    D    E   波長カウンタ(デクリメント カウンタ)
+    // @param LABEL_SD_SD_LEN                         音長の上位 8bit
+    // @param LABEL_SD_MML                            MML ポインタ(自己書換)
+    // @param LABEL_SD_WAVE_CT                        波長カウンタ(自己書換)
+#define SD3_INIT(sd_ct_reg_h, sd_ct_reg_l, sd_ct_reg_hl, wave_ct_reg, \
+    LABEL_SD_SD_LEN, LABEL_SD_MML, LABEL_SD_WAVE_CT) \
+    pop     HL                          /* MML ポインタ             */ \
+    ; ---- 波長初期値, カウンタ         /*                          */ \
+    ld      A, (HL)                     /*                          */ \
+    ld      (LABEL_SD_WAVE_CT + 1), A   /* 波長カウンタ    自己書換 */ \
+    ld      wave_ct_reg, A              /* 波長カウンタ             */ \
+    inc     HL                          /*                          */ \
+    ; ---- 音長初期値                   /*                          */ \
+    ld      A, (HL)                     /*                          */ \
+    ld      (LABEL_SD_SD_LEN + 1), A    /* 音長の上位 8bit 自己書換 */ \
+    inc     HL                          /*                          */ \
+    ld      (LABEL_SD_MML    + 1), HL   /* MML ポインタ    自己書換 */ \
+    exx                                 /*                          */ \
+        ld  sd_ct_reg_hl, 0x0000        /* 音長カウンタ初期化       */ \
+    exx                                 /*                          */
+
+    // -------------------------------- 波形生成と合成マクロ
+    // @param sd_ct_reg_h, sd_ct_reg_l  HL'  BC'  DE'   音長カウンタ(減衰テーブル検索の為に, インクリメント カウンタになってます)
+    // @param wave_ct_reg               B    D    E     波長カウンタ(デクリメント カウンタ)
+    // @param LABEL_SD_SD_LEN                           音長の上位 8bit
+    // @param LABEL_SD_MML                              MML ポインタ(自己書換)
+    // @param LABEL_SD_WAVE_CT                          波長カウンタ(自己書換)
+    // 暗黙:                            C               パルス値 MIO_8253_CH0_MODE0 or MIO_8253_CH0_MODE3
+    // 暗黙:                            H               ADDR_SD3_ATT_TAB の上位 8 bit
+    // 破壊:                            A, L
+    // 未使用:                          IX, IY, I, A'
+#define SD3_MAIN(sd_ct_reg_h, sd_ct_reg_l, sd_ct_reg_hl, wave_ct_reg, \
+    LABEL_SD_SD_LEN, LABEL_SD_MML, LABEL_SD_LEN_END, LABEL_SD_PULSE_END, LABEL_SD_WAVE_CT, LABEL_SD_END) \
+    /* ---------------- 次の MML を読む */                                             \
+    exx                                         /*  4 |                             */ \
+        inc sd_ct_reg_hl                        /*  6 |  音長カウンタ               */ \
+        ld  A,  sd_ct_reg_h                     /*  4 |  音長カウンタ上位 8bit      */ \
+LABEL_SD_SD_LEN:                                                                       \
+        cp  A,  0x00                            /*  7 |  音長の上位 8bit 自己書換   */ \
+        jp  nz, LABEL_SD_LEN_END                /* 10 +-計31                        */ \
+LABEL_SD_MML:                                                                          \
+            ld  sd_ct_reg_hl, 0x0000            /* 10    MML ポインタ       自己書換*/ \
+            /* ---- 波長                                                            */ \
+            ld  A, (sd_ct_reg_hl)               /*  7    波長初期値                 */ \
+            and A                               /*  4                               */ \
+            jp  z, SD3_END                      /* 10    if (A == 0) goto end       */ \
+            ld (LABEL_SD_WAVE_CT + 1), A        /* 13    波長カウンタ初期値 自己書換*/ \
+            inc sd_ct_reg_hl                    /*  6                               */ \
+            /* ---- 音長                                                            */ \
+            ld  A, (sd_ct_reg_hl)               /*  7    音長の上位 8bit            */ \
+            inc sd_ct_reg_hl                    /*  6                               */ \
+            ld  (LABEL_SD_MML + 1), sd_ct_reg_hl/* 16/20 MML ポインタ       自己書換*/ \
+            ld  (LABEL_SD_SD_LEN + 1), A        /* 13    音長の上位 8bit    自己書換*/ \
+            ld  sd_ct_reg_hl, 0x0000            /*  8                               */ \
+                                                /* 波長カウンタ(B,D,E)は初期化しなくてもOK */ \
+            ld  A, sd_ct_reg_h                  /*  4    音長カウンタ上位 8bit      */ \
+LABEL_SD_LEN_END:                                                                      \
+    /* ---------------- パルス生成                                                  */ \
+    exx                                         /*  4 |                             */ \
+    /* ---- if (sound3AttTab[A] - wave_ct_reg >= 0) { C = 波形 '1'; }               */ \
+    ld      L, A                                /*  4 | HL = sound3 att table       */ \
+    ld      A, (HL)                             /*  7 |                             */ \
+    cp      A, wave_ct_reg                      /*  4 |                             */ \
+    jp      c, LABEL_SD_PULSE_END               /* 10 +-計29                        */ \
+        ld  C, MIO_8253_CH0_MODE3               /*  7                               */ \
+LABEL_SD_PULSE_END:                                                                    \
+    /* ---------------- 波長ループの終わり                                          */ \
+    dec     wave_ct_reg                         /*  4 |                             */ \
+    jp      nz, LABEL_SD_END                    /* 10 +- 計14                       */ \
+LABEL_SD_WAVE_CT:                                                                      \
+        ld  wave_ct_reg, 0x00                   /*  7   波長カウンタ        自己書換*/ \
 LABEL_SD_END:
 
-// CPU クロックの計算                     loop start
-//                                          |7
-//                                        -----
-//                                          |37
-//                +-------------------------+
-// sound len == 0 |                         |33
-//                |                  +------+
-//                |    wave len < 10 |7     |
-//                |                  +------+
-//             131|                         |14
-//                |                  +------+
-//                |    wave len == 0 |17    |
-//                |                  +------+
-//                |                         |
-//                +-------------------------+
-//                                          |
-//                                        -----
-//                                          |27
-//                                       loop end
-// 最短の場合の時間
-// (減衰なし) 40 + (46+14+13)*3 + 27 = 286 clocks
-// (減衰あり)  7 + (37+33+14)*3 + 27 = 286 clocks
 
 __asm
-    // ---------------- 初期化
+    // -------------------------------- 初期化
     ld      (SD3_SP_RESTORE + 1), SP// SP を保存(自己書換)
     pop     HL                      // リターン アドレス(捨てる)
 
-    SD3_INIT(_spMml0, _sWaveLen0, _sSdLen0, B)
-    SD3_INIT(_spMml1, _sWaveLen1, _sSdLen1, D)
-    SD3_INIT(_spMml2, _sWaveLen2, _sSdLen2, E)
-    ld      SP, #ADDR_TMP_SP
-    // 音長カウンタの初期化
-    exx
-        ld  HL, 0x0000  // HL' 音長カウンタ 0 = 0x0000
-        ld  BC, HL      // BC' 音長カウンタ 1 = 0x0000
-        ld  DE, HL      // DE' 音長カウンタ 2 = 0x0000
-    exx
+    SD3_INIT(H, L, HL, B, SD3_SD_LEN0, SD3_MML0, SD3_WAVE_CT0)
+    SD3_INIT(B, C, BC, D, SD3_SD_LEN1, SD3_MML1, SD3_WAVE_CT1)
+    SD3_INIT(D, E, DE, E, SD3_SD_LEN2, SD3_MML2, SD3_WAVE_CT2)
 
     // バンクを切り替えて, 8253 にアクセスするようにします
     ld      C, 0xe3
     out     (C), A  // 値はなんでもいい
 
-    // ---------------- 波形合成
-    ld      H, ADDR_SD3_ATT_TAB >> 8// 減衰テーブル
+    ld      H, ADDR_SD3_ATT_TAB >> 8 // 減衰テーブル
+    // -------------------------------- 波形合成&出力ループ
 SD3_LOOP:
     ld      C, #MIO_8253_CH0_MODE0  // 7
-    SD3_MAIN(_spMml0, _sWaveLen0, _sSdLen0, H, L, B,        ,       , SD3_SD_LEN_END0, SD3_SD_WAVE_PULSE0, SD3_SD_WAVE_LEN0, SD3_SD_END0)
-    SD3_MAIN(_spMml1, _sWaveLen1, _sSdLen1, B, C, D, push HL, pop HL, SD3_SD_LEN_END1, SD3_SD_WAVE_PULSE1, SD3_SD_WAVE_LEN1, SD3_SD_END1)
-    SD3_MAIN(_spMml2, _sWaveLen2, _sSdLen2, D, E, E, push HL, pop HL, SD3_SD_LEN_END2, SD3_SD_WAVE_PULSE2, SD3_SD_WAVE_LEN2, SD3_SD_END2)
-
+    SD3_MAIN(H, L, HL, B, SD3_SD_LEN0, SD3_MML0, SD3_LEN_END0, SD3_PULSE_END0, SD3_WAVE_CT0, SD3_END0)
+    SD3_MAIN(B, C, BC, D, SD3_SD_LEN1, SD3_MML1, SD3_LEN_END1, SD3_PULSE_END1, SD3_WAVE_CT1, SD3_END1)
+    SD3_MAIN(D, E, DE, E, SD3_SD_LEN2, SD3_MML2, SD3_LEN_END2, SD3_PULSE_END2, SD3_WAVE_CT2, SD3_END2)
 SD3_LOOP_END:
     // ---------------- 波形出力
-    ld      A, C                    // 4
-    ld      (#MIO_8253_CTRL), A     // 13
-    jp      SD3_LOOP                // 10
+    ld      A, C                    //  4 |
+    ld      (#MIO_8253_CTRL), A     // 13 |
+    jp      SD3_LOOP                // 10 +- 計 17
+
+    // ループ内の Tステート数(周波数)
+    // SD3_MAIN 内最短: 7 + (31+29+14)*3 + 17 = 246 (14500Hz)
 
 SD3_END:
-    // ---------------- 後始末
+    // -------------------------------- 後始末
     // 8253 を元の設定に戻します
     ld      A, MIO_8253_CH0_MODE3
     ld      (#MIO_8253_CTRL), A
@@ -228,4 +206,7 @@ SD3_SP_RESTORE:
     ret
 __endasm;
 }
+
+
+
 #pragma restore

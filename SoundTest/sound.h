@@ -78,7 +78,7 @@
 #define SOUND_FREQ_C7   2093.005
 
 // -------------------------------- sd3Play() 三重和音の音程
-#define SD3_SAMPLE_DURATION (286.0 / 3579545.0)    // 三重和音 1 ループ内での時間
+#define SD3_SAMPLE_DURATION (240.0 / 3579545.0)    // 三重和音 1 ループ内での時間
 #define SD3_LT(freq)  (u8)(1.0f / freq / SD3_SAMPLE_DURATION + 0.0f)// 内部使用. ループ回数
 
 #define SD3_C2    SD3_LT(SOUND_FREQ_C2)
