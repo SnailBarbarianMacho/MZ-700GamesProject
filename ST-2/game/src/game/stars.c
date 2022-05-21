@@ -13,8 +13,8 @@
 #include "stars.h"
 
 // ------------------------------- 変数, マクロ, 構造体
-bool _bStarsEnabled;
-u8   _starsCounter;
+bool b_stars_enabled_;
+u8   stars_counter_;
 
 #define NR_NEAR_STARS 10   // 最小 1
 #define NR_FAR_STARS  50   // 最小 1, 最大 合計 85 - 2 = 83
@@ -23,26 +23,26 @@ u8   _starsCounter;
  * 星 1 個 1 個 Obj で処理するのは重いので,
  * 専用のワークで高速化する
  */
-typedef struct _Star
+typedef struct s_Star
 {
     u8  col;
     u8  x, y;
 } Star;
 
-static Star* const StarsFar  = (Star*)ADDR_STARS;
-static Star* const StarsNear = (Star*)(ADDR_STARS + (NR_FAR_STARS + 1) * sizeof(Star));
+static Star* const stars_far_  = (Star*)ADDR_STARS;
+static Star* const stars_near_ = (Star*)(ADDR_STARS + (NR_FAR_STARS + 1) * sizeof(Star));
 
 // ---------------------------------------------------------------- 初期化
 void starsInit()
 {
-    _bStarsEnabled = true;
-    _starsCounter  = 0;
+    b_stars_enabled_ = true;
+    stars_counter_  = 0;
 
-    StarsNear[NR_NEAR_STARS].col = 0;
-    StarsFar[NR_FAR_STARS].col = 0;
+    stars_near_[NR_NEAR_STARS].col = 0;
+    stars_far_[NR_FAR_STARS].col = 0;
     Star* p;
 
-    p = StarsFar;
+    p = stars_far_;
     for (u8 i = NR_FAR_STARS; 0 < i; i--, p++)
     {
         p->x   = rand8_40();
@@ -50,7 +50,7 @@ void starsInit()
         p->col = rand8_7() * 0x10 + 0x10;
     }
 
-    p = StarsNear;
+    p = stars_near_;
     for (u8 i = NR_NEAR_STARS; 0 < i; i--, p++)
     {
         p->x   = rand8_40();
@@ -63,11 +63,11 @@ void starsInit()
 // ---------------------------------------------------------------- メイン
 void starsMain()
 {
-//printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 10)); printU8(StarsNear[0].col); printU8(StarsNear[0].x); printU8(StarsNear[0].y); printU8(StarsNear[1].col);
-//printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 11)); printU16((u16)StarsFar); printU16((u16)StarsNear);
+//printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 10)); printU8(stars_near_[0].col); printU8(stars_near_[0].x); printU8(stars_near_[0].y); printU8(stars_near_[1].col);
+//printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 11)); printU16((u16)stars_far_); printU16((u16)stars_near_);
 #if 0
     if (sbStarsTimer & 1) {
-        for (Star* p = StarsFar; p->col; p++) {
+        for (Star* p = stars_far_; p->col; p++) {
             p->y++;
             if (VRAM_HEIGHT <= p->y) {
                 p->x = rand8() % VRAM_WIDTH;
@@ -75,30 +75,30 @@ void starsMain()
             }
         }
     }
-    for (Star* p = StarsFar; p->col; p++) {
+    for (Star* p = stars_far_; p->col; p++) {
         u8* addrF = (u8*)VVRAM_TEXT_ADDR(p->x, p->y);
-        *addrF = CHAR_1DOT;
+        *addrF = DC_1DOT;
         addrF += VRAM_WIDTH + VRAM_GAP;
         *addrF = p->col;
     }
-    for (Star* p = StarsNear; p->col; p++) {
+    for (Star* p = stars_near_; p->col; p++) {
         p->y++;
         if (VRAM_HEIGHT <= p->y) {
             p->x = rand8() % VRAM_WIDTH;
             p->y = 0;
         }
         u8* addrN = (u8*)VVRAM_TEXT_ADDR(p->x, p->y);
-        *addrN = CHAR_PERIOD;
+        *addrN = DC_PERIOD;
         addrN += VRAM_WIDTH + VRAM_GAP;
         *addrN = p->col;
     }
 #else
 __asm
     // ---------------- 星の描画許可
-    ld      a, (#__bStarsEnabled)
+    ld      a, (#_b_stars_enabled_)
     and     a
     ld      a, 1
-    ld      (#__bStarsEnabled), a
+    ld      (#_b_stars_enabled_), a
     ret     z
 __endasm;
 
@@ -111,13 +111,13 @@ __endasm;
 
     // --------------- 遠景の星々(移動)
 __asm
-    ld      HL, #__starsCounter     // _starsCounter++
+    ld      HL, #_stars_counter_     // stars_counter_++
     ld      A, (HL)
     inc     A
     ld      (HL), A
     and     A, 1
     jp      z, STARS_MAIN_FAR_DRAW
-    ld      HL, (#_StarsFar)
+    ld      HL, (#_stars_far_)
 
     // ---- ループ
 STARS_MAIN_FAR_MOVE_LOOP:
@@ -156,7 +156,7 @@ __endasm;
     // --------------- 遠景の星々(表示)
 __asm
 STARS_MAIN_FAR_DRAW:
-    ld      HL, (#_StarsFar)
+    ld      HL, (#_stars_far_)
 
     // ---- ループ
     ld      A, (HL)         // col
@@ -171,7 +171,7 @@ STARS_MAIN_FAR_DRAW_LOOP:
     exx
         pop HL              // yx
         add HL, DE          // VRAM
-        ld  (HL), CHAR_1DOT
+        ld  (HL), DC_1DOT
         add HL, BC          // ATB
         ld  (HL), A         // col
     exx
@@ -185,7 +185,7 @@ __endasm;
 
     // --------------- 近景の星々(移動+表示)
 __asm
-    ld      HL, (#_StarsNear)
+    ld      HL, (#_stars_near_)
 
     // ---- ループ
     ld      A, (HL)         // col
@@ -225,7 +225,7 @@ MAIN_NEAR_MOVE:
     exx
         pop HL              // yx
         add HL, DE          // VRAM
-        ld  (HL), CHAR_PERIOD
+        ld  (HL), DC_PERIOD
         add HL, BC          // ATB
         ld  (HL), A         // col
     exx

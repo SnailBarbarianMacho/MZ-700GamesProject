@@ -11,14 +11,13 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- private 変数. 直接触らない
-
-extern u16  _score;
-extern u8   _scoreLevel;
-extern bool _bScoreEnabled;
-extern u16  _scoreNrContinues;
-extern u16  _scoreNrMisses;
+extern u16  score_;
+extern u8   score_level_;
+extern bool b_score_enabled_;
+extern u16  score_nr_continues_;
+extern u16  score_nr_misses_;
 #if DEBUG
-extern const u8* _scoreStepStr;
+extern const u8* score_step_str_;
 #endif
 
 // ---------------------------------------------------------------- マクロ
@@ -33,7 +32,7 @@ void scoreMain() __z88dk_fastcall;
 
 // ---------------------------------------------------------------- 制御
 /** スコア等の描画を停止します. 次のフレームでは許可されます */
-inline void scoreSetDisabled() { _bScoreEnabled = false; }
+inline void scoreSetDisabled() { b_score_enabled_ = false; }
 
 // ---------------------------------------------------------------- スタート, コンティニュー
 /** スコアを 0 点に初期化します. アトラクト モード時は初期化しません */
@@ -41,13 +40,13 @@ void scoreGameStart()__z88dk_fastcall;
 /** スコアを 0 点に初期化します */
 void scoreContinue()__z88dk_fastcall;
 /** コンティニュー回数 */
-inline u16 scoreGetNrContinues() { return _scoreNrContinues; }
+inline u16 scoreGetNrContinues() { return score_nr_continues_; }
 /** ミス回数 */
-inline u16 scoreGetNrMisses() { return _scoreNrMisses; }
+inline u16 scoreGetNrMisses() { return score_nr_misses_; }
 
 // ---------------------------------------------------------------- スコア, ハイ スコア
 /** スコアを返します */
-inline u16 scoreGet() { return _score; }
+inline u16 scoreGet() { return score_; }
 
 /** スコアを加算します. アトラクト モード時は加算しません
  * @return 残機が増えたなら true
@@ -68,19 +67,19 @@ bool scoreDecrementLeft()__z88dk_fastcall;
 // ---------------------------------------------------------------- レベル
 /** サブ レベルを増加します
  * サブ レベルが 4 * 4 * 7 になったらレベル アップ
- * @param subLevel
+ * @param sub_level
  */
-void scoreAddSubLevel(const u8 subLevel)__z88dk_fastcall;
+void scoreAddSubLevel(const u8 sub_level)__z88dk_fastcall;
 /** レベルを返します */
-inline u8 scoreGetLevel() { return _scoreLevel; }
+inline u8 scoreGetLevel() { return score_level_; }
 /** レベルをリセットします */
-inline void scoreResetLevel() { _scoreLevel = 1; }
+inline void scoreResetLevel() { score_level_ = 1; }
 
 
 // ---------------------------------------------------------------- デバッグ
 #if DEBUG
 /** 現在のシーンを表示します */
-inline void scoreSetStepString(const u8* const str) { _scoreStepStr = str; }
+inline void scoreSetStepString(const u8* const str) { score_step_str_ = str; }
 #endif
 
 #endif // SCORE_H_INCLUDED

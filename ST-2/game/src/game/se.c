@@ -10,8 +10,8 @@
 
 // ---------------------------------------------------------------- SE
 // -------------------------------- スタート
-#define SE_START_CT     48
-#define SE_SUB_STAGE_START_CT  64
+#define SE_START_CT           48
+#define SE_SUB_STAGE_START_CT 64
 
 static void seStart(u8 ct)          // スタート
 {
@@ -112,7 +112,7 @@ static void seChime(u8 ct)
 
 
 // ---------------------------------------------------------------- テーブル
-const SeSequencerDesc _seSequencerTab[NR_SES] = {
+const SeSequencerDesc SE_SEQUENCE_TAB_[NR_SES] = {
     { seStart,          SD_SE_PRIORITY_2, SE_START_CT           },
     { seSubStageStart,  SD_SE_PRIORITY_1, SE_SUB_STAGE_START_CT },
     { seLevelUp,        SD_SE_PRIORITY_0, SE_LEVEL_UP_CT        },

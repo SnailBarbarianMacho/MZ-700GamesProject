@@ -16,15 +16,15 @@
 // ---------------------------------------------------------------- 変数, マクロ
 #define NR_SE_SEQUENCERS 4
 
-u16  (*_bgmMain)(u16);                   // サウンド BGM シーケンサ
-u16    _bgmCt;                           // サウンド BGM シーケンサ カウンタ
-u8     _sePri;                           // サウンド SE 優先順位
-void (*_seMains[NR_SE_SEQUENCERS])(u8);  // サウンド SE シーケンサ
-u8     _seCts[NR_SE_SEQUENCERS];         // サウンド SE シーケンサ カウンタ
+u16  (*bgm_main_)(u16);                   // サウンド BGM シーケンサ
+u16    bgm_ct_;                           // サウンド BGM シーケンサ カウンタ
+u8     se_pri_;                           // サウンド SE 優先順位
+void (*se_mains_[NR_SE_SEQUENCERS])(u8);  // サウンド SE シーケンサ
+u8     se_cts_[NR_SE_SEQUENCERS];         // サウンド SE シーケンサ カウンタ
 
 // ---------------------------------------------------------------- システム(初期化)
 // -------- sd1 音程テーブル
-static const u16 sSdScaleTab[] = {
+static const u16 SD_SCALE_TAB_[] = {
     0, 0x0000,  // 停止と休符
     SD_MAKE_INTERVAL(SD_FREQ_C2),  SD_MAKE_INTERVAL(SD_FREQ_CS2), SD_MAKE_INTERVAL(SD_FREQ_D2),  SD_MAKE_INTERVAL(SD_FREQ_DS2),
     SD_MAKE_INTERVAL(SD_FREQ_E2),  SD_MAKE_INTERVAL(SD_FREQ_F2),  SD_MAKE_INTERVAL(SD_FREQ_FS2), SD_MAKE_INTERVAL(SD_FREQ_G2),
@@ -40,7 +40,7 @@ static const u16 sSdScaleTab[] = {
 };
 
 // -------- sd3 減衰テーブル
-static const u8 sSd3AttTab[] = {
+static const u8 SD_ATT_TAB_[] = {
 #if 1
     4,10,15,17,  14,10,9, 8,  8, 7, 7, 6,  6, 5, 5, 5,
     4, 4, 4, 4,  3, 3, 3, 3,  3, 3, 3, 3,  2, 2, 2, 2,
@@ -59,14 +59,14 @@ static void sdInitSub() __z88dk_fastcall
 {
 __asm
     // -------- 減衰テーブルの作成
-    ld      HL, _sSdScaleTab
+    ld      HL, _SD_SCALE_TAB_
     ld      DE, #ADDR_SD_SCALE_TAB
     ld      BC, #((2 + 12 + 12 + 12) * 2)
     ldir
 
     // -------- 減衰テーブルの作成
     // 減衰テーブルのコピー
-    ld      HL, _sSd3AttTab
+    ld      HL, _SD_ATT_TAB_
     ld      DE, #ADDR_SD3_ATT_TAB
     ld      BC, 0x40
     ldir
@@ -82,10 +82,10 @@ __endasm;
 
 void sdInit()
 {
-    _bgmMain  = nullptr;
-    _sePri    = 0xff;
+    bgm_main_  = nullptr;
+    se_pri_    = 0xff;
     for (u8 i = 0; i < NR_SE_SEQUENCERS; i++) {
-        _seMains[i] = nullptr;
+        se_mains_[i] = nullptr;
     }
     sdInitSub();
 }
@@ -94,9 +94,9 @@ void sdInit()
 // ---------------------------------------------------------------- システム(メイン)
 void sdBgmMain()
 {
-    u16 (*main)(u16) = _bgmMain;
-    if (main) {
-        _bgmCt = main(_bgmCt);
+    u16 (*main_func)(u16) = bgm_main_;
+    if (main_func) {
+        bgm_ct_ = main_func(bgm_ct_);
     }
 }
 void sdSeMain()
@@ -104,20 +104,20 @@ void sdSeMain()
     // SE シーケンサ
     u8 i = 0;
     for (; i < NR_SE_SEQUENCERS; i++) {
-        void (*main)(u8) = _seMains[i];
-        if (main) {
-            u8 ct = _seCts[i];
+        void (*main_func)(u8) = se_mains_[i];
+        if (main_func) {
+            u8 ct = se_cts_[i];
             ct--;
-            main(ct);
+            main_func(ct);
             if (ct == 0) {
-                _seMains[i] = nullptr;
-                _sePri  = 0xff;       // 鳴り終わったらシーケンサー優先度をリセットする
+                se_mains_[i] = nullptr;
+                se_pri_  = 0xff;       // 鳴り終わったらシーケンサー優先度をリセットする
                 sdMake(0x0000);       // 音は止める
             } else {
                 // 優先順位の低いシーケンサーは削除
-                _seCts[i] = ct;
+                se_cts_[i] = ct;
                 for (i++; i < NR_SE_SEQUENCERS; i++) {
-                    _seMains[i] = nullptr;
+                    se_mains_[i] = nullptr;
                 }
                 break;
             }
@@ -146,8 +146,9 @@ SOUND_SET_ENABLED:
     ld      (HL), A
 
     // ---------------- 音も止めます
+    // モードを再セットするとカウンタは止まります
     ld      A, #MIO_8253_CH0_MODE3
-    dec     L               // L = MIO_8253_CTRL
+    dec     L                       // L = MIO_8253_CTRL
     ld      (HL), A
 
     // ---------------- 後始末
@@ -161,20 +162,20 @@ __endasm;
 // ---------------------------------------------------------------- サウンド シーケンサ
 void sdPlayBgm(const u8 bgm) __z88dk_fastcall
 {
-    const BgmSequencerDesc* const pTab = bgmGetSequencerDesc(bgm);
-    _bgmMain = pTab->main;
-    _bgmCt   = 0;
-    if (pTab->init) { pTab->init(); }
+    const BgmSequencerDesc* const p_tab = bgmGetSequencerDesc(bgm);
+    bgm_main_ = p_tab->main_func;
+    bgm_ct_   = 0;
+    if (p_tab->init_func) { p_tab->init_func(); }
 }
 
 void sdPlaySe(const u8 se) __z88dk_fastcall
 {
-    const SeSequencerDesc* const pTab = seGetSequencerDesc(se);
-    u8 priority = pTab->priority;
-    if (priority <= _sePri) {
-        _sePri = priority;
-        _seMains[priority] = pTab->main;
-        _seCts[priority] = pTab->ct;
+    const SeSequencerDesc* const p_tab = seGetSequencerDesc(se);
+    u8 priority = p_tab->priority;
+    if (priority <= se_pri_) {
+        se_pri_ = priority;
+        se_mains_[priority] = p_tab->main_func;
+        se_cts_[priority] = p_tab->ct;
     }
 }
 
@@ -197,6 +198,7 @@ __asm
     ld      A, H
     or      A, L
     jp      nz, SDM_NON_ZERO
+        // モードを再セットするとカウンタは止まります
         ld  A, #MIO_8253_CH0_MODE3
         ld  (#MIO_8253_CTRL), A
         jp  SDM_END
@@ -204,11 +206,10 @@ SDM_NON_ZERO:
 
     // ----------------
     // カウンタをセット
-    ld      DE, #MIO_8253_CH0
-    ld      A, L
-    ld      (DE), A
-    ld      A, H
-    ld      (DE), A
+    ld      DE, HL
+    ld      HL, #MIO_8253_CH0
+    ld      (HL), E
+    ld      (HL), D
 
     // ---------------- 後始末
 SDM_END:
@@ -261,22 +262,22 @@ __endasm;
 #pragma restore
 
 // ---------------------------------------------------------------- 音を鳴らす(三重和音)
-static u16* _pMml0;     // サウンド データへのポインタ
-static u16* _pMml1;
-static u16* _pMml2;
-static u8   _sdLen0;    // 音長カウンタ初期値(8bit)
-static u8   _sdLen1;
-static u8   _sdLen2;
-static u8   _sdWaveLen0;  // 波長初期値(8bit)
-static u8   _sdWaveLen1;
-static u8   _sdWaveLen2;
+static u16* p_mml0_;     // サウンド データへのポインタ
+static u16* p_mml1_;
+static u16* p_mml2_;
+static u8   sd_len0_;    // 音長カウンタ初期値(8bit)
+static u8   sd_len1_;
+static u8   sd_len2_;
+static u8   sd_wave_len0_;  // 波長初期値(8bit)
+static u8   sd_wave_len1_;
+static u8   sd_wave_len2_;
 
 // 一時的に使うワークエリア
 #define ADDR_TMP_SP     (VVRAM_TMP_WORK + 10)// SP の仮場所. 4段もあれば十分
 
 #pragma disable_warning 85
 #pragma save
-bool sd3Play(const u8* mml0, const u8* mml1, const u8* mml2, const bool bCancelEnabled) __naked
+bool sd3Play(const u8* mml0, const u8* mml1, const u8* mml2, const bool b_cancel_enabled) __naked
 {
     // 初期化
     // HL' BC' DE' = 音長カウンタ = 0x0000 (マクロの外で設定)
@@ -301,17 +302,17 @@ bool sd3Play(const u8* mml0, const u8* mml1, const u8* mml2, const bool bCancelE
     // C = MIO_8253_CH0_MODE0 or MIO_8253_CH0_MODE3
     // H = ADDR_SD3_ATT_TAB の上位 8 bit
     // L 破壊
-#define SD3_MAIN(pMml, waveLen, sdLen, sdLenRegH, sdLenRegL, waveLenCtReg, pushHL, popHL, LABEL_SD_LEN_END, LABEL_SD_WAVE_PULSE, LABEL_SD_WAVE_LEN, LABEL_SD_END) \
+#define SD3_MAIN(p_mml, wave_len, sd_len, sd_len_reg_h, sd_len_reg_l, wave_len_ct_reg, push_hl, pop_hl, LABEL_SD_LEN_END, LABEL_SD_WAVE_PULSE, LABEL_SD_WAVE_LEN, LABEL_SD_END) \
     ; ---------------- sound length 音長 \
     ; ---- 音長カウンタ -- \
     exx                             ;  4\
-        inc sdLenRegH##sdLenRegL    ;  6\
-        ld  A, (sdLen)              ; 13\
-        cp  A, sdLenRegH            ;  4\
+        inc sd_len_reg_h##sd_len_reg_l; 6\
+        ld  A, (sd_len)             ; 13\
+        cp  A, sd_len_reg_h         ;  4\
         jp  nz, LABEL_SD_LEN_END    ; 10 if (sound length == 0) { read next MML }\
     ;---- \
-            pushHL                  ; 11 / 0 マクロ引数です\
-            ld  HL, (pMml)          ; 16 小計26\
+            push_hl                 ; 11 / 0 マクロ引数です\
+            ld  HL, (p_mml)         ; 16 小計26\
     ;---- F1 キーでキャンセル\
             ld  A, (MIO_8255_PORTB) ; 13\
             and A, A                ;  4\
@@ -319,39 +320,39 @@ bool sd3Play(const u8* mml0, const u8* mml1, const u8* mml2, const bool bCancelE
     ;---- 波長初期値\
             ld  A, (HL)             ;  7 A = 波長初期値\
             and A                   ;  4\
-            jp  z, SD3_END       ; 10 if (A == 0) goto end, H != 0 \
-            ld  (waveLen), A        ; 13\
+            jp  z, SD3_END          ; 10 if (A == 0) goto end, H != 0 \
+            ld  (wave_len), A       ; 13\
             inc HL                  ;  4 小計38\
     ;---- 音長初期値\
             ld  A, (HL)             ;  7 A = 音長初期値\
-            ld  (sdLen), A          ; 13\
+            ld  (sd_len), A         ; 13\
             inc HL                  ;  6 小計26\
     ;---- MML\
-            ld  (pMml), HL          ; 16 HL = MML\
-            popHL                   ; 10 マクロ引数です 小計26\
+            ld  (p_mml), HL         ; 16 HL = MML\
+            pop_hl                  ; 10 マクロ引数です 小計26\
     ;---- 音長カウンタ\
-            ld sdLenRegH##sdLenRegL, 0x0000; 10 小計10\
+            ld sd_len_reg_h##sd_len_reg_l, 0x0000; 10 小計10\
     ;---- 波長カウンタは初期化しません\
     exx                             ;  4\
     jp      LABEL_SD_END            ; 10 小計14\
     ;\
 LABEL_SD_LEN_END:\
-        ld  A, sdLenRegH            ;  4 音長カウンタ 上位 8bit\
+        ld  A, sd_len_reg_h         ;  4 音長カウンタ 上位 8bit\
     exx                             ;  4\
     ; ---------------- wave length 波長 \
-    ; ---- if (waveLenReg <= sd3AttTab[A]) { C = MIO_8253_CH0_MODE3; }\
+    ; ---- if (wave_len_reg <= ATT_TAB_[A]) { C = MIO_8253_CH0_MODE3; }\
     ld      L, A                    ;  4 HL = sound3 att table\
     ld      A, (HL);                ;  7 offset is self-modify\
-    cp      A, waveLenCtReg         ;  4\
-    jp      c, LABEL_SD_WAVE_PULSE  ; 10  (if A > WaveLenCtReg) .. \
+    cp      A, wave_len_ct_reg      ;  4\
+    jp      c, LABEL_SD_WAVE_PULSE  ; 10  (if A > Wave_len_ct_reg) .. \
         ld  C, MIO_8253_CH0_MODE3   ;  7\
 ;\
 LABEL_SD_WAVE_PULSE:\
     ; ---- wave length Loop\
-    dec     waveLenCtReg            ;  4\
+    dec     wave_len_ct_reg         ;  4\
     jp      nz, LABEL_SD_WAVE_LEN   ; 10\
-        ld  A, (waveLen)            ; 13\
-        ld  waveLenCtReg, A         ;  4\
+        ld  A, (wave_len)           ; 13\
+        ld  wave_len_ct_reg, A      ;  4\
     ;\
 LABEL_SD_WAVE_LEN:\
     ;\
@@ -385,12 +386,13 @@ __asm
     ld      (SD3_PLAY_SP_RESTORE + 1), SP// SP 保存(自己書換)
     pop     HL                  // リターン アドレス(捨てる)
 
-    SD3_INIT(__pMml0, __sdWaveLen0, __sdLen0, B)
-    SD3_INIT(__pMml1, __sdWaveLen1, __sdLen1, D)
-    SD3_INIT(__pMml2, __sdWaveLen2, __sdLen2, E)
+    SD3_INIT(_p_mml0_, _sd_wave_len0_, _sd_len0_, B)
+    SD3_INIT(_p_mml1_, _sd_wave_len1_, _sd_len1_, D)
+    SD3_INIT(_p_mml2_, _sd_wave_len2_, _sd_len2_, E)
     pop     HL                  // L= キャンセル可能フラグ
 
-    ld      SP, #ADDR_TMP_SP
+    ld      SP, #ADDR_TMP_SP    // バンク切替による 臨時 SP
+    BANK_VRAM_IO                // バンク切替
 
     // 音長カウンタの初期化
     exx
@@ -399,10 +401,8 @@ __asm
         ld  DE, HL              // DE' 音長カウンタ 2 = 0x0000
     exx
 
-    BANK_VRAM_IO                // バンク切替
-
     // F1 キーでキャンセルできるように, Key Strobe を仕込みます
-    ld      A, 9                // A = key strobe 9
+    ld      A, 0xf9             // A = key strobe 9
     dec     L                   // L = キャンセル可能フラグ
     jr      z, SD3_CANCEL_ENABLE
     inc     A
@@ -414,9 +414,9 @@ SD3_CANCEL_ENABLE:
 SD3_LOOP:
     ld      C, #MIO_8253_CH0_MODE0  // 7
 
-    SD3_MAIN(__pMml0, __sdWaveLen0, __sdLen0, H, L, B,        ,       , SD3_SD_LEN_END0, SD3_SD_WAVE_PULSE0, SD3_SD_WAVE_LEN0, SD3_SD_END0)
-    SD3_MAIN(__pMml1, __sdWaveLen1, __sdLen1, B, C, D, push HL, pop HL, SD3_SD_LEN_END1, SD3_SD_WAVE_PULSE1, SD3_SD_WAVE_LEN1, SD3_SD_END1)
-    SD3_MAIN(__pMml2, __sdWaveLen2, __sdLen2, D, E, E, push HL, pop HL, SD3_SD_LEN_END2, SD3_SD_WAVE_PULSE2, SD3_SD_WAVE_LEN2, SD3_SD_END2)
+    SD3_MAIN(_p_mml0_, _sd_wave_len0_, _sd_len0_, H, L, B,        ,       , SD3_SD_LEN_END0, SD3_SD_WAVE_PULSE0, SD3_SD_WAVE_LEN0, SD3_SD_END0)
+    SD3_MAIN(_p_mml1_, _sd_wave_len1_, _sd_len1_, B, C, D, push HL, pop HL, SD3_SD_LEN_END1, SD3_SD_WAVE_PULSE1, SD3_SD_WAVE_LEN1, SD3_SD_END1)
+    SD3_MAIN(_p_mml2_, _sd_wave_len2_, _sd_len2_, D, E, E, push HL, pop HL, SD3_SD_LEN_END2, SD3_SD_WAVE_PULSE2, SD3_SD_WAVE_LEN2, SD3_SD_END2)
 
 SD3_LOOP_END:
     // ---------------- 波形出力

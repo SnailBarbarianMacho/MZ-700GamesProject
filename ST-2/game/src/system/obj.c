@@ -11,19 +11,19 @@
 
 // ---------------------------------------------------------------- 変数, マクロ
 // 未使用オブジェクト. 片方向リンク
-Obj* _pObjFreePlayer;
-Obj* _pObjFreePlayerBullet;
-Obj* _pObjFreeEnemy;
-Obj* _pObjFreeEnemyBullet;
-Obj* _pObjFreeItem;
-Obj* _pObjFreeEtc;
+Obj* p_obj_free_player_;
+Obj* p_obj_free_player_bullet_;
+Obj* p_obj_free_enemy_;
+Obj* p_obj_free_enemy_bullet_;
+Obj* p_obj_free_item_;
+Obj* p_obj_free_etc_;
 // 使用中のオブジェクト. 双方向リンク
-Obj* _pObjInUsePlayer;
-Obj* _pObjInUsePlayerBullet;
-Obj* _pObjInUseEnemy;
-Obj* _pObjInUseEnemyBullet;
-Obj* _pObjInUseItem;
-Obj* _pObjInUseEtc;
+Obj* p_obj_in_use_player_;
+Obj* p_obj_in_use_player_bullet_;
+Obj* p_obj_in_use_enemy_;
+Obj* p_obj_in_use_enemy_bullet_;
+Obj* p_obj_in_use_item_;
+Obj* p_obj_in_use_etc_;
 
 // 各 Obj の数. 多すぎるとエラー
 #define NR_OBJS_PLAYER          8
@@ -40,16 +40,16 @@ Obj* _pObjInUseEtc;
 #define OBJ_ADDR_ETC            (OBJ_ADDR_ITEM          + NR_OBJS_ITEM          * sizeof(Obj))
 
 // ---------------------------------------------------------------- システム(初期化)
-static void objInitSub(Obj* pObj, Obj** ppObjFree, Obj** ppObjInUse, u8 nrObjs)
+static void objInitSub(Obj* p_obj, Obj** pp_obj_free, Obj** pp_obj_in_use, u8 nr_objs)
 {
-    *ppObjFree  = pObj;
-    *ppObjInUse = nullptr;
+    *pp_obj_free   = p_obj;
+    *pp_obj_in_use = nullptr;
 
-    for (u8 i = nrObjs; 1 < i; --i) {
-        pObj->pNext  = pObj + 1;
-        pObj++;
+    for (u8 i = nr_objs; 1 < i; --i) {
+        p_obj->p_next  = p_obj + 1;
+        p_obj++;
     }
-    pObj->pNext = nullptr;
+    p_obj->p_next = nullptr;
 }
 
 void objInit() __z88dk_fastcall
@@ -65,67 +65,67 @@ void objInit() __z88dk_fastcall
     }
 #endif
 
-    objInitSub((Obj*)OBJ_ADDR_PLAYER,        &_pObjFreePlayer,       &_pObjInUsePlayer,       NR_OBJS_PLAYER);
-    objInitSub((Obj*)OBJ_ADDR_PLAYER_BULLET, &_pObjFreePlayerBullet, &_pObjInUsePlayerBullet, NR_OBJS_PLAYER_BULLET);
-    objInitSub((Obj*)OBJ_ADDR_ENEMY,         &_pObjFreeEnemy,        &_pObjInUseEnemy,        NR_OBJS_ENEMY);
+    objInitSub((Obj*)OBJ_ADDR_PLAYER,        &p_obj_free_player_,        &p_obj_in_use_player_,       NR_OBJS_PLAYER);
+    objInitSub((Obj*)OBJ_ADDR_PLAYER_BULLET, &p_obj_free_player_bullet_, &p_obj_in_use_player_bullet_, NR_OBJS_PLAYER_BULLET);
+    objInitSub((Obj*)OBJ_ADDR_ENEMY,         &p_obj_free_enemy_,         &p_obj_in_use_enemy_,        NR_OBJS_ENEMY);
     objInitEnemyBullet();
     objInitItem();
-    objInitSub((Obj*)OBJ_ADDR_ETC,           &_pObjFreeEtc,          &_pObjInUseEtc,          NR_OBJS_ETC);
+    objInitSub((Obj*)OBJ_ADDR_ETC,           &p_obj_free_etc_,          &p_obj_in_use_etc_,          NR_OBJS_ETC);
 }
 
 void objInitEnemyBullet()
 {
-    objInitSub((Obj*)OBJ_ADDR_ENEMY_BULLET,  &_pObjFreeEnemyBullet,  &_pObjInUseEnemyBullet,  NR_OBJS_ENEMY_BULLET);
+    objInitSub((Obj*)OBJ_ADDR_ENEMY_BULLET,  &p_obj_free_enemy_bullet_,  &p_obj_in_use_enemy_bullet_,  NR_OBJS_ENEMY_BULLET);
 }
 void objInitItem()
 {
-    objInitSub((Obj*)OBJ_ADDR_ITEM,          &_pObjFreeItem,         &_pObjInUseItem,         NR_OBJS_ITEM);
+    objInitSub((Obj*)OBJ_ADDR_ITEM,          &p_obj_free_item_,         &p_obj_in_use_item_,         NR_OBJS_ITEM);
 }
 
 // ---------------------------------------------------------------- システム(メイン)
-static inline void objMainSub(Obj** ppObjInUse, Obj** ppObjFree)
+static inline void objMainSub(Obj** pp_obj_in_use, Obj** pp_obj_free)
 {
-    Obj* pObj = *ppObjInUse;
-    while (pObj) {
-        bool ret = pObj->mainFunc(pObj);
-        Obj* const pObjNext = pObj->pNext;
-        pObj->bHit = false;
+    Obj* p_obj = *pp_obj_in_use;
+    while (p_obj) {
+        bool ret = p_obj->main_func(p_obj);
+        Obj* const p_obj_next = p_obj->p_next;
+        p_obj->b_hit = false;
         // Obj をプールに格納します
         if (!ret) {
             /* objInUse から切り離し */
-            Obj* const pObjPrev    = pObj->pPrev;
-            if (pObjNext) {/* 末端部を除く */
-                pObjNext->pPrev = pObjPrev;
+            Obj* const p_obj_prev = p_obj->p_prev;
+            if (p_obj_next) {/* 末端部を除く */
+                p_obj_next->p_prev = p_obj_prev;
             }
-            if (pObjPrev) {/* 根元部を除く */
-                pObjPrev->pNext = pObjNext;
+            if (p_obj_prev) {/* 根元部を除く */
+                p_obj_prev->p_next = p_obj_next;
             } else {/* 最元部 */
-                *ppObjInUse = pObjNext;
+                *pp_obj_in_use = p_obj_next;
             }
             /* objFree に挿入 */
-            pObj->pNext = *ppObjFree;
-            *ppObjFree  = pObj;
+            p_obj->p_next = *pp_obj_free;
+            *pp_obj_free  = p_obj;
         }
-        pObj = pObjNext;
+        p_obj = p_obj_next;
     }
 }
 
 // ---------------------------------------------------------------- システム(描画)
-extern u8* funcPtr; // crt0
+extern u8* func_ptr; // Defined at crt0.asm
 
 // 表示アドレスを計算し,
 // draw() を呼び出し,
 // 座標を移動します
-#pragma disable_warning 85          // pObj 未使用
+#pragma disable_warning 85          // p_obj 未使用
 #pragma save
-static void moveDrawSub(Obj* const pObj) __z88dk_fastcall __naked
+static void moveDrawSub(Obj* const p_obj) __z88dk_fastcall __naked
 {
     STATIC_ASSERT(3 == OBJ_OFFSET_GEO8_XH,                        Asm1); // ※1 を修正
     STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH   - OBJ_OFFSET_GEO8_XH, Asm2); // ※2 を修正
     STATIC_ASSERT(3 <  OBJ_OFFSET_DRAW_FUNC - OBJ_OFFSET_GEO8_YH, Asm3); // ※3 を修正
     STATIC_ASSERT(3 == OBJ_OFFSET_GEO_SY    - OBJ_OFFSET_GEO_X,   Asm4); // ※4 を修正
 __asm
-    ld      DE, HL                  // pObj 保存
+    ld      DE, HL                  // p_obj 保存
 
     // --- draw addr x の計算
     // HL += GEO8_XH
@@ -133,7 +133,7 @@ __asm
     inc     L                       // ※1
     inc     L                       // ※1
     // C = VRAM_TEXT_ADDR(X, 0)
-    ld      A, (HL)                 // pObj->uGeo.geo8.xh
+    ld      A, (HL)                 // p_obj->u_geo.geo8.xh
     add     A, #(VVRAM_TEXT_ADDR(0, 0) & 0xff)
     ld      C, A
 
@@ -144,14 +144,14 @@ __asm
     ld      L, A                                            // ※2
     // B = VRAM_TEXT_ADDR(0, Y) >> 8
 #if ((VVRAM_TEXT_ADDR(0, 0) >> 8) & 0xff) != 0
-    ld      A, (HL)             // pObj->uGeo.geo8.yh
+    ld      A, (HL)             // p_obj->u_geo.geo8.yh
     add     A, #((VVRAM_TEXT_ADDR(0, 0) >> 8) & 0xff)
     ld      B, A
 #else // 仮想 VRAM が 0x0000 からある場合
     ld      B, (HL)
 #endif
 
-    // ---- pObj->draw(pObj, drawAddr);
+    // ---- p_obj->draw(p_obj, draw_addr);
     // HL += DRAW_FUNC - GEL8_YH
     ld      A, L                                            // ※3
     add     A, #(OBJ_OFFSET_DRAW_FUNC - OBJ_OFFSET_GEO8_YH) // ※3
@@ -163,27 +163,27 @@ __asm
     ld      H, (HL)
     ld      L, A                    // HL = draw() のアドレス
     // HL の指すアドレスに呼び出す
-    push    BC                      // drawAddr
-    push    DE                      // pObj
-    call    _funcPtr                // crt0 に, 「jp (HL)」 があります
-    pop     HL                      // pObj
-    pop     BC                      // drawAddr (捨てる)
+    push    BC                      // draw_addr
+    push    DE                      // p_obj
+    call    _func_ptr               // crt0 に, 「jp (HL)」 があります
+    pop     HL                      // p_obj
+    pop     BC                      // draw_addr (捨てる)
 
-    // ---- pObj->uGeo.geo.x += pObj->uGeo.geo.sx;
+    // ---- p_obj->u_geo.geo.x += p_obj->u_geo.geo.sx;
     ld      (MOVE_DRAW_SUB_SP_RESTORE + 1), SP// 20 SP 保存(自己書換)
     ld      SP, HL                  //  6
-    pop     BC                      // 10 BC = pObj->uGeo.geo.sx
-    pop     HL                      // 10 HL = pObj->uGeo.geo.x
+    pop     BC                      // 10 BC = p_obj->u_geo.geo.sx
+    pop     HL                      // 10 HL = p_obj->u_geo.geo.x
     add     HL, BC                  // 11
     push    HL                      // 11
 
-    // ---- pObj->uGeo.geo.y += pObj->uGeo.geo.sy;
+    // ---- p_obj->u_geo.geo.y += p_obj->u_geo.geo.sy;
     inc     SP                      //  6 ※4
     inc     SP                      //  6 ※4
     inc     SP                      //  6 ※4
 
-    pop     BC                      // BC = pObj->uGeo.geo.sy
-    pop     HL                      // HL = pObj->uGeo.geo.y
+    pop     BC                      // BC = p_obj->u_geo.geo.sy
+    pop     HL                      // HL = p_obj->u_geo.geo.y
     add     HL, BC
     push    HL
 MOVE_DRAW_SUB_SP_RESTORE:
@@ -194,31 +194,31 @@ __endasm;
 #pragma restore
 
 #if 0 // C 版
-static inline void objMoveDraw(Obj* pObjInUse)
+static inline void objMoveDraw(Obj* p_obj_in_use)
 {
-    Obj* pObj = pObjInUse;
-    while (pObj) {
-        void (*drawFunc)(Obj* const, u8*) = pObj->drawFunc;
-        if (drawFunc) {
-            moveDrawSub(pObj);
+    Obj* p_obj = p_obj_in_use;
+    while (p_obj) {
+        void (*draw_func)(Obj* const, u8*) = p_obj->draw_func;
+        if (draw_func) {
+            moveDrawSub(p_obj);
         }
-        pObj = pObj->pNext;
+        p_obj = p_obj->p_next;
     }
 }
 #else // ASM 版
-static void objMoveDraw(Obj* pObjInUse) __z88dk_fastcall __naked
+static void objMoveDraw(Obj* p_obj_in_use) __z88dk_fastcall __naked
 {
     STATIC_ASSERT(3 <  OBJ_OFFSET_DRAW_FUNC                            , Asm1); // ※1 を修正
     STATIC_ASSERT(3 < (OBJ_OFFSET_P_NEXT - (OBJ_OFFSET_DRAW_FUNC + 1)) , Asm2); // ※2 を修正
 __asm
-    // ---- while (pObj)
+    // ---- while (p_obj)
     ld      A, H
     or      A, L
     ret     z
 OBJ_MOVE_DRAW_LOOP:
     ld      C, L                                    // HL 保存
 
-    // ---- drawFunc = pObj->drawFunc;
+    // ---- draw_func = p_obj->draw_func;
     // HL += DRAW_FUNC
     ld      A, L
     add     A, #OBJ_OFFSET_DRAW_FUNC                // ※1
@@ -229,7 +229,7 @@ OBJ_MOVE_DRAW_LOOP:
     inc     L
     ld      D, (HL)
 
-    // ---- if (drawFunc) { moveDrawSub(pObj); }
+    // ---- if (draw_func) { moveDrawSub(p_obj); }
     // if (DE == 0) {goto LOOP_END }
     ld      A, D
     or      A, E
@@ -241,7 +241,7 @@ OBJ_MOVE_DRAW_LOOP:
     call    _moveDrawSub
     pop     HL
 
-    // ---- pObj = pObj->pNext;
+    // ---- p_obj = p_obj->p_next;
 OBJ_MOVE_DRAW_LOOP_END:
     // HL += P_NEXT - DRAW_FUNC
     ld      A, L
@@ -266,41 +266,41 @@ __endasm;
 // ---------------------------------------------------------------- システム(衝突判定)
 // 相互に衝突フラグが付きます
 #if 0 // C 版
-static void objCollision(Obj* const pObjInUse1, Obj* const pObjInUse2)
+static void objCollision(Obj* const p_obj_in_use1, Obj* const p_obj_in_use2)
 {
     // x0+--------+x1    x0'+--------+x1'
     //         xx0+---------+xx1
     //
     // xx0 < x1 かつ x0 < xx1 ならば衝突
     // アセンブラ化が望ましい
-    for (Obj* pObj1 = pObjInUse1; pObj1; pObj1 = pObj1->pNext) {
-        u8 w1 = pObj1->uGeo.geo.w;
+    for (Obj* pObj1 = p_obj_in_use1; pObj1; pObj1 = pObj1->p_next) {
+        u8 w1 = pObj1->u_geo.geo.w;
         if (!w1) { continue; }
-        s8 x0 = pObj1->uGeo.geo8.xh;
-        s8 y0 = pObj1->uGeo.geo8.yh;
+        s8 x0 = pObj1->u_geo.geo8.xh;
+        s8 y0 = pObj1->u_geo.geo8.yh;
         s8 x1 = x0 + w1;
-        s8 y1 = y0 + pObj1->uGeo.geo.h;
-        Obj* pObj2 = pObjInUse2;
-        for (Obj* pObj2 = pObjInUse2; pObj2; pObj2 = pObj2->pNext) {
-            u8 w2 = pObj2->uGeo.geo.w;
+        s8 y1 = y0 + pObj1->u_geo.geo.h;
+        Obj* pObj2 = p_obj_in_use2;
+        for (Obj* pObj2 = p_obj_in_use2; pObj2; pObj2 = pObj2->p_next) {
+            u8 w2 = pObj2->u_geo.geo.w;
             if (!w2) { continue; }
-            s8 c = pObj2->uGeo.geo8.xh;
+            s8 c = pObj2->u_geo.geo8.xh;
             if (c >= x1) { continue; }
             c += w2;
             if (x0 >= c) { continue; }
-            c = pObj2->uGeo.geo8.yh;
+            c = pObj2->u_geo.geo8.yh;
             if (c >= y1) { continue; }
-            c += pObj2->uGeo.geo.h;
+            c += pObj2->u_geo.geo.h;
             if (y0 >= c) { continue; }
-            pObj1->bHit = true;
-            pObj2->bHit = true;
+            pObj1->b_hit = true;
+            pObj2->b_hit = true;
             pObj2->fitness -= pObj1->offence;// 繰り下がりしてしまうバグあり
             pObj1->fitness -= pObj2->offence;// 繰り下がりしてしまうバグあり
             return;
         } // for (pObj2)
     } // for (pObj1)
 #else // ASM 版
-static void objCollision(Obj* const pObjInUse1, Obj* const pObjInUse2) __naked
+static void objCollision(Obj* const p_obj_in_use1, Obj* const p_obj_in_use2) __naked
 {
     STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_W,                       Asm1); // ※1 を修正
     STATIC_ASSERT(1 == OBJ_OFFSET_GEO8_W  - OBJ_OFFSET_GEO8_XH, Asm2); // ※2 を修正
@@ -317,12 +317,12 @@ __asm
     pop     HL                  // リターン アドレス(捨てる)
     pop     HL                  // pObj1
 
-    // pObjInUse1 が null なら何もしない
+    // p_obj_in_use1 が null なら何もしない
     ld      A, H
     or      L
     jp      z, OBJ_COLLISION_RET
 
-    // pObjInUse2 が null でも何もしない
+    // p_obj_in_use2 が null でも何もしない
     pop     DE
     push    DE
 
@@ -331,7 +331,7 @@ __asm
     jp      z, OBJ_COLLISION_RET
 
 OBJ_COLLISION_LOOP1:
-    // w1 = pObj1->uGeo.geo.w;
+    // w1 = pObj1->u_geo.geo.w;
     ld      A, L                    // ※1
     add     A, #(OBJ_OFFSET_GEO8_W) // ※1
     ld      L, A                    // ※1
@@ -341,25 +341,25 @@ OBJ_COLLISION_LOOP1:
     and     A
     jp      z, OBJ_COLLISION_LOOP1_END
 
-    // D = x0 = pObj1->uGeo.geo8.xh;
+    // D = x0 = pObj1->u_geo.geo8.xh;
     dec     L                       // ※2
     ld      D, (HL)
     // E = x1 = x0 + w1;
     add     A, D
     ld      E, A
 
-    // B = y0 = pObj1->uGeo.geo8.yh;
+    // B = y0 = pObj1->u_geo.geo8.yh;
     ld      A, L                                            // ※3
     add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※3
     ld      L, A                                            // ※3
     ld      B, (HL)
-    // C = y1 = y0 + pObj1->uGeo.geo.h;
+    // C = y1 = y0 + pObj1->u_geo.geo.h;
     inc     L                       // ※4
     ld      A, (HL)
     add     A, B
     ld      C, A
 
-    // HL の位置を uGeo.geo.w に移動する
+    // HL の位置を u_geo.geo.w に移動する
     ld      A, L                                        // ※11
     sub     A, #(OBJ_OFFSET_GEO8_H - OBJ_OFFSET_GEO8_W) // ※11
     ld      L, A                                        // ※11
@@ -371,7 +371,7 @@ OBJ_COLLISION_LOOP1:
 OBJ_COLLISION_LOOP2:
         ld  E, L                    // HL 保存
 
-        // A = w2 = pObj2->uGeo.geo.w;
+        // A = w2 = pObj2->u_geo.geo.w;
         ld  A, L                    // ※1
         add A, #(OBJ_OFFSET_GEO8_W) // ※1
         ld  L, A                    // ※1
@@ -382,7 +382,7 @@ OBJ_COLLISION_LOOP2:
         // B = w2
         ld  B, A
 
-        // A = c = pObj2->uGeo.geo8.xh;
+        // A = c = pObj2->u_geo.geo8.xh;
         dec L                       // ※2
         ld  A, (HL)                 // A = c
         // if (c >= x1) { continue; }
@@ -402,7 +402,7 @@ OBJ_COLLISION_LOOP2:
         cp  A, C
         jp  p, OBJ_COLLISION_LOOP2_END
 
-        // A = c = pObj2->uGeo.geo8.yh;
+        // A = c = pObj2->u_geo.geo8.yh;
         ld  A, L                                            // ※3
         add A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※3
         ld  L, A                                            // ※3
@@ -414,7 +414,7 @@ OBJ_COLLISION_LOOP2:
     exx
         jp  p, OBJ_COLLISION_LOOP2_END
 
-        // A = c += pObj2->uGeo.geo.h;
+        // A = c += pObj2->u_geo.geo.h;
         inc L                       // ※4
         add A, (HL)
         ld  C, A
@@ -428,9 +428,9 @@ OBJ_COLLISION_LOOP2:
 
 #if 1 // ヒット処理
         // -------- ヒットした
-        // HL' = pObj2->bHit    から加算していく
+        // HL' = pObj2->b_hit    から加算していく
         // HL  = pObj1->offence から減算していく
-        // pObj2->bHit = true;
+        // pObj2->b_hit = true;
         ld  A, L                                            // ※5
         add A, #(OBJ_OFFSET_B_HIT - OBJ_OFFSET_GEO8_H)      // ※5
         ld  L, A                                            // ※5
@@ -492,7 +492,7 @@ OBJ_COLLISION_HIT1:
     ld      (HL), A
     dec     L
     ld      (HL), C
-    // pObj1->bHit = 0 以外の値
+    // pObj1->b_hit = 0 以外の値
     dec     L                       // ※6
     ld      (HL), H
 
@@ -503,7 +503,7 @@ OBJ_COLLISION_HIT1:
     ret
 #endif
 OBJ_COLLISION_LOOP2_END:
-        // pObj = pObj->pNext;
+        // p_obj = p_obj->p_next;
         ld  A, E                    // HL 復活              // ※8
         add A, #(OBJ_OFFSET_P_NEXT)                         // ※8
         ld  L, A                                            // ※8
@@ -519,7 +519,7 @@ OBJ_COLLISION_LOOP2_END:
     exx
 
 OBJ_COLLISION_LOOP1_END:
-    // pObj = pObj->pNext;
+    // p_obj = p_obj->p_next;
     ld      A, L                                            // ※9
     add     A, #(OBJ_OFFSET_P_NEXT - OBJ_OFFSET_GEO8_W)     // ※9
     ld      L, A                                            // ※9
@@ -557,18 +557,18 @@ static void objCollisionItem() __z88dk_fastcall
         return;
     }
 
-    s8 px = pObjPlayer->uGeo.geo8.xh;
-    s8 py = pObjPlayer->uGeo.geo8.yh;
-    for (Obj* pObj = _pObjInUseItem; pObj; pObj = pObj->pNext) {
-        s8 c = pObj->uGeo.geo8.xh;
+    s8 px = pObjPlayer->u_geo.geo8.xh;
+    s8 py = pObjPlayer->u_geo.geo8.yh;
+    for (Obj* p_obj = p_obj_in_use_item_; p_obj; p_obj = p_obj->p_next) {
+        s8 c = p_obj->u_geo.geo8.xh;
         if (c <  px) { continue; }
         c -= PLAYER_W;
         if (c >= px) { continue; }
-        c = pObj->uGeo.geo8.yh;
+        c = p_obj->u_geo.geo8.yh;
         if (c <  py) { continue; }
         c -= PLAYER_H;
         if (c >= py) { continue; }
-        pObj->bHit = true;
+        p_obj->b_hit = true;
     }
 #else // ASM 版
 static void objCollisionItem() __z88dk_fastcall __naked
@@ -578,23 +578,23 @@ static void objCollisionItem() __z88dk_fastcall __naked
     STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT  - OBJ_OFFSET_GEO_SX,  Asm3); // ※3 を修正
     STATIC_ASSERT(3 <  OBJ_OFFSET_STEP    - OBJ_OFFSET_GEO8_YH, Asm4); // ※4 を修正
 __asm
-    // if (!_pObjInUsePlayer) { return; }
-    ld      HL, (__pObjInUsePlayer);
+    // if (!p_obj_in_use_player_) { return; }
+    ld      HL, (_p_obj_in_use_player_);
     ld      A, H
     or      L
     ret     z
 
-    // px = pObjPlayer->uGeo.geo8.xh;
+    // px = pObjPlayer->u_geo.geo8.xh;
     inc     L                       // ※1
     inc     L                       // ※1
     inc     L                       // ※1
-    ld      B, (HL)                 // B = px = pObjPlayer->uGeo.geo8.xh
+    ld      B, (HL)                 // B = px = pObjPlayer->u_geo.geo8.xh
 
-    // py = pObjPlayer->uGeo.geo8.yh;
+    // py = pObjPlayer->u_geo.geo8.yh;
     ld      A, L                                            // ※2
     add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※2
     ld      L, A                                            // ※2
-    ld      C, (HL)                 // C = py = pObjPlayer->uGeo.geo8.yh
+    ld      C, (HL)                 // C = py = pObjPlayer->u_geo.geo8.yh
 
     // if (pObjPlayer->step != OBJ_PLAYER_STEP_NORMAL) { return; } 死亡してたら衝突判定なし
     add     A, #(OBJ_OFFSET_STEP - OBJ_OFFSET_GEO8_YH)      // ※4
@@ -603,13 +603,13 @@ __asm
     and     A
     ret     nz
 
-    // if (!_pObjInUseItem) { return; }
-    ld      HL, (__pObjInUseItem);
+    // if (!p_obj_in_use_item_) { return; }
+    ld      HL, (_p_obj_in_use_item_);
     ld      A, H
     or      L
     ret     z
 
-    dec     B                       // B = px = pObjPlayer->uGeo.geo8.xh - 1
+    dec     B                       // B = px = pObjPlayer->u_geo.geo8.xh - 1
 
 OBJ_COLLISION_ITEM_LOOP:
     ld      E, L                    // HL 保存
@@ -618,7 +618,7 @@ OBJ_COLLISION_ITEM_LOOP:
     inc     L                       // ※1
     inc     L                       // ※1
     inc     L                       // ※1
-    ld      A, (HL)                 // x = pObj->uGeo.geo8.xh
+    ld      A, (HL)                 // x = p_obj->u_geo.geo8.xh
     cp      A, B                    // x - px
     jp      m, OBJ_COLLISION_ITEM_LOOP_END
 
@@ -631,7 +631,7 @@ OBJ_COLLISION_ITEM_LOOP:
     ld      A, L                                            // ※2
     add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※2
     ld      L, A                                            // ※2
-    ld      A, (HL)                 // y = pObj->uGeo.geo8.yh
+    ld      A, (HL)                 // y = p_obj->u_geo.geo8.yh
     cp      A, C                    // y - py
     jp      m, OBJ_COLLISION_ITEM_LOOP_END
 
@@ -640,14 +640,14 @@ OBJ_COLLISION_ITEM_LOOP:
     cp      A, C                    // y - py
     jp      p, OBJ_COLLISION_ITEM_LOOP_END
 
-    // pObj->bHit = true;
+    // p_obj->b_hit = true;
     ld      A, L
     add     A, #(OBJ_OFFSET_B_HIT - OBJ_OFFSET_GEO8_YH)
     ld      L, A
     ld      (HL), H // 0 以外の値
 
 OBJ_COLLISION_ITEM_LOOP_END:
-    // pObj = pObj->pNext;
+    // p_obj = p_obj->p_next;
     ld      A, E                    // HL 復活              // ※3
     add     A, #(OBJ_OFFSET_P_NEXT - OBJ_OFFSET_GEO_SX)     // ※3
     ld      L, A                                            // ※3
@@ -657,7 +657,7 @@ OBJ_COLLISION_ITEM_LOOP_END:
     ld      H, (HL)
     ld      L, A
 
-    // if (pObj) goto OBJ_COLLISION_ITEM_LOOP
+    // if (p_obj) goto OBJ_COLLISION_ITEM_LOOP
     ld      A, H
     or      L
     jp      nz, OBJ_COLLISION_ITEM_LOOP
@@ -671,105 +671,105 @@ __endasm;
 void objMain() __z88dk_fastcall
 {
     // メイン
-    objMainSub(&_pObjInUsePlayer,       &_pObjFreePlayer);
-    objMainSub(&_pObjInUsePlayerBullet, &_pObjFreePlayerBullet);
-    objMainSub(&_pObjInUseEnemy,        &_pObjFreeEnemy);
-    objMainSub(&_pObjInUseEnemyBullet,  &_pObjFreeEnemyBullet);
-    objMainSub(&_pObjInUseItem,         &_pObjFreeItem);
-    objMainSub(&_pObjInUseEtc,          &_pObjFreeEtc);
+    objMainSub(&p_obj_in_use_player_,        &p_obj_free_player_);
+    objMainSub(&p_obj_in_use_player_bullet_, &p_obj_free_player_bullet_);
+    objMainSub(&p_obj_in_use_enemy_,         &p_obj_free_enemy_);
+    objMainSub(&p_obj_in_use_enemy_bullet_,  &p_obj_free_enemy_bullet_);
+    objMainSub(&p_obj_in_use_item_,          &p_obj_free_item_);
+    objMainSub(&p_obj_in_use_etc_,           &p_obj_free_etc_);
 
     // 衝突判定
-    objCollision(_pObjInUsePlayer,       _pObjInUseEnemy);       // プレーヤーと敵(相互にフラグが立つ)
-    objCollision(_pObjInUsePlayer,       _pObjInUseEnemyBullet); // プレーヤーと敵弾(相互にフラグが立つ)
-    objCollision(_pObjInUsePlayerBullet, _pObjInUseEnemy);       // プレーヤー弾と敵(相互にフラグが立つ)
+    objCollision(p_obj_in_use_player_,        p_obj_in_use_enemy_);        // プレーヤーと敵(相互にフラグが立つ)
+    objCollision(p_obj_in_use_player_,        p_obj_in_use_enemy_bullet_); // プレーヤーと敵弾(相互にフラグが立つ)
+    objCollision(p_obj_in_use_player_bullet_, p_obj_in_use_enemy_);        // プレーヤー弾と敵(相互にフラグが立つ)
     objCollisionItem(); // プレーヤーとアイテム(アイテムのみフラグが立つ)
 
     // 移動と表示
-    objMoveDraw(_pObjInUseItem);
-    objMoveDraw(_pObjInUseEnemy);
-    objMoveDraw(_pObjInUsePlayerBullet);
-    objMoveDraw(_pObjInUsePlayer);
-    objMoveDraw(_pObjInUseEnemyBullet);
-    objMoveDraw(_pObjInUseEtc);
+    objMoveDraw(p_obj_in_use_item_);
+    objMoveDraw(p_obj_in_use_enemy_);
+    objMoveDraw(p_obj_in_use_player_bullet_);
+    objMoveDraw(p_obj_in_use_player_);
+    objMoveDraw(p_obj_in_use_enemy_bullet_);
+    objMoveDraw(p_obj_in_use_etc_);
 }
 
 
 // ---------------------------------------------------------------- 生成
-#define OBJ_CREATE(pObjFree, pObjInUse, initFunc, mainFunc, drawFunc, pParent)\
+#define OBJ_CREATE(pObjFree, p_obj_in_use, init_func, main_func, draw_func, p_parent)\
     /* 未使用の Obj を探して切り離し */\
-    Obj* pObj = pObjFree;           \
-    if (!pObj) {                    \
+    Obj* p_obj = pObjFree;          \
+    if (!p_obj) {                   \
         return nullptr; /* 全て使用済 */\
     }                               \
-    pObjFree = pObj->pNext;         \
+    pObjFree = p_obj->p_next;        \
                                     \
-    {   /* pObjInUse に挿入 */      \
-        Obj* pInUse = pObjInUse;   /* 最初の場合は, nullptr */\
+    {   /* p_obj_in_use に挿入 */    \
+        Obj* pInUse = p_obj_in_use;   /* 最初の場合は, nullptr */\
         if (pInUse) {               \
-            pInUse->pPrev = pObj;   \
+            pInUse->p_prev = p_obj;  \
         }                           \
-        pObj->pNext = pInUse;       \
-        pObj->pPrev = nullptr;      \
-        pObjInUse = pObj;           \
+        p_obj->p_next = pInUse;      \
+        p_obj->p_prev = nullptr;     \
+        p_obj_in_use = p_obj;       \
     }                               \
                                     \
     /* 関数の登録と実行 */          \
-    pObj->mainFunc = mainFunc;      \
-    pObj->drawFunc = drawFunc;      \
-    pObj->bHit     = false;         \
-    if (initFunc) {                 \
-        initFunc(pObj, pParent);    \
+    p_obj->main_func = main_func;   \
+    p_obj->draw_func = draw_func;   \
+    p_obj->b_hit     = false;        \
+    if (init_func) {                \
+        init_func(p_obj, p_parent);  \
     }                               \
-    return pObj;
+    return p_obj;
 
 
 Obj* objCreatePlayer(
-    void (*initFunc)(Obj* const, Obj* const),
-    bool (*mainFunc)(Obj* const),
-    void (*drawFunc)(Obj* const, u8* drawAddr),
-    Obj* const pParent)
+    void (*init_func)(Obj* const, Obj* const),
+    bool (*main_func)(Obj* const),
+    void (*draw_func)(Obj* const, u8* draw_addr),
+    Obj* const p_parent)
 {
-    OBJ_CREATE(_pObjFreePlayer, _pObjInUsePlayer, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(p_obj_free_player_, p_obj_in_use_player_, init_func, main_func, draw_func, p_parent);
 }
 Obj* objCreatePlayerBullet(
-    void (*initFunc)(Obj* const, Obj* const),
-    bool (*mainFunc)(Obj* const),
-    void (*drawFunc)(Obj* const, u8* drawAddr),
-    Obj* const pParent)
+    void (*init_func)(Obj* const, Obj* const),
+    bool (*main_func)(Obj* const),
+    void (*draw_func)(Obj* const, u8* draw_addr),
+    Obj* const p_parent)
 {
-    OBJ_CREATE(_pObjFreePlayerBullet, _pObjInUsePlayerBullet, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(p_obj_free_player_bullet_, p_obj_in_use_player_bullet_, init_func, main_func, draw_func, p_parent);
 }
 Obj* objCreateEnemy(
-    void (*initFunc)(Obj* const, Obj* const),
-    bool (*mainFunc)(Obj* const),
-    void (*drawFunc)(Obj* const, u8* drawAddr),
-    Obj* const pParent)
+    void (*init_func)(Obj* const, Obj* const),
+    bool (*main_func)(Obj* const),
+    void (*draw_func)(Obj* const, u8* draw_addr),
+    Obj* const p_parent)
 {
-    OBJ_CREATE(_pObjFreeEnemy, _pObjInUseEnemy, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(p_obj_free_enemy_, p_obj_in_use_enemy_, init_func, main_func, draw_func, p_parent);
 }
 Obj* objCreateEnemyBullet(
-    void (*initFunc)(Obj* const, Obj* const),
-    bool (*mainFunc)(Obj* const),
-    void (*drawFunc)(Obj* const, u8* drawAddr),
-    Obj* const pParent)
+    void (*init_func)(Obj* const, Obj* const),
+    bool (*main_func)(Obj* const),
+    void (*draw_func)(Obj* const, u8* draw_addr),
+    Obj* const p_parent)
 {
-    OBJ_CREATE(_pObjFreeEnemyBullet, _pObjInUseEnemyBullet, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(p_obj_free_enemy_bullet_, p_obj_in_use_enemy_bullet_, init_func, main_func, draw_func, p_parent);
 }
 Obj* objCreateItem(
-    void (*initFunc)(Obj* const, Obj* const),
-    bool (*mainFunc)(Obj* const),
-    void (*drawFunc)(Obj* const, u8* drawAddr),
-    Obj* const pParent)
+    void (*init_func)(Obj* const, Obj* const),
+    bool (*main_func)(Obj* const),
+    void (*draw_func)(Obj* const, u8* draw_addr),
+    Obj* const p_parent)
 {
-    OBJ_CREATE(_pObjFreeItem, _pObjInUseItem, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(p_obj_free_item_, p_obj_in_use_item_, init_func, main_func, draw_func, p_parent);
 }
 Obj* objCreateEtc(
-    void (*initFunc)(Obj* const, Obj* const),
-    bool (*mainFunc)(Obj* const),
-    void (*drawFunc)(Obj* const, u8* drawAddr),
-    Obj* const pParent)
+    void (*init_func)(Obj* const, Obj* const),
+    bool (*main_func)(Obj* const),
+    void (*draw_func)(Obj* const, u8* draw_addr),
+    Obj* const p_parent)
 {
-    OBJ_CREATE(_pObjFreeEtc, _pObjInUseEtc, initFunc, mainFunc, drawFunc, pParent);
+    OBJ_CREATE(p_obj_free_etc_, p_obj_in_use_etc_, init_func, main_func, draw_func, p_parent);
 }
 
 

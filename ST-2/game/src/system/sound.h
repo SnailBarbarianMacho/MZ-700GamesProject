@@ -201,9 +201,9 @@
 #define SD_SE_PRIORITY_3 3  // 最も低い SE 優先順位
 
 // ---------------------------------------------------------------- private 変数. 直接触らない
-extern u16  (*_bgmMain)(u16);
-extern u16  _bgmCt;
-extern u8   _sePri;
+extern u16  (*bgm_main_)(u16);
+extern u16  bgm_ct_;
+extern u8   se_pri_;
 
 // ---------------------------------------------------------------- システム
 /** サウンド システムの初期化 */
@@ -217,7 +217,7 @@ void sdSeMain();
  * - false だと全ての音声が鳴りません
  * - シーンが変更されると自動で false になります
  */
-void sdSetEnabled(const bool bEnabled) __z88dk_fastcall __naked;
+void sdSetEnabled(const bool b_enabled) __z88dk_fastcall __naked;
 
 // ---------------------------------------------------------------- サウンド シーケンサ
 /** BGM を鳴らします.
@@ -232,7 +232,7 @@ void sdPlayBgm(const u8 bgm) __z88dk_fastcall;
 void sdPlaySe(const u8 se) __z88dk_fastcall;
 
 /** 現在の SE(効果音) プライオリティを返します */
-inline u8 sdGetSePriority() { return _sePri; }
+inline u8 sdGetSePriority() { return se_pri_; }
 
 // ---------------------------------------------------------------- 音を鳴らす
 /**
@@ -266,11 +266,11 @@ void sd1Play(const u8 scale) __z88dk_fastcall __naked;
  * @param mml0 サウンド データ0
  * @param mml1 サウンド データ1
  * @param mml2 サウンド データ2
- * @param bCancelEnabled true にすると F1 キーを押しっぱなしでキャンセルします.
+ * @param b_cancel_enabled true にすると F1 キーを押しっぱなしでキャンセルします.
  *  - キャンセル時は, F1 キーを離さないと関数は終了しません
  * @return false/true = キャンセルされた/通常終了
  */
-bool sd3Play(const u8* mml0, const u8* mml1, const u8* mml2, const bool bCancelEnabled) __naked;
+bool sd3Play(const u8* mml0, const u8* mml1, const u8* mml2, const bool b_cancel_enabled) __naked;
 
 
 #endif // SOUND_H_INCLUDED

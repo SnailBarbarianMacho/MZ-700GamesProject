@@ -21,14 +21,14 @@
 
 // BGM シーケンサ記述構造体
 typedef struct s_BgmSequencerDesc {
-    void (*init)();  // 初期化関数 nullptr 可
-    u16 (*main)(u16);// sdMake() で音を出す関数. 引数は唯一の変数として使用し, 戻値で保存. 初期値 0. nullptr 可
+    void (*init_func)();  // 初期化関数 nullptr 可
+    u16 (*main_func)(u16);// sdMake() で音を出す関数. 引数は唯一の変数として使用し, 戻値で保存. 初期値 0. nullptr 可
 } BgmSequencerDesc;
 
 // ---------------------------------------------------------------- private 変数. 直接触らない
-extern const BgmSequencerDesc _bgmSequencerTab[NR_BGMS];
+extern const BgmSequencerDesc bgm_sequencer_tab_[NR_BGMS];
 
 // ---------------------------------------------------------------- BGM シーケンサ
-inline const BgmSequencerDesc* bgmGetSequencerDesc(const u8 bgm) { return &_bgmSequencerTab[bgm]; }
+inline const BgmSequencerDesc* bgmGetSequencerDesc(const u8 bgm) { return &bgm_sequencer_tab_[bgm]; }
 
 #endif // BGM_H_INCLUDED

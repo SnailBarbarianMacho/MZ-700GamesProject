@@ -4,6 +4,7 @@
  */
 
 #include "../../../../src-common/common.h"
+#include "../../../../src-common/hard.h"
 #include "../system/addr.h"
 #include "../system/sys.h"
 #include "../system/vram.h"
@@ -13,25 +14,25 @@
 #if DEBUG
 #include "../system/input.h"
 #endif
-#include "../game/gameMode.h"
-#include "../objworks/objItem.h"
-#include "../objworks/objEnemy.h"
+#include "../game/game_mode.h"
+#include "../objworks/obj_item.h"
+#include "../objworks/obj_enemy.h"
 #include "se.h"
 #include "score.h"
 
 // ---------------------------------------------------------------- 変数
-u16  _score;
-u16  _scoreForLife;  // 残機を増やす用のスコア
-u16  _scoreHiScore;
-u16  _scoreHiScoreCaravan;
-u8   _scoreLevel;
-u8   _scoreSubLevel;
-u8   _scoreLeft;
-bool _bScoreEnabled;
-u16  _scoreNrContinues;
-u16  _scoreNrMisses;
+u16  score_;
+u16  score_for_life_;  // 残機を増やす用のスコア
+u16  score_hi_score_;
+u16  score_hi_score_caravan_;
+u8   score_level_;
+u8   score_sub_level_;
+u8   score_left_;
+bool b_score_enabled_;
+u16  score_nr_continues_;
+u16  score_nr_misses_;
 #if DEBUG
-const u8* _scoreStepStr;
+const u8* score_step_str_;
 #endif
 
 // ---------------------------------------------------------------- マクロ
@@ -49,9 +50,9 @@ const u8* _scoreStepStr;
 void scoreInit() __z88dk_fastcall
 {
     scoreGameStart();
-    _scoreHiScore   = 500;
-    _scoreLeft      = 0;
-    _bScoreEnabled  = true;
+    score_hi_score_   = 500;
+    score_left_       = 0;
+    b_score_enabled_  = true;
 
     // サブ レベル テーブル作成
     u8* p = (u8*)ADDR_SUB_LEVEL;
@@ -67,113 +68,131 @@ void scoreInit() __z88dk_fastcall
     }
 
 #if DEBUG
-    _scoreStepStr = nullptr;
+    score_step_str_ = nullptr;
 #endif
 }
 
 // ---------------------------------------------------------------- メイン
+/** 555 カーソルタイマーの点滅をゲット */
+static u8 cursorBlank() __naked
+{
+__asm
+    BANK_VRAM_IO
+    LD      A, (#MIO_8255_PORTC)
+    BANK_RAM
+    AND     A, #MIO_8255_PORTC_556OUT_MASK
+    LD      L, A
+    RET
+__endasm;
+}
+
 void scoreMain() __z88dk_fastcall
 {
-    if (!_bScoreEnabled) {
-        _bScoreEnabled = true;
+    if (!b_score_enabled_) {
+        b_score_enabled_ = true;
         return;
     }
-    static const u8 str1Up[]  = { CHAR_1, CHAR_U, CHAR_P, 0 };
-    static const u8 strHi[]   = { CHAR_COL7, CHAR_H, CHAR_I, 0 };
+    static const u8 str_1up[]  = { DC_1, DC_U, DC_P, 0 };
+    static const u8 str_hi[]   = { DC_COL7, DC_H, DC_I, 0 };
 
     // -------- スコア表示
     printSetAtb(VATB(7, 0, 0));
-    if (_scoreHiScore < _score) {
+    if (score_hi_score_ < score_) {
         printSetAtb(VATB(6, 0, 0));    // ハイ スコア突破したら色が変わる
     }
     printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 0));
     if (sysIsGameMode()) {
-        if (sysGetCounter() & 0x10) {
-            printString(str1Up);        // プレイ中は点滅します
+        if (cursorBlank()) {
+            printString(str_1up);        // プレイ中は点滅します
         } else {
             printAddAddr(3);
         }
     } else {
-        printString(str1Up);
+        printString(str_1up);
     }
     printAddAddr(1);
-    printU16Right(_score);
-    printPutc(CHAR_0);
+    printU16Right(score_);
+    printPutc(DC_0);
 
     // -------- ハイ スコア表示
     printSetAddr((u8*)VVRAM_TEXT_ADDR(13, 0));
-    printString(strHi);
+    printString(str_hi);
     printAddAddr(1);
-    printU16Right(_scoreHiScore);
-    printPutc(CHAR_0);
+    printU16Right(score_hi_score_);
+    printPutc(DC_0);
 
     // -------- 残機表示
     if (gameIsCaravan()) {
         printSetAddr((u8*)VVRAM_TEXT_ADDR(35, 0));
         u16 timer = gameGetCaravanTimer() / GAME_FPS;
         printU16Left(timer);
-        printPutc(CHAR_PERIOD);
+        printPutc(DC_PERIOD);
         timer = gameGetCaravanTimer() % GAME_FPS;
-        static const u8 tab[] = {
-            CHAR_0, CHAR_0, CHAR_0, CHAR_1,  CHAR_1, CHAR_1, CHAR_2, CHAR_2,
-            CHAR_2, CHAR_2, CHAR_3, CHAR_3,  CHAR_3, CHAR_4, CHAR_4, CHAR_4,
-            CHAR_5, CHAR_5, CHAR_5, CHAR_6,  CHAR_6, CHAR_6, CHAR_6, CHAR_7,
-            CHAR_7, CHAR_7, CHAR_8, CHAR_8,  CHAR_8, CHAR_9, CHAR_9, CHAR_9, };
-        printPutc(tab[timer]);
+        static const u8 TAB[] = {
+            DC_0, DC_0, DC_0, DC_1,  DC_1, DC_1, DC_2, DC_2,
+            DC_2, DC_2, DC_3, DC_3,  DC_3, DC_4, DC_4, DC_4,
+            DC_5, DC_5, DC_5, DC_6,  DC_6, DC_6, DC_6, DC_7,
+            DC_7, DC_7, DC_8, DC_8,  DC_8, DC_9, DC_9, DC_9, };
+        printPutc(TAB[timer]);
     } else {
-        u8  left = _scoreLeft;
+        u8  left = score_left_;
         if (5 < left) { left = 5; }
-        u8* tAddr = (u8*)VVRAM_TEXT_ADDR(35, 0);
-        u8* aAddr = (u8*)VVRAM_ATB_ADDR(35, 0);
+        u8* t_addr = (u8*)VVRAM_TEXT_ADDR(35, 0);
+        u8* a_addr = (u8*)VVRAM_ATB_ADDR(35, 0);
         for (; 0 < left; left--) {
-            *tAddr ++ = 0xc9;
-            *aAddr ++ = VATB(5, 0, 0);
+            *t_addr ++ = 0xc9;
+            *a_addr ++ = VATB(5, 0, 0);
         }
     }
 
     if (!sysIsGameMode()) {
         // -------- ゲーム オーバー表示
-#include "../../text/gameOver.h"
+#include "../../text/game_over.h"
         printSetAddr((u8*)VVRAM_TEXT_ADDR(15, 15));
-        printString(textGameOver);
+        printString(text_game_over);
     } else {
         // -------- レベル表示
         printSetAddr((u8*)VVRAM_TEXT_ADDR(25, 0));
-        printPutc(CHAR_L);
-        printPutc(CHAR_V);
+        printPutc(DC_L);
+        printPutc(DC_V);
         printAddAddr(4);
-        printU8Left(_scoreLevel);
+        printU8Left(score_level_);
 
         // サブ レベル 4 * 4 文字 * 7段階
-        static const u8 subLevelTextTab[] = {
+        static const u8 SUB_LEVEL_TEXT_TAB[] = {
             0x37, 0x7b, 0x3f, 0x43,
         };
-        u8* addrText = (u8*)VVRAM_TEXT_ADDR(27, 0);
-        u8* addrAtb  = (u8*)VVRAM_ATB_ADDR(27, 0);
-        u8 sl  = _scoreSubLevel;
+        u8* t_addr = (u8*)VVRAM_TEXT_ADDR(27, 0);
+        u8* a_addr = (u8*)VVRAM_ATB_ADDR(27, 0);
+        u8 sl  = score_sub_level_;
         u8 j   = (sl / 4) & 3;
         u8 atb = ((u8*)ADDR_SUB_LEVEL)[sl & 0xf0];
         for (u8 i = 0; i < j; ++i) {
-            *addrText++ = 0x43;
-            *addrAtb++  = atb;
+            *t_addr++ = 0x43;
+            *a_addr++  = atb;
         }
-        *addrText++ = subLevelTextTab[sl & 0x03];
-        *addrAtb++  = ((u8*)ADDR_SUB_LEVEL)[sl];
+        *t_addr++ = SUB_LEVEL_TEXT_TAB[sl & 0x03];
+        *a_addr++  = ((u8*)ADDR_SUB_LEVEL)[sl];
         atb = ((u8*)ADDR_SUB_LEVEL)[(sl & 0xf0) + 2];
         for (u8 i = j + 1; i < 4; i++) {
-            *addrText++ = 0x43;
-            *addrAtb++  = atb;
+            *t_addr++ = 0x43;
+            *a_addr++  = atb;
         }
     }
 
 #if DEBUG
-    // 現在のシーンと, 処理時間表示
-    //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 22)); printHex16(inputGet());//TEST
-    //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 22)); printHex16(inputGetTrigger());//TEST
-    static const u8 strMs[] = { CHAR_CAPS, CHAR_M, CHAR_S, CHAR_CAPS, 0 };
-    printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 23)); printU16Left(vramDebugGetProcessTime()); printString(strMs);
-    if (_scoreStepStr) {
-        printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 24)); printString(_scoreStepStr);
+    // 入力, 処理時間, 現在のシーン表示
+    //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 22));
+    //printHex16(inputGet());
+    //printHex16(inputGetTrigger());
+
+    static const u8 str_ms[] = { DC_CAPS, DC_M, DC_S, DC_CAPS, 0 };
+    printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 23));
+    printU16Left(vramDebugGetProcessTime()); printString(str_ms);
+
+    if (score_step_str_) {
+        printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 24));
+        printString(score_step_str_);
     }
 #endif
 }
@@ -187,13 +206,13 @@ void scoreGameStart()__z88dk_fastcall
         return;
     }
     scoreContinue();
-    _scoreSubLevel    = 0;
-    _scoreNrContinues = 0;
-    _scoreNrMisses    = 0;
-    _scoreLevel       = (gameGetMode() == GAME_MODE_EASY) ? START_LEVEL_EASY : START_LEVEL;
+    score_sub_level_    = 0;
+    score_nr_continues_ = 0;
+    score_nr_misses_    = 0;
+    score_level_        = (gameGetMode() == GAME_MODE_EASY) ? START_LEVEL_EASY : START_LEVEL;
 #if DEBUG
-    _score            = 0;
-    _scoreForLife     = SCORE_BONUS_SHIP - SCORE_BONUS_SHIP_1;
+    score_              = 0;
+    score_for_life_     = SCORE_BONUS_SHIP - SCORE_BONUS_SHIP_1;
 #endif
     objItemInitStatistics();
     objEnemyInitStatistics();
@@ -203,27 +222,27 @@ void scoreContinue()__z88dk_fastcall
 {
 #if DEBUG
 #else
-    _score        = 0;
-    _scoreForLife = SCORE_BONUS_SHIP - SCORE_BONUS_SHIP_1;
+    score_          = 0;
+    score_for_life_ = SCORE_BONUS_SHIP - SCORE_BONUS_SHIP_1;
 #endif
-    _scoreNrContinues++;
-    //_score        = 300;//DEBUG
-    //_scoreForLife += _score; // DEBUG
-    //_scoreSubLevel     = 0; // レベルは下がらないが, サブレベルは 0 から再開
-    _scoreLeft         = (GAME_MODE_SURVIVAL <= gameGetMode()) ? 0 : LEFT; // サバイバル, キャラバン モードは残機なし
+    score_nr_continues_++;
+    //score_           = 300;//DEBUG
+    //score_for_life_ += score_; // DEBUG
+    //score_sub_level_ = 0; // レベルは下がらないが, サブレベルは 0 から再開
+    score_left_         = (GAME_MODE_SURVIVAL <= gameGetMode()) ? 0 : LEFT; // サバイバル, キャラバン モードは残機なし
 }
 
 // ---------------------------------------------------------------- スコア, ハイ スコア
 bool scoreAdd(const u16 score)__z88dk_fastcall
 {
     if (sysIsGameMode()) {
-        _score = addSaturateU16(_score, score);
-        if (gameIsIncLeft() && (_score != 0xffff)) {
-            _scoreForLife += score; // ゲーム モードによっては残機は増えない. カンストしたら残機は増えない.
+        score_ = addSaturateU16(score_, score);
+        if (gameIsIncLeft() && (score_ != 0xffff)) {
+            score_for_life_ += score; // ゲーム モードによっては残機は増えない. カンストしたら残機は増えない.
         }
-        if (SCORE_BONUS_SHIP < _scoreForLife) {
-            _scoreForLife -= SCORE_BONUS_SHIP;
-            _scoreLeft++;
+        if (SCORE_BONUS_SHIP < score_for_life_) {
+            score_for_life_ -= SCORE_BONUS_SHIP;
+            score_left_++;
             sdPlaySe(SE_1UP);
             return true;
         }
@@ -233,8 +252,8 @@ bool scoreAdd(const u16 score)__z88dk_fastcall
 
 bool scoreReflectHiScore()__z88dk_fastcall
 {
-    if (_scoreHiScore < _score) {
-        _scoreHiScore = _score;
+    if (score_hi_score_ < score_) {
+        score_hi_score_ = score_;
         return true;
     }
     return false;
@@ -245,32 +264,32 @@ bool scoreReflectHiScore()__z88dk_fastcall
 bool scoreDecrementLeft()__z88dk_fastcall
 {
     if (sysIsGameMode()) {
-        _scoreNrMisses++;
+        score_nr_misses_++;
         if (gameIsCaravan()) {  // キャラバン モードは何回死んでもいい
             return false;
         }
-        if (_scoreLeft == 0) {
+        if (score_left_ == 0) {
             return true;
         }
         if (gameGetMode() == GAME_MODE_HARD) {  // ハードモードではレベル 10% 引
-            _scoreLevel -= _scoreLevel / 10;
-            _scoreSubLevel = 0;
+            score_level_ -= score_level_ / 10;
+            score_sub_level_ = 0;
         }
-        _scoreLeft --;
+        score_left_ --;
     }
     return false;
 }
 
 // ---------------------------------------------------------------- レベル
-void scoreAddSubLevel(const u8 subLevel)__z88dk_fastcall
+void scoreAddSubLevel(const u8 sub_level)__z88dk_fastcall
 {
-    if (_scoreLevel != 255) {    // カンスト
-        _scoreSubLevel += subLevel;
-        if (4 * 4 * 7 <= _scoreSubLevel) {
-            _scoreSubLevel -= 4 * 4 * 7;
-            _scoreLevel++;
-            if (_scoreLevel == 255) {
-                _scoreSubLevel = 0;
+    if (score_level_ != 255) {    // カンスト
+        score_sub_level_ += sub_level;
+        if (4 * 4 * 7 <= score_sub_level_) {
+            score_sub_level_ -= 4 * 4 * 7;
+            score_level_++;
+            if (score_level_ == 255) {
+                score_sub_level_ = 0;
             }
             sdPlaySe(SE_LEVEL_UP);
         }

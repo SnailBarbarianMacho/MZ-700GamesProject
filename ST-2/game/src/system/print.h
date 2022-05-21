@@ -1,6 +1,6 @@
 /**
  * 文字の表示
- * - 名前空間 PRINT_ CHAR_ ATB または print
+ * - 名前空間 ATB または print
  * - 文字, 数値の表示
  * - 画像の表示
  *
@@ -11,7 +11,7 @@
 #define PRINT_H_INCLUDED
 
 #include "../../../../src-common/common.h"
-#include "../../../../src-common/char.h"
+#include "../../../../src-common/display_code.h"
 
 // ---------------------------------------------------------------- マクロ
 
@@ -45,7 +45,7 @@ void printPutc(const u8 c) __z88dk_fastcall __naked;
 // ---------------------------------------------------------------- 表示(文字列)
 /**
  * printString() と同じですが, 最大文字列の長さを指定できます.
- * - 制御コード(CHAR_CAPS 等)を除きます
+ * - 制御コード(DC_CAPS 等)を除きます
  * - スペースは含みます
  * @param len 制御コードを除いた文字数. 負の値も指定できます. 0 未満の場合, 表示されません
  */
@@ -53,7 +53,7 @@ void printStringWithLength(const u8* const str, const s16 len) __naked;
 /**
  * 文字列を表示します
  * - 0 を検出すると, そこまで表示して終了します
- * - CHAR_CAPS で小文字やひらがなに変更しても, 終了したら戻ります
+ * - DC_CAPS で小文字やひらがなに変更しても, 終了したら戻ります
  */
 inline void printString(const u8* const str) {
     printStringWithLength(str, 0x7fff);

@@ -7,22 +7,22 @@
 #include "../../../../src-common/hard.h"
 #include "input.h"
 #include "vram.h"//TEST
-#include "print.h"//TEEST
+#include "print.h"//TEST
 
 // ---------------------------------------------------------------- 変数
-u8          _input;                 // 入力生データ
-static u8   _inputOld;              // 入力生データ
-u8          _inputTrg;              // 入力 OFF->ON エッジ データ
+u8          input_;                 // 入力生データ
+static u8   input_old_;              // 入力生データ
+u8          input_trg_;              // 入力 OFF->ON エッジ データ
 
 // ---------------------------------------------------------------- システム
 void inputInit() __z88dk_fastcall
 {
-    _input    = 0;
-    _inputOld = 0;
-    _inputTrg = 0;
+    input_     = 0;
+    input_old_ = 0;
+    input_trg_ = 0;
 }
 
-static const u8 sInputTab[] = {
+static const u8 INPUT_TAB_[] = {
     // strobe, count, mask, input, mask, input, ...
     0xf1,      1, /* Z */0x40, INPUT_MASK_A,
     0xf2,      5, /* S */0x20, INPUT_MASK_D, /* U */0x08, INPUT_MASK_U, /* V */0x04, INPUT_MASK_A, /* W */0x02, INPUT_MASK_U, /* X */0x01, INPUT_MASK_B,
@@ -37,14 +37,14 @@ static const u8 sInputTab[] = {
 void inputMain() __z88dk_fastcall __naked
 {
 __asm
-    ld      A, (#__input)
-    ld      (#__inputOld), A
+    ld      A, (#_input_)
+    ld      (#_input_old_), A
 
     BANK_VRAM_IO                // バンク切替
 
-    ld      HL, #_sInputTab
+    ld      HL, #_INPUT_TAB_
     ld      DE, #MIO_8255_PORTA
-    ld      C,  0x00            // _input
+    ld      C,  0x00            // input_
 
     // -------- write strobe
 STROBE_LOOP:
@@ -67,8 +67,8 @@ KEY_LOOP:
     and     A, E
     jp      nz, KEY_LOOP_END
     ld      A, (HL)
-    or      A, C                // _input
-    ld      C, A                // _input
+    or      A, C                // input_
+    ld      C, A                // input_
 KEY_LOOP_END:
     inc     HL
     djnz    B, KEY_LOOP
@@ -76,9 +76,9 @@ KEY_LOOP_END:
     jp      STROBE_LOOP
 
 STROBE_LOOP_END:
-    ld      A, C                // _input
-    ld      (#__input), A
-    ld      E, A                // _input 保存
+    ld      A, C                // input_
+    ld      (#_input_), A
+    ld      E, A                // input_ 保存
 
     // -------- ジョイスティックの読み取り(1) JA2 立下がり検出
     ld      HL, #MIO_ETC
@@ -181,18 +181,18 @@ JEND2:
 #endif
     // -------- ジョイスティック入力があったなら合成
     or      A, E
-    ld      (#__input), A
+    ld      (#_input_), A
     ld      E, A
 
 JEND:
     BANK_RAM                    // バンク切替
 
-    // -------- _inputTrg = _input & ~_inputOld;
-    ld      A, (#__inputOld)
+    // -------- input_trg_ = input_ & ~input_old_;
+    ld      A, (#_input_old_)
     cpl     A                   // ビット反転
-    and     A, E                // _input
+    and     A, E                // input_
 
-    ld      (#__inputTrg), A
+    ld      (#_input_trg_), A
 
     ret
 __endasm;

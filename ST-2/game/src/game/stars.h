@@ -11,7 +11,7 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- private 変数. 直接触らない
-extern bool _bStarsEnabled;
+extern bool b_stars_enabled_;
 
 // ---------------------------------------------------------------- 初期化, メイン
 void starsInit();
@@ -19,6 +19,6 @@ void starsMain();
 
 // ---------------------------------------------------------------- 制御
 /** 星の描画を停止します. 次のフレームでは許可されます */
-inline void starsSetDisabled() { _bStarsEnabled = false; }
+inline void starsSetDisabled() { b_stars_enabled_ = false; }
 
 #endif // STARS_H_INCLUDED

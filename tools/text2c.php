@@ -30,7 +30,7 @@ if (count($argv) != 3)
     exit(1);
 }
 $inTextFilename = $argv[1];
-$outFilename   = $argv[2];
+$outFilename    = $argv[2];
 
 if (file_exists($inTextFilename) === false) {
     fwrite(STDERR, "file not found[$inTextFilename]\n");
@@ -38,97 +38,99 @@ if (file_exists($inTextFilename) === false) {
 }
 
 const TAB = [
-    ' ' => 'CHAR_SP', '　' => 'CHAR_SP', '{sp}' => 'CHAR_SP',
-    '{lf}' => 'CHAR_LF', '{lf2}' => 'CHAR_LF2',
+    ' ' => 'DC_SP',
+    '　' => 'DC_SP',
+    '{sp}' => 'DC_SP',
+    '{lf}' => 'DC_LF',
+    '{lf2}' => 'DC_LF2',
 
-    'A' => 'CHAR_A', 'B' => 'CHAR_B', 'C' => 'CHAR_C', 'D' => 'CHAR_D', 'E' => 'CHAR_E',
-    'F' => 'CHAR_F', 'G' => 'CHAR_G', 'H' => 'CHAR_H', 'I' => 'CHAR_I', 'J' => 'CHAR_J',
-    'K' => 'CHAR_K', 'L' => 'CHAR_L', 'M' => 'CHAR_M', 'N' => 'CHAR_N', 'O' => 'CHAR_O',
-    'P' => 'CHAR_P', 'Q' => 'CHAR_Q', 'R' => 'CHAR_R', 'S' => 'CHAR_S', 'T' => 'CHAR_T',
-    'U' => 'CHAR_U', 'V' => 'CHAR_V', 'W' => 'CHAR_W', 'X' => 'CHAR_X', 'Y' => 'CHAR_Y',
-    'Z' => 'CHAR_Z',
-    'a' => 'CHAR_A', 'b' => 'CHAR_B', 'c' => 'CHAR_C', 'd' => 'CHAR_D', 'e' => 'CHAR_E',
-    'f' => 'CHAR_F', 'g' => 'CHAR_G', 'h' => 'CHAR_H', 'i' => 'CHAR_I', 'j' => 'CHAR_J',
-    'k' => 'CHAR_K', 'l' => 'CHAR_L', 'm' => 'CHAR_M', 'n' => 'CHAR_N', 'o' => 'CHAR_O',
-    'p' => 'CHAR_P', 'q' => 'CHAR_Q', 'r' => 'CHAR_R', 's' => 'CHAR_S', 't' => 'CHAR_T',
-    'u' => 'CHAR_U', 'v' => 'CHAR_V', 'w' => 'CHAR_W', 'x' => 'CHAR_X', 'y' => 'CHAR_Y',
-    'z' => 'CHAR_Z',
-    '0' => 'CHAR_0', '1' => 'CHAR_1', '2' => 'CHAR_2', '3' => 'CHAR_3', '4' => 'CHAR_4',
-    '5' => 'CHAR_5', '6' => 'CHAR_6', '7' => 'CHAR_7', '8' => 'CHAR_8', '9' => 'CHAR_9',
-    '+' => 'CHAR_PLUS',   '-' => 'CHAR_HYPHEN', '*' => 'CHAR_ASTERISK', '/' => 'CHAR_SLASH',
-    '#' => 'CHAR_NUMBER', '$' => 'CHAR_DOLLER', '%' => 'CHAR_PERCENT',  '&' => 'CHAR_AMPERSAND',
-    '=' => 'CHAR_EQUALS',        '@' => 'CHAR_AT',
-    ':' => 'CHAR_COLON',         ';' => 'CHAR_SEMICOLON',
-    '.' => 'CHAR_PERIOD',        ',' => 'CHAR_COMMA',
-    '?' => 'CHAR_QUESTIO',       '？' => 'CHAR_QUESTIO',
-    '!' => 'CHAR_EXCLAMATION',   '！' => 'CHAR_EXCLAMATION',
-    '"' => 'CHAR_QUOTATION',     "'" => 'CHAR_APOSTROPHE',
-    '(' => 'CHAR_L_PARENTHESIS', ')' => 'CHAR_R_PARENTHESIS',
-    '[' => 'CHAR_L_SQ_BLACKET',  ']' => 'CHAR_R_SQ_BLACKET',
-    '<' => 'CHAR_LT',            '>' => 'CHAR_GT',
-    'π' => 'CHAR_PI',           '￥' => 'CHAR_YEN',      '\\' => 'CHAR_BACK_SLASH',
-    '←' => 'CHAR_R_ARROW',      '↑' => 'CHAR_U_ARROW',
+    'A' => 'DC_A', 'B' => 'DC_B', 'C' => 'DC_C', 'D' => 'DC_D', 'E' => 'DC_E',
+    'F' => 'DC_F', 'G' => 'DC_G', 'H' => 'DC_H', 'I' => 'DC_I', 'J' => 'DC_J',
+    'K' => 'DC_K', 'L' => 'DC_L', 'M' => 'DC_M', 'N' => 'DC_N', 'O' => 'DC_O',
+    'P' => 'DC_P', 'Q' => 'DC_Q', 'R' => 'DC_R', 'S' => 'DC_S', 'T' => 'DC_T',
+    'U' => 'DC_U', 'V' => 'DC_V', 'W' => 'DC_W', 'X' => 'DC_X', 'Y' => 'DC_Y',
+    'Z' => 'DC_Z',
+    'a' => 'DC_A', 'b' => 'DC_B', 'c' => 'DC_C', 'd' => 'DC_D', 'e' => 'DC_E',
+    'f' => 'DC_F', 'g' => 'DC_G', 'h' => 'DC_H', 'i' => 'DC_I', 'j' => 'DC_J',
+    'k' => 'DC_K', 'l' => 'DC_L', 'm' => 'DC_M', 'n' => 'DC_N', 'o' => 'DC_O',
+    'p' => 'DC_P', 'q' => 'DC_Q', 'r' => 'DC_R', 's' => 'DC_S', 't' => 'DC_T',
+    'u' => 'DC_U', 'v' => 'DC_V', 'w' => 'DC_W', 'x' => 'DC_X', 'y' => 'DC_Y',
+    'z' => 'DC_Z',
+    '0' => 'DC_0', '1' => 'DC_1', '2' => 'DC_2', '3' => 'DC_3', '4' => 'DC_4',
+    '5' => 'DC_5', '6' => 'DC_6', '7' => 'DC_7', '8' => 'DC_8', '9' => 'DC_9',
+    '+' => 'DC_PLUS',   '-' => 'DC_MINUS', '*' => 'DC_STAR', '/' => 'DC_SLASH',
+    '#' => 'DC_NUMBER', '$' => 'DC_DOLLER', '%' => 'DC_PERCENT',  '&' => 'DC_AMP',
+    '=' => 'DC_EQUAL',         '@' => 'DC_AT',
+    ':' => 'DC_COLON',         ';' => 'DC_SEMICOLON',
+    '.' => 'DC_PERIOD',        ',' => 'DC_COMMA',
+    '?' => 'DC_QUESTION',      '？' => 'DC_QUESTION',
+    '!' => 'DC_EXCLAM',        '！' => 'DC_EXCLAM',
+    '"' => 'DC_QUOT',          "'" => 'DC_APOS',
+    '(' => 'DC_L_BLACKET',     ')' => 'DC_R_BLACKET',
+    '[' => 'DC_L_SQ_BLACKET',  ']' => 'DC_R_SQ_BLACKET',
+    '<' => 'DC_LT',            '>' => 'DC_GT',
+    'π' => 'DC_PI',            '￥' => 'DC_YEN',      '\\' => 'DC_BACK_SLASH',
+    '←' => 'DC_R_ARROW',       '↑' => 'DC_U_ARROW',
 
-    '■' => 'CHAR_SQUARE',
-    '♠' => 'CHAR_SPADE', '♦' => 'CHAR_DIAMOND', '♣' => 'CHAR_CLUB', '♥' => 'CHAR_HEART',
+    '■' => 'DC_SQUARE',
+    '♠' => 'DC_SPADE', '♦' => 'DC_DIAMOND', '♣' => 'DC_CLUB', '♥' => 'DC_HEART',
 
-    'ア' => 'CHAR_KANA_A',  'イ' => 'CHAR_KANA_I',  'ウ' => 'CHAR_KANA_U',  'エ' => 'CHAR_KANA_E',  'オ' => 'CHAR_KANA_O',
-    'ァ' => 'CHAR_KANA_XA', 'ィ' => 'CHAR_KANA_XI', 'ゥ' => 'CHAR_KANA_XU', 'ェ' => 'CHAR_KANA_XE', 'ォ' => 'CHAR_KANA_XO',
-    'ヴ' => 'CHAR_KANA_VU',
-    'カ' => 'CHAR_KANA_KA', 'キ' => 'CHAR_KANA_KI',  'ク' => 'CHAR_KANA_KU',  'ケ' => 'CHAR_KANA_KE', 'コ' => 'CHAR_KANA_KO',
-    'ガ' => 'CHAR_KANA_GA', 'ギ' => 'CHAR_KANA_GI',  'グ' => 'CHAR_KANA_GU',  'ゲ' => 'CHAR_KANA_GE', 'ゴ' => 'CHAR_KANA_GO',
-    'サ' => 'CHAR_KANA_SA', 'シ' => 'CHAR_KANA_SHI', 'ス' => 'CHAR_KANA_SU',  'セ' => 'CHAR_KANA_SE', 'ソ' => 'CHAR_KANA_SO',
-    'ザ' => 'CHAR_KANA_ZA', 'ジ' => 'CHAR_KANA_ZI',  'ズ' => 'CHAR_KANA_ZU',  'ゼ' => 'CHAR_KANA_ZE', 'ゾ' => 'CHAR_KANA_ZO',
-    'タ' => 'CHAR_KANA_TA', 'チ' => 'CHAR_KANA_CHI', 'ツ' => 'CHAR_KANA_TSU', 'テ' => 'CHAR_KANA_TE', 'ト' => 'CHAR_KANA_TO',
-    'ダ' => 'CHAR_KANA_DA', 'ヂ' => 'CHAR_KANA_DI',  'ヅ' => 'CHAR_KANA_DU',  'デ' => 'CHAR_KANA_DE', 'ド' => 'CHAR_KANA_DO',
-    'ッ' => 'CHAR_KANA_XTSU',
-    'ナ' => 'CHAR_KANA_NA', 'ニ' => 'CHAR_KANA_NI', 'ヌ' => 'CHAR_KANA_NU', 'ネ' => 'CHAR_KANA_NE', 'ノ' => 'CHAR_KANA_NO',
-    'ハ' => 'CHAR_KANA_HA', 'ヒ' => 'CHAR_KANA_HI', 'フ' => 'CHAR_KANA_FU', 'ヘ' => 'CHAR_KANA_HE', 'ホ' => 'CHAR_KANA_HO',
-    'バ' => 'CHAR_KANA_BA', 'ビ' => 'CHAR_KANA_BI', 'ブ' => 'CHAR_KANA_BU', 'ベ' => 'CHAR_KANA_BE', 'ボ' => 'CHAR_KANA_BO',
-    'パ' => 'CHAR_KANA_PA', 'ピ' => 'CHAR_KANA_PI', 'プ' => 'CHAR_KANA_PU', 'ペ' => 'CHAR_KANA_PE', 'ポ' => 'CHAR_KANA_PO',
-    'マ' => 'CHAR_KANA_MA', 'ミ' => 'CHAR_KANA_MI', 'ム' => 'CHAR_KANA_MU', 'メ' => 'CHAR_KANA_ME', 'モ' => 'CHAR_KANA_MO',
-    'ヤ' => 'CHAR_KANA_YA', 'ユ' => 'CHAR_KANA_YU', 'ヨ' => 'CHAR_KANA_YO',
-    'ャ' => 'CHAR_KANA_XYA', 'ュ' => 'CHAR_KANA_XYU', 'ョ' => 'CHAR_KANA_XYO',
-    'ラ' => 'CHAR_KANA_RA', 'リ' => 'CHAR_KANA_RI', 'ル' => 'CHAR_KANA_RU', 'レ' => 'CHAR_KANA_RE', 'ロ' => 'CHAR_KANA_RO',
-    'ワ' => 'CHAR_KANA_WA', 'ヲ' => 'CHAR_KANA_WO', 'ン' => 'CHAR_KANA_N',
+    'ア' => 'DC_KANA_A',  'イ' => 'DC_KANA_I',  'ウ' => 'DC_KANA_U',  'エ' => 'DC_KANA_E',  'オ' => 'DC_KANA_O',
+    'ァ' => 'DC_KANA_XA', 'ィ' => 'DC_KANA_XI', 'ゥ' => 'DC_KANA_XU', 'ェ' => 'DC_KANA_XE', 'ォ' => 'DC_KANA_XO',
+    'ヴ' => 'DC_KANA_VU',
+    'カ' => 'DC_KANA_KA', 'キ' => 'DC_KANA_KI',  'ク' => 'DC_KANA_KU',  'ケ' => 'DC_KANA_KE', 'コ' => 'DC_KANA_KO',
+    'ガ' => 'DC_KANA_GA', 'ギ' => 'DC_KANA_GI',  'グ' => 'DC_KANA_GU',  'ゲ' => 'DC_KANA_GE', 'ゴ' => 'DC_KANA_GO',
+    'サ' => 'DC_KANA_SA', 'シ' => 'DC_KANA_SHI', 'ス' => 'DC_KANA_SU',  'セ' => 'DC_KANA_SE', 'ソ' => 'DC_KANA_SO',
+    'ザ' => 'DC_KANA_ZA', 'ジ' => 'DC_KANA_ZI',  'ズ' => 'DC_KANA_ZU',  'ゼ' => 'DC_KANA_ZE', 'ゾ' => 'DC_KANA_ZO',
+    'タ' => 'DC_KANA_TA', 'チ' => 'DC_KANA_CHI', 'ツ' => 'DC_KANA_TSU', 'テ' => 'DC_KANA_TE', 'ト' => 'DC_KANA_TO',
+    'ダ' => 'DC_KANA_DA', 'ヂ' => 'DC_KANA_DI',  'ヅ' => 'DC_KANA_DU',  'デ' => 'DC_KANA_DE', 'ド' => 'DC_KANA_DO',
+    'ッ' => 'DC_KANA_XTSU',
+    'ナ' => 'DC_KANA_NA', 'ニ' => 'DC_KANA_NI', 'ヌ' => 'DC_KANA_NU', 'ネ' => 'DC_KANA_NE', 'ノ' => 'DC_KANA_NO',
+    'ハ' => 'DC_KANA_HA', 'ヒ' => 'DC_KANA_HI', 'フ' => 'DC_KANA_FU', 'ヘ' => 'DC_KANA_HE', 'ホ' => 'DC_KANA_HO',
+    'バ' => 'DC_KANA_BA', 'ビ' => 'DC_KANA_BI', 'ブ' => 'DC_KANA_BU', 'ベ' => 'DC_KANA_BE', 'ボ' => 'DC_KANA_BO',
+    'パ' => 'DC_KANA_PA', 'ピ' => 'DC_KANA_PI', 'プ' => 'DC_KANA_PU', 'ペ' => 'DC_KANA_PE', 'ポ' => 'DC_KANA_PO',
+    'マ' => 'DC_KANA_MA', 'ミ' => 'DC_KANA_MI', 'ム' => 'DC_KANA_MU', 'メ' => 'DC_KANA_ME', 'モ' => 'DC_KANA_MO',
+    'ヤ' => 'DC_KANA_YA', 'ユ' => 'DC_KANA_YU', 'ヨ' => 'DC_KANA_YO',
+    'ャ' => 'DC_KANA_XYA', 'ュ' => 'DC_KANA_XYU', 'ョ' => 'DC_KANA_XYO',
+    'ラ' => 'DC_KANA_RA', 'リ' => 'DC_KANA_RI', 'ル' => 'DC_KANA_RU', 'レ' => 'DC_KANA_RE', 'ロ' => 'DC_KANA_RO',
+    'ワ' => 'DC_KANA_WA', 'ヲ' => 'DC_KANA_WO', 'ン' => 'DC_KANA_N',
 
-    'あ' => 'CHAR_KANA_A',  'い' => 'CHAR_KANA_I',   'う' => 'CHAR_KANA_U',   'え' => 'CHAR_KANA_E',  'お' => 'CHAR_KANA_O',
-    'ぁ' => 'CHAR_KANA_XA', 'ぃ' => 'CHAR_KANA_XI',  'ぅ' => 'CHAR_KANA_XU',  'ぇ' => 'CHAR_KANA_XE', 'ぉ' => 'CHAR_KANA_XO',
-    'か' => 'CHAR_KANA_KA', 'き' => 'CHAR_KANA_KI',  'く' => 'CHAR_KANA_KU',  'け' => 'CHAR_KANA_KE', 'こ' => 'CHAR_KANA_KO',
-    'が' => 'CHAR_KANA_GA', 'ぎ' => 'CHAR_KANA_GI',  'ぐ' => 'CHAR_KANA_GU',  'げ' => 'CHAR_KANA_GE', 'ご' => 'CHAR_KANA_GO',
-    'さ' => 'CHAR_KANA_SA', 'し' => 'CHAR_KANA_SHI', 'す' => 'CHAR_KANA_SU',  'せ' => 'CHAR_KANA_SE', 'そ' => 'CHAR_KANA_SO',
-    'ざ' => 'CHAR_KANA_ZA', 'じ' => 'CHAR_KANA_ZI',  'ず' => 'CHAR_KANA_ZU',  'ぜ' => 'CHAR_KANA_ZE', 'ぞ' => 'CHAR_KANA_ZO',
-    'た' => 'CHAR_KANA_TA', 'ち' => 'CHAR_KANA_CHI', 'つ' => 'CHAR_KANA_TSU', 'て' => 'CHAR_KANA_TE', 'と' => 'CHAR_KANA_TO',
-    'だ' => 'CHAR_KANA_DA', 'ぢ' => 'CHAR_KANA_DI',  'づ' => 'CHAR_KANA_DU',  'で' => 'CHAR_KANA_DE', 'ど' => 'CHAR_KANA_DO',
-    'っ' => 'CHAR_KANA_XTSU',
-    'な' => 'CHAR_KANA_NA', 'に' => 'CHAR_KANA_NI', 'ぬ' => 'CHAR_KANA_NU', 'ね' => 'CHAR_KANA_NE', 'の' => 'CHAR_KANA_NO',
-    'は' => 'CHAR_KANA_HA', 'ひ' => 'CHAR_KANA_HI', 'ふ' => 'CHAR_KANA_FU', 'へ' => 'CHAR_KANA_HE', 'ほ' => 'CHAR_KANA_HO',
-    'ば' => 'CHAR_KANA_BA', 'び' => 'CHAR_KANA_BI', 'ぶ' => 'CHAR_KANA_BU', 'べ' => 'CHAR_KANA_BE', 'ぼ' => 'CHAR_KANA_BO',
-    'ぱ' => 'CHAR_KANA_PA', 'ぴ' => 'CHAR_KANA_PI', 'ぷ' => 'CHAR_KANA_PU', 'ぺ' => 'CHAR_KANA_PE', 'ぽ' => 'CHAR_KANA_PO',
-    'ま' => 'CHAR_KANA_MA', 'み' => 'CHAR_KANA_MI', 'む' => 'CHAR_KANA_MU', 'め' => 'CHAR_KANA_ME', 'も' => 'CHAR_KANA_MO',
-    'や' => 'CHAR_KANA_YA', 'ゆ' => 'CHAR_KANA_YU', 'よ' => 'CHAR_KANA_YO',
-    'ゃ' => 'CHAR_KANA_XYA', 'ゅ' => 'CHAR_KANA_XYU', 'ょ' => 'CHAR_KANA_XYO',
-    'ら' => 'CHAR_KANA_RA', 'り' => 'CHAR_KANA_RI', 'る' => 'CHAR_KANA_RU', 'れ' => 'CHAR_KANA_RE', 'ろ' => 'CHAR_KANA_RO',
-    'わ' => 'CHAR_KANA_WA', 'を' => 'CHAR_KANA_WO', 'ん' => 'CHAR_KANA_N',
+    'あ' => 'DC_KANA_A',  'い' => 'DC_KANA_I',   'う' => 'DC_KANA_U',   'え' => 'DC_KANA_E',  'お' => 'DC_KANA_O',
+    'ぁ' => 'DC_KANA_XA', 'ぃ' => 'DC_KANA_XI',  'ぅ' => 'DC_KANA_XU',  'ぇ' => 'DC_KANA_XE', 'ぉ' => 'DC_KANA_XO',
+    'か' => 'DC_KANA_KA', 'き' => 'DC_KANA_KI',  'く' => 'DC_KANA_KU',  'け' => 'DC_KANA_KE', 'こ' => 'DC_KANA_KO',
+    'が' => 'DC_KANA_GA', 'ぎ' => 'DC_KANA_GI',  'ぐ' => 'DC_KANA_GU',  'げ' => 'DC_KANA_GE', 'ご' => 'DC_KANA_GO',
+    'さ' => 'DC_KANA_SA', 'し' => 'DC_KANA_SHI', 'す' => 'DC_KANA_SU',  'せ' => 'DC_KANA_SE', 'そ' => 'DC_KANA_SO',
+    'ざ' => 'DC_KANA_ZA', 'じ' => 'DC_KANA_ZI',  'ず' => 'DC_KANA_ZU',  'ぜ' => 'DC_KANA_ZE', 'ぞ' => 'DC_KANA_ZO',
+    'た' => 'DC_KANA_TA', 'ち' => 'DC_KANA_CHI', 'つ' => 'DC_KANA_TSU', 'て' => 'DC_KANA_TE', 'と' => 'DC_KANA_TO',
+    'だ' => 'DC_KANA_DA', 'ぢ' => 'DC_KANA_DI',  'づ' => 'DC_KANA_DU',  'で' => 'DC_KANA_DE', 'ど' => 'DC_KANA_DO',
+    'っ' => 'DC_KANA_XTSU',
+    'な' => 'DC_KANA_NA', 'に' => 'DC_KANA_NI', 'ぬ' => 'DC_KANA_NU', 'ね' => 'DC_KANA_NE', 'の' => 'DC_KANA_NO',
+    'は' => 'DC_KANA_HA', 'ひ' => 'DC_KANA_HI', 'ふ' => 'DC_KANA_FU', 'へ' => 'DC_KANA_HE', 'ほ' => 'DC_KANA_HO',
+    'ば' => 'DC_KANA_BA', 'び' => 'DC_KANA_BI', 'ぶ' => 'DC_KANA_BU', 'べ' => 'DC_KANA_BE', 'ぼ' => 'DC_KANA_BO',
+    'ぱ' => 'DC_KANA_PA', 'ぴ' => 'DC_KANA_PI', 'ぷ' => 'DC_KANA_PU', 'ぺ' => 'DC_KANA_PE', 'ぽ' => 'DC_KANA_PO',
+    'ま' => 'DC_KANA_MA', 'み' => 'DC_KANA_MI', 'む' => 'DC_KANA_MU', 'め' => 'DC_KANA_ME', 'も' => 'DC_KANA_MO',
+    'や' => 'DC_KANA_YA', 'ゆ' => 'DC_KANA_YU', 'よ' => 'DC_KANA_YO',
+    'ゃ' => 'DC_KANA_XYA', 'ゅ' => 'DC_KANA_XYU', 'ょ' => 'DC_KANA_XYO',
+    'ら' => 'DC_KANA_RA', 'り' => 'DC_KANA_RI', 'る' => 'DC_KANA_RU', 'れ' => 'DC_KANA_RE', 'ろ' => 'DC_KANA_RO',
+    'わ' => 'DC_KANA_WA', 'を' => 'DC_KANA_WO', 'ん' => 'DC_KANA_N',
 
-    '「' => 'CHAR_L_BRACKET', '」' => 'CHAR_R_BRACKET', 'ー' => 'CHAR_HYPHEN',
-    '、' => 'CHAR_KUTEN',     '。' => 'CHAR_TOUTEN',
-    '゛' => 'CHAR_DAKUTEN',   '゜' => 'CHAR_HANDAKUTEN',
+    '「' => 'DC_L_BRACKET', '」' => 'DC_R_BRACKET', 'ー' => 'DC_KANA_HYPHEN',
+    '、' => 'DC_KUTEN',     '。' => 'DC_TOUTEN',
+    '゛' => 'DC_DAKUTEN',   '゜' => 'DC_HANDAKUTEN',
 
-    '{small-}' => 'CHAR_SMALL_HYPHEN',
-    '{1dot}'   => 'CHAR_1DOT',
-    '{↓}'     => 'CHAR_CURSOR_DOWN', '{↑}' => 'CHAR_CURSOR_UP', '{→}' => 'CHAR_CURSOR_RIGHT', '{←}' => 'CHAR_CURSOR_LEFT',
-    '{man↓}'  => 'CHAR_MAN_DOWN', '{man↑}' => 'CHAR_MAN_UP', '{man→}' => 'CHAR_MAN_RIGHT', '{man←}' => 'CHAR_MAN_LEFT',
-    '{ufo}'    => 'CHAR_UFO',      '{snake}' => 'CHAR_SNAKE',
-    '{nicochan1}' => 'CHAR_NICOCHAN_1', '{nicochan0}' => 'CHAR_NICOCHAN_0',
+    '{1dot}'   => 'DC_1DOT',
+    '{↓}'     => 'DC_CURSOR_DOWN', '{↑}' => 'DC_CURSOR_UP', '{→}' => 'DC_CURSOR_RIGHT', '{←}' => 'DC_CURSOR_LEFT',
+    '{man↓}'  => 'DC_MAN_DOWN', '{man↑}' => 'DC_MAN_UP', '{man→}' => 'DC_MAN_RIGHT', '{man←}' => 'DC_MAN_LEFT',
+    '{ufo}'    => 'DC_UFO',      '{snake}' => 'DC_SNAKE',
+    '{nicochan1}' => 'DC_NICOCHAN_1', '{nicochan0}' => 'DC_NICOCHAN_0',
 
-    '日' => 'CHAR_KNAJI_SUN', '月' => 'CHAR_KNAJI_MON', '火' => 'CHAR_KNAJI_TUE',
-    '水' => 'CHAR_KNAJI_WED', '木' => 'CHAR_KNAJI_THU', '金' => 'CHAR_KNAJI_FRI',
-    '土' => 'CHAR_KNAJI_SAT', '生' => 'CHAR_KNAJI_LIVE', '年' => 'CHAR_KNAJI_YEAR',
-    '時' => 'CHAR_KNAJI_HOUR', '分' => 'CHAR_KNAJI_MIN', '秒' => 'CHAR_KNAJI_SEC',
-    '円' => 'CHAR_KNAJI_YEN',
+    '日' => 'DC_KNAJI_SUN', '月' => 'DC_KNAJI_MON', '火' => 'DC_KNAJI_TUE',
+    '水' => 'DC_KNAJI_WED', '木' => 'DC_KNAJI_THU', '金' => 'DC_KNAJI_FRI',
+    '土' => 'DC_KNAJI_SAT', '生' => 'DC_KNAJI_LIVE', '年' => 'DC_KNAJI_YEAR',
+    '時' => 'DC_KNAJI_HOUR', '分' => 'DC_KNAJI_MIN', '秒' => 'DC_KNAJI_SEC',
+    '円' => 'DC_KNAJI_YEN',
 
-    '{caps}' => 'CHAR_CAPS',
+    '{caps}' => 'DC_CAPS',
 ];
 
 
@@ -193,12 +195,12 @@ for ($i = 0; $i < strlen($inText); $i++) {
             if ($nrLfs === 0) {// 改行モード開始
                 $nrLfs++;
             } else {
-                $arr[] = 'CHAR_LF2';
+                $arr[] = 'DC_LF2';
                 $nrLfs = 0;
             }
             continue;
         } else if ($nrLfs !== 0) {// 改行モード終了
-            $arr[] = 'CHAR_LF';
+            $arr[] = 'DC_LF';
             $nrLfs = 0;
         }
         if ($c === '{') {// タグ モード開始
@@ -208,12 +210,12 @@ for ($i = 0; $i < strlen($inText); $i++) {
             // CAPS モード
             if ($bCaps) {
                 if (preg_match('/[A-Zァ-ン]/u', $c)) {
-                    $arr[] = 'CHAR_CAPS';
+                    $arr[] = 'DC_CAPS';
                     $bCaps = false;
                 }
             } else {
                 if (preg_match('/[a-zぁ-ん]/u', $c)) {
-                    $arr[] = 'CHAR_CAPS';
+                    $arr[] = 'DC_CAPS';
                     $bCaps = true;
                 }
             }
@@ -234,10 +236,10 @@ if ($nrErrs) {
 }
 
 optimizeAtbCaps($arr);
-optimizeAtb($arr, '0x40', 'CHAR_COL4');
-optimizeAtb($arr, '0x50', 'CHAR_COL5');
-optimizeAtb($arr, '0x60', 'CHAR_COL6');
-optimizeAtb($arr, '0x70', 'CHAR_COL7');
+optimizeAtb($arr, '0x40', 'DC_COL4');
+optimizeAtb($arr, '0x50', 'DC_COL5');
+optimizeAtb($arr, '0x60', 'DC_COL6');
+optimizeAtb($arr, '0x70', 'DC_COL7');
 outData($inText, $outFilename, $arr);
 
 // -------------------------------- 引数を持つタグの処理関数
@@ -249,7 +251,7 @@ function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, a
         (0 <= $matches[1]) && ($matches[1] <= 7) &&
         (0 <= $matches[2]) && ($matches[2] <= 7)
     ) {
-        $arr[] = 'CHAR_ATB';
+        $arr[] = 'DC_ATB';
         $fgColor = (int)$matches[1];
         $bgColor = (int)$matches[2];
         $atb = ($fgColor << 4) | ($bCaps ? 0x80 : 0x00) | $bgColor;
@@ -260,7 +262,7 @@ function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, a
         (count($matches) == 2) &&
         (0 <= $matches[1]) && ($matches[1] <= 7)
     ) {
-        $arr[] = 'CHAR_ATB';
+        $arr[] = 'DC_ATB';
         $fgColor = (int)$matches[1];
         $bgColor = 0;
         $atb = ($fgColor << 4) | ($bCaps ? 0x80 : 0x00);
@@ -269,7 +271,7 @@ function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, a
     }
 
     //print_r($matches);
-    fwrite (STDERR, "ERROR: Invalid tag $tag\n");
+    fwrite (STDERR, "ERROR: Invalid tag [$tag]\n");
     return false;
 }
 
@@ -280,10 +282,10 @@ function checkTagMoveRight(string $tag, array &$arr): bool
         (count($matches) != 2) ||
         ($matches[1] < 0) || (40 < $matches[1])) {
         //echo("tag:$tag match:$matches[1]\n");
-        fwrite (STDERR, "ERROR: Invalid tag $tag\n");
+        fwrite (STDERR, "ERROR: Invalid tag [$tag]\n");
         return false;
     }
-    $arr[] = 'CHAR_MOVE_RIGHT';
+    $arr[] = 'DC_MOVE_RIGHT';
     $arr[] = sprintf('0x%02x', $matches[1]);
     return true;
 }
@@ -295,10 +297,10 @@ function checkTagMoveDown(string $tag, array &$arr): bool
         (count($matches) != 2) ||
         ($matches[1] < 0) || (25 < $matches[1])) {
         //print_r($matches);
-        fwrite (STDERR, "ERROR: Invalid tag $tag\n");
+        fwrite (STDERR, "ERROR: Invalid tag [$tag]\n");
         return false;
     }
-    $arr[] = 'CHAR_MOVE_DOWN';
+    $arr[] = 'DC_MOVE_DOWN';
     $arr[] = sprintf('0x%02x', $matches[1]);
     return true;
 }
@@ -306,21 +308,21 @@ function checkTagMoveDown(string $tag, array &$arr): bool
 
 // -------------------------------- 最適化
 /** atb と caps の最適化
- * CHAR_CAPS があれば, 前方に CHAR_ATB がないかサーチ.
+ * DC_CAPS があれば, 前方に DC_ATB がないかサーチ.
  * サーチ中に英文字・カナ文字があるならば, サーチはキャンセル.
  * サーチ中に先頭にまで達したら,サーチはキャンセル.
- * CHAR_ATB が見つかったら, 次の属性値を修正して, CHAR_CAPS は削除
+ * DC_ATB が見つかったら, 次の属性値を修正して, DC_CAPS は削除
  */
 function optimizeAtbCaps(array &$arr): void
 {
     foreach ($arr as $i => $char) {
-        if ($char === 'CHAR_CAPS') {
+        if ($char === 'DC_CAPS') {
             //echo("caps detected $i\n");
 
             for ($j = $i - 1; 0 <= $j; $j--) {
                 if (!isset($arr[$j])) {
                     continue;
-                } else if ($arr[$j] === 'CHAR_ATB') {
+                } else if ($arr[$j] === 'DC_ATB') {
                     //echo("atb detected $j\n");
                     $val = 0;
                     sscanf($arr[$j + 1], '0x%02x', $val);
@@ -328,7 +330,7 @@ function optimizeAtbCaps(array &$arr): void
                     unset($arr[$i]);
                     //$arr[$i] = '-----'.sprintf('0x%02x', $val ^ 0x80);//TEST
                     break;
-                } else if (preg_match('/^CHAR_[A-Z]$/', $arr[$j]) || preg_match('/^CHAR_KANA_[A-Z]+$/', $arr[$j])) {
+                } else if (preg_match('/^DC_[A-Z]$/', $arr[$j]) || preg_match('/^DC_KANA_[A-Z]+$/', $arr[$j])) {
                     break;
                 }
             }
@@ -338,12 +340,12 @@ function optimizeAtbCaps(array &$arr): void
 
 
 /** a6b7 の最適化
- * CHAR_ATB 0x70 ならば, CHAR_COL7 に置き換えます
+ * DC_ATB 0x70 ならば, DC_COL7 に置き換えます
  */
 function optimizeAtb(array &$arr, string $value, string $out): void
 {
     foreach ($arr as $i => $char) {
-        if (($char === 'CHAR_ATB') &&  ($arr[$i + 1] === $value)) {
+        if (($char === 'DC_ATB') &&  ($arr[$i + 1] === $value)) {
             $arr[$i] = $out;
             unset($arr[$i + 1]);
         }
@@ -366,10 +368,10 @@ function outData(string $inText, string $outFilename, array $arr): void
     foreach ($textArr as $t) {
         $outStr .= '// ' . $t . "\n";
     }
-    $outStr .= 'static const u8 text' . ucfirst(pathinfo($outFilename, PATHINFO_FILENAME)) . "[] = { \n    ";
+    $outStr .= 'static const u8 text_' . pathinfo($outFilename, PATHINFO_FILENAME) . "[] = { \n    ";
     foreach ($arr as $c) {
         $outStr .= $c . ', ';
-        if (($c === 'CHAR_LF') || ($c === 'CHAR_LF2')) {
+        if (($c === 'DC_LF') || ($c === 'DC_LF2')) {
             $outStr .= "\n    ";
         }
     }

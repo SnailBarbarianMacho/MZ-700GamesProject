@@ -12,8 +12,8 @@
 
 
 // ---------------------------------------------------------------- private 変数. 直接触らない
-extern u8 _input;
-extern u8 _inputTrg;
+extern u8 input_;
+extern u8 input_trg_;
 
 // ---------------------------------------------------------------- マクロ
 // inputGet(), inputGetTrigger() 戻値のビット マスク. AM7J(..UDRLBA) 互換です
@@ -34,8 +34,8 @@ void inputMain() __z88dk_fastcall __naked;
 
 // ---------------------------------------------------------------- 入力
 /** 入力生データを入手します. INPUT_MASK_XXXX の bitwise or */
-inline u8 inputGet() { return _input; }
+inline u8 inputGet() { return input_; }
 /** 入力 OFF->ON データを入手します. INPUT_MASK_XXXX の bitwise or */
-inline u8 inputGetTrigger() { return _inputTrg; }
+inline u8 inputGetTrigger() { return input_trg_; }
 
 #endif // INPUT_H_INCLUDED

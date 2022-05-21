@@ -12,8 +12,8 @@
 
         EXTERN  _main           ; main() のシンボル
         PUBLIC  l_dcal          ; 関数ポインタの飛び先
-        PUBLIC  _funcPtr        ; ↑と同じ(Cから使う)
-        PUBLIC  _buildNr        ; ビルド番号(Cから使う)
+        PUBLIC  _func_ptr       ; ↑と同じ(Cから使う)
+        PUBLIC  _build_nr       ; ビルド番号(Cから使う)
 
         org     CRT_ORG_CODE    ; -zorg で定義
 
@@ -54,7 +54,7 @@ start:
         jp      _main
 
 ; -------- 関数ポインタの飛び先
-_funcPtr:
+_func_ptr:
 l_dcal:
         jp	(hl)
 
@@ -62,5 +62,5 @@ l_dcal:
         INCLUDE "crt/classic/crt_section.asm"
 
 ; -------- ビルド番号が収められる
-_buildNr:
+_build_nr:
        INCLUDE "build_nr.asm"

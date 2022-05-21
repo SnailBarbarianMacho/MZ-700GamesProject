@@ -54,7 +54,7 @@
 #define MIO_8253_CTRL_M4_MASK       0x08    /// モード4 M2～0
 #define MIO_8253_CTRL_M5_MASK       0x0a    /// モード5 M2～0
 #define MIO_8253_CTRL_BCD_MASK      0x01    /// BCD カウンタモード. 通常 0 で使用 BCD
-#define MIO_8253_CH0_MODE0          MIO_8253_CTRL_CH0_MASK | MIO_8253_CTRL_RL_MASK | MIO_8253_CTRL_M0_MASK  /// サウンドをモード3 に設定する. アセンブラの都合でカッコを入れてないので注意. 0x30
+#define MIO_8253_CH0_MODE0          MIO_8253_CTRL_CH0_MASK | MIO_8253_CTRL_RL_MASK | MIO_8253_CTRL_M0_MASK  /// サウンドをモード0 に設定する. アセンブラの都合でカッコを入れてないので注意. 0x30
 #define MIO_8253_CH0_MODE3          MIO_8253_CTRL_CH0_MASK | MIO_8253_CTRL_RL_MASK | MIO_8253_CTRL_M3_MASK  /// サウンドをモード3 に設定する. アセンブラの都合でカッコを入れてないので注意. 0x36
 
 #define MIO_ETC                     0xe008  /// H-blank, Joystick, 8253 Ch 0 Gate, etc.

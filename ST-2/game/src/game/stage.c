@@ -6,11 +6,11 @@
 #include "../system/sys.h"
 #include "../system/sound.h"
 #include "../system/math.h"
-#include "../objworks/objEnemy.h"
-#include "../objworks/objPlayer.h"
+#include "../objworks/obj_enemy.h"
+#include "../objworks/obj_player.h"
 #include "bgm.h"
 #include "se.h"
-#include "gameMode.h"
+#include "game_mode.h"
 #include "stage.h"
 
 // ---------------------------------------------------------------- ステージ テーブル
@@ -36,21 +36,20 @@
 #define ST_BGM4         0x4f
 #define ST_END          0x5f
 
-static const u8 _stage[] = {
-#if 1
-#if 1   // STAGE 1 3_2 が後半に登場.
+static const u8 STG_TAB_[] = {
+#if 1   // TEST STAGE 1 3_2 が後半に登場.
     ST_BGM1,
-#if DEBUG
-    E3_1(3), 0,
+#if DEBUG // TEST いろいろ敵のテスト
+    //E3_1(3), 0,
     //ST_BGM2,
     //E3_6(4), 0,
     //E5_1(2), E5_2(2), E5_3(2), E4_1(1), E4_2(1), E4_3(1), E3_1(1), E3_2(1), E3_3(1), E3_4(1), E3_5(1), E3_6(1), 0,
     //ST_BGM3,
+    //E4_2(1), 0,
     //E8_1(1), 0,
     //ST_END,//TEST 即エンディング
-#else
-    E3_1(3), 0,
 #endif
+    E3_1(3), 0,
     E3_1(4), 0,
     E3_1(5), 0,
     E3_1(6), 0,
@@ -291,11 +290,10 @@ static const u8 _stage[] = {
     ST_BGM4,
     E8_3(1), 0,
 #endif
-#endif
     ST_END,// だいたい スコア 540000, レベル 144
 };
 
-static const u8 _stageCaravan[] = {
+static const u8 STG_CARAVAN_TAB_[] = {
     ST_BGM1,
     E3_1(15), 0, E3_1(15), 0,
     E3_2(15), 0, E3_2(15), 0,
@@ -321,26 +319,26 @@ static const u8 _stageCaravan[] = {
 };
 
 
-const u8* _pStgTab;         // ステージ テーブルへのポインタ
-u8        _stgNr;           // ステージ番号
-u8        _stgNrEnemies;    // 敵の残り
+const u8* p_stg_tab_;        // ステージ テーブルへのポインタ
+u8        stg_nr_;           // ステージ番号
+u8        stg_nr_enemies_;   // 敵の残り
 
 // ---------------------------------------------------------------- ステージ, サブステージ
-void stgInit(u8 nrSkippedStages)__z88dk_fastcall
+void stgInit(u8 nr_skipped_stages)__z88dk_fastcall
 {
-    _pStgTab   = (gameGetMode() == GAME_MODE_CARAVAN) ? _stageCaravan : _stage;
-    _stgNr     = 1;
+    p_stg_tab_  = (gameGetMode() == GAME_MODE_CARAVAN) ? STG_CARAVAN_TAB_ : STG_TAB_;
+    stg_nr_     = 1;
     // ステージを飛ばす
-    for (u8 i = 0; i < nrSkippedStages; ) {
-        if (*_pStgTab++ == ST_CLEAR) { i++; }
+    for (u8 i = 0; i < nr_skipped_stages; ) {
+        if (*p_stg_tab_++ == ST_CLEAR) { i++; }
     }
 }
 
 u8 stgSubInit()
 {
-    _stgNrEnemies = 0;
+    stg_nr_enemies_ = 0;
     while (true) {
-        u8 p = *_pStgTab++;
+        u8 p = *p_stg_tab_++;
         if (p == 0x00) {
             break;
         }
@@ -349,7 +347,7 @@ u8 stgSubInit()
         case ST_CLEAR:
             switch (n) {
             case ST_CLEAR >> 4:
-                _stgNr++;
+                stg_nr_++;
                 return STG_STATUS_CLEAR;
             case ST_END >> 4:
                 return STG_STATUS_ENDING;
@@ -370,9 +368,9 @@ u8 stgSubInit()
         default:
             {
                 struct s_Tab {
-                    void (*initFunc)(Obj* const, Obj* const);
-                    bool (*mainFunc)(Obj* const);
-                    void (*drawFunc)(Obj* const, u8* drawAddr);
+                    void (*init_func)(Obj* const, Obj* const);
+                    bool (*main_func)(Obj* const);
+                    void (*draw_func)(Obj* const, u8*);
                 } static const tab[] = {
                     { objEnemyInit3_1, objEnemyMain3_1, objEnemyDraw3_1, },
                     { objEnemyInit3_2, objEnemyMain3_2, objEnemyDraw3_2, },
@@ -392,8 +390,8 @@ u8 stgSubInit()
                 };
                 const struct s_Tab* const pTab = &tab[p & 0x0f];
                 for (; n > 0; n--) {
-                    if (!objCreateEnemy(pTab->initFunc, pTab->mainFunc, pTab->drawFunc, nullptr)) { break; }
-                    _stgNrEnemies++;
+                    if (!objCreateEnemy(pTab->init_func, pTab->main_func, pTab->draw_func, nullptr)) { break; }
+                    stg_nr_enemies_++;
                 }
             }
             break;

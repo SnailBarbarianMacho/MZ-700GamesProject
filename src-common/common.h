@@ -25,20 +25,35 @@ typedef unsigned char  bool;
 /** 配列の大きさを知ります */
 #define COUNT_OF(array) (sizeof(array)/sizeof(array[0]))
 
-///** 構造体 type のメンバ member のオフセット位置をバイトで返します. コンパイル字に内部エラーが出るので現在ボツ */
-//#define OFFSET_OF(type, member)  ((u8)&(((type*)nullptr)->member))
+/** 構造体 s のメンバ m のオフセット位置をバイトで返します. z88dkでは, 何故か定数式ではありません... */
+#define OFFSET_OF(s, m) ((int)&(((s*)0)->m))
 
-/** cond が 0(false) ならばここでコンパイルを停止します
+/** cond が 0(false) ならば, コンパイルを停止します
  * - 配列の大きさが負といって停止します
- * - 手抜き版なので制限があります:
- *   -  msg は[A-Za-z0-9_] のみ. スペースは使えません.
- *   - スコープが届く範囲で同じメッセージは使えません
  * @example
  * STATIC_ASSERT(false, ConditionFailed);
  */
+#ifdef DEBUG
 #define STATIC_ASSERT(cond, msg) typedef char static_assertion_##msg[2*(!!(cond))-1]
+#else
+#define STATIC_ASSERT(cond, msg)
+#endif
+
+/** 実行時に cond が 0(false) ならば, ソースと行数を表示して, 実行を停止します
+ * - release ビルド
+ * - assert() を実装する必要があります
+ */
+#ifdef DEBUG
+#define ASSERT(cond) assert(cond, __FILE__, __LINE__)
+#else
+#define ASSERT(cond)
+#endif
+
+/* assert 本体. 別途用意してください */
+void assert(const bool cond, const char* const file, const u16 line) __naked;
 
 // ---------------------------------------------------------------- 引数を減らすための合同マクロ
+// z88dk は, 引数を 1 個にして __fastcall を付けた関数の引数は, HL レジスタ経由で渡されるのです
 #define X8Y8(x, y)          (((x) << 8) | (y))      /// 2つの s8 値を 1つの 16 bit 値にします. 不要ビットのカットはやってないので注意
 #define W8H8(w, h)          (((w) << 8) | (h))      /// 2つの u8 値を 1つの 16 bit 値にします. 不要ビットのカットはやってないので注意
 

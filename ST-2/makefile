@@ -73,7 +73,7 @@ endif
 $(OUTFILE_BIN): $(GAME_OUTFILE_PAK) $(LOADER_OUTFILE_BIN)
 	@echo Marging ... [$@]
 	@$(PHP) $(TOOLS)/merger.php $(LOADER_ORG) $(LOADER_OUTFILE_BIN) $(GAME_ORG) $(GAME_OUTFILE_PAK) $@
-	@$(PHP) $(TOOLS)/makeMzt.php $(OUTFILE_BIN) $(PROG_NAME) $(LOADER_ORG) $(LOADER_ORG) $(OUTFILE_MZT)
+	@$(PHP) $(TOOLS)/make_mzt.php $(OUTFILE_BIN) $(PROG_NAME) $(LOADER_ORG) $(LOADER_ORG) $(OUTFILE_MZT)
 
 # Make loader binary
 $(LOADER_DIR)/obj/loader-main.o: $(LOADER_DIR)/loader-main.c $(LOADER_DIR)/deexo3.h
@@ -81,15 +81,16 @@ $(LOADER_DIR)/obj/deexo3.o:      $(LOADER_DIR)/deexo3.c      $(LOADER_DIR)/deexo
 $(LOADER_OUTFILE_BIN): $(LOADER_OBJS) $(LOADER_CRT0)
 	@echo Linking loader ... [$@]
 	@$(CC) +mz -mz80 -o $@ $(LOADER_OBJS) -crt0$(LOADER_CRT0) -zorg=$(LOADER_ORG) $(LFLAGS) -Ca-DSTACK=$(LOADER_STACK)
-#	@$(PHP) $(TOOLS)/makeMzt.php $@ $(PROG_NAME) $(LOADER_ORG) $(LOADER_ORG) $(LOADER_OUTFILE).mzt
+#	@$(PHP) $(TOOLS)/make_mzt.php $@ $(PROG_NAME) $(LOADER_ORG) $(LOADER_ORG) $(LOADER_OUTFILE).mzt
 
 # Make game binary
 -include $(GAME_DEPENDS)   # dependency list, make cg, define $(GAME_OBJS)
 $(GAME_OUTFILE_PAK): $(GAME_OBJS) $(GAME_CRT0)
 	@echo Linking game ... [$@]
-	@$(PHP) $(TOOLS)/incBuildNr.php $(GAME_DIR)/src/build_nr.asm
+	@$(PHP) $(TOOLS)/inc_build_nr.php $(GAME_DIR)/src/build_nr.asm
 	@$(CC) +mz -mz80 -o $(GAME_OUTFILE_BIN) $(GAME_OBJS) -crt0$(GAME_CRT0) -zorg=$(GAME_ORG) $(LFLAGS) -Ca-DSTACK=$(GAME_STACK)
-	@$(PHP) $(TOOLS)/makeMzt.php $(GAME_OUTFILE_BIN) $(PROG_NAME) $(GAME_ORG) $(GAME_ORG) $(GAME_OUTFILE).mzt
+	@$(PHP) $(TOOLS)/map2emuzsym.php $(GAME_OUTFILE).map $(GAME_OUTFILE).emuz.sym
+	@$(PHP) $(TOOLS)/make_mzt.php $(GAME_OUTFILE_BIN) $(PROG_NAME) $(GAME_ORG) $(GAME_ORG) $(GAME_OUTFILE).mzt
 	@$(TOOLS)/exomizer.exe raw -B $(GAME_OUTFILE_BIN) -o $(GAME_OUTFILE_EXO)
 #	$(TOOLS)/exomizer.exe raw -B -d $(GAME_OUTFILE).exo -o a.out
 #	diff $(GAME_OUTFILE_BIN) a.out
@@ -155,7 +156,7 @@ clean_text:
 # Create game dependencies
 depend $(GAME_DEPENDS):
 	@echo Generating dependencies...
-	@$(PHP) $(TOOLS)/makeDepend.php\
+	@$(PHP) $(TOOLS)/make_depend.php\
 		$(GAME_DIR)/src $(GAME_DIR)/cg $(GAME_DIR)/music $(GAME_DIR)/text $(GAME_DIR)/obj\
 		$(GAME_DIR)/cg/cg.cgedit.txt $(GAME_DIR)/cg/cg.cgedit.json\
 		GAME_OBJS $(GAME_DEPENDS)

@@ -13,7 +13,7 @@
 //#include "print.h"//TEST
 
 // ---------------------------------------------------------------- 三角関数テーブル
-static const u8 sAtan2Tab[] = {
+static const u8 ATAN2_TAB_[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x40, 0x20, 0x12, 0x0d, 0x09, 0x08, 0x06, 0x05, 0x05, 0x04, 0x04, 0x03, 0x03, 0x03, 0x02, 0x02,
     0x40, 0x2d, 0x20, 0x17, 0x12, 0x0f, 0x0d, 0x0b, 0x09, 0x08, 0x08, 0x07, 0x06, 0x06, 0x05, 0x05,
@@ -31,7 +31,7 @@ static const u8 sAtan2Tab[] = {
     0x40, 0x3d, 0x3a, 0x37, 0x34, 0x32, 0x2f, 0x2d, 0x2a, 0x28, 0x26, 0x24, 0x23, 0x21, 0x20, 0x1e,
     0x40, 0x3d, 0x3a, 0x37, 0x35, 0x32, 0x30, 0x2e, 0x2c, 0x29, 0x28, 0x26, 0x24, 0x22, 0x21, 0x20,
 };
-static const s8 sSinTab[] = {
+static const s8 SIN_TAB_[] = {
     0x00, 0x02, 0x03, 0x05, 0x06, 0x08, 0x09, 0x0b, 0x0c, 0x0e, 0x10, 0x11, 0x13, 0x14, 0x16, 0x17,
     0x18, 0x1a, 0x1b, 0x1d, 0x1e, 0x20, 0x21, 0x22, 0x24, 0x25, 0x26, 0x27, 0x29, 0x2a, 0x2b, 0x2c,
     0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x38, 0x39, 0x3a, 0x3b,
@@ -53,7 +53,7 @@ void mathInit() __z88dk_fastcall
 
     // 三角関数テーブルの初期化
     {
-        const u8* p = sSinTab;
+        const u8* p = SIN_TAB_;
         u8*       q = (u8*)ADDR_SIN_TAB;
         u8*       r = (u8*)ADDR_COS_TAB;
         for (u8 i = 0; i < 64; i++) {
@@ -64,9 +64,9 @@ void mathInit() __z88dk_fastcall
         }
     }
 
-    //memcpy((u8*)ADDR_ATAN2_TAB, sAtan2Tab, 256);
+    //memcpy((u8*)ADDR_ATAN2_TAB, ATAN2_TAB_, 256);
 __asm
-    ld  HL, #_sAtan2Tab
+    ld  HL, #_ATAN2_TAB_
     ld  DE, #(ADDR_ATAN2_TAB)
     ld  BC, #0x0100
     ldir
@@ -119,17 +119,17 @@ u8 atan2(const u16 xy) __z88dk_fastcall
     s8 x = xy >> 8;
     s8 y = (s8)xy;
 
-    bool signX = false;
-    bool signY = false;
+    bool sign_x = false;
+    bool sign_y = false;
 
     if (x < 0) {
          x = -x;
-         signX = true;
+         sign_x = true;
     }
 
     if (y < 0) {
         y = -y;
-        signY = true;
+        sign_y = true;
     }
 
     while (16 <= x) {
@@ -144,22 +144,22 @@ u8 atan2(const u16 xy) __z88dk_fastcall
 
     u16 i = ((u16)y & 0x0f) * 16 + ((u16)x & 0x0f);
     u8  a = ((u8*)ADDR_ATAN2_TAB)[i];
-    if (signX) {
+    if (sign_x) {
         a = 128 - a;
     }
-    if (signY) {
+    if (sign_y) {
         a = -a;
     }
     return a;
 #else   // ASM 版
 __asm
     // A, BC, HL 破壊
-    ld      BC, 0x0000      // signX, signY
+    ld      BC, 0x0000      // sign_x, sign_y
     ld      A, H            // x
     and     A
     jp      P, ATAN2_XP
     neg                     // x = -x
-    inc     B               // signX = 1
+    inc     B               // sign_x = 1
 ATAN2_XP:
     cp      A, 15
     jp      c, ATAN2_XP_END // A <= 15 ならばループ終了
@@ -175,7 +175,7 @@ ATAN2_XP_END:
     jp      P, ATAN2_YP
     neg
     ld      L, A            // y = -y
-    inc     C               // signY =1
+    inc     C               // sign_y =1
 ATAN2_YP:
     cp      A, 15
     jp      c, ATAN2_YP_END // A <= 15 ならばループ終了
@@ -194,7 +194,7 @@ ATAN2_YP_END:
     ld      H, #(ADDR_ATAN2_TAB >> 8)
     ld      A, (HL)         // A = ADDR_ATAN2_TAB[x + y * 16];
 
-    dec     B               // signX
+    dec     B               // sign_x
     jr      nz, ATAN2_Y
     neg     A
     ld      B, 0x80
@@ -202,7 +202,7 @@ ATAN2_YP_END:
 
 ATAN2_Y:
     ld      L, A            // return value
-    dec     C               // signY
+    dec     C               // sign_y
     ret     nz
     neg     A               // A = -A
     ld      L, A            // return value
@@ -246,26 +246,26 @@ u8 rand7r() __z88dk_fastcall __naked
     __endasm;
 }
 
-static const u8 sMSequenceWork[] = {    // 値は変化するが, data セクションで OK
+static const u8 M_SEQUENCE_WORK[] = {    // 内容は変化するが, data セクションで OK
     0x8f, 0xe6, 0xc8, 0x29, 0x2a, 0xf2, 0x4e, 0x61,
     0x15, 0x1c, 0xdf, 0x1b, 0x88, 0xfd, 0xe4, 0x72,
     0xc5,
 };
-static u8* sMSequence_1 = (u8*)(&sMSequenceWork[13]);
-static u8* sMSequence_2 = (u8*)(&sMSequenceWork[0]);
+static u8* m_sequence1_ = (u8*)(&M_SEQUENCE_WORK[13]);
+static u8* m_sequence2_ = (u8*)(&M_SEQUENCE_WORK[0]);
 
 u8 rand8() __z88dk_fastcall __naked
 {
-    // M系列乱数 + GFSR法
+    // M 系列乱数 + GFSR法
     //   ------ シフト レジスタ(m bit) ----->
-    //    ┌───┐  ┌───┐  ┌───┐  ┌───┐    ┌───┐
-    //  ┌┤   0  ├─┤   1  ├─┤   2  ├..┤ tap  ├┬..┤  m-1 ├┐
-    //  │└───┘  └───┘  └───┘  └───┘│  └───┘│
-    //  │                                            ┌┴──────┴┐
-    //  │                                            │       XOR      │
-    //  │                                            └────┬───┘
+    //   ┌───┐ ┌───┐ ┌───┐  ┌───┐   ┌───┐
+    //  ┌┤ 0 ├─┤ 1 ├─┤ 2 ├..┤ta ├┬..┤m-1├┐
+    //  │└───┘ └───┘ └───┘  └───┘│  └───┘│
+    //  │                       ┌┴───────┴┐
+    //  │                       │   XOR   │
+    //  │                       └───┬─────┘
     //  └───────────────────────────┤
-    //                               出力
+    //                            出力
     //
     // ビット幅 タップ位置   周期
     // -------------------------
@@ -275,31 +275,31 @@ u8 rand8() __z88dk_fastcall __naked
     //    20      16    1048575
     //    21      18    2097151
     __asm
-    ld      E, #(_sMSequenceWork + 17) & 0xff // テーブルは 127 bytes しかないので, アドレスの比較は, 下 8bit だけで OK
-    // -------- *mMsequence_2++
-    ld      HL, (#_sMSequence_2)
+    ld      E, #(_M_SEQUENCE_WORK + 17) & 0xff // テーブルは 127 bytes しかないので, アドレスの比較は, 下 8bit だけで OK
+    // -------- *m_sequence2_++
+    ld      HL, (#_m_sequence2_)
     ld      BC, HL
     inc     HL
     ld      A, L
     cp      E
     jp      nz, RAND8_2
-    ld      HL, #_sMSequenceWork
+    ld      HL, #_M_SEQUENCE_WORK
 RAND8_2:
-    ld      (#_sMSequence_2), HL
+    ld      (#_m_sequence2_), HL
     ld      D, (HL)                 // D に保存
 
-    // -------- *mMsequence_1++
-    ld      HL, (#_sMSequence_1)
+    // -------- *m_sequence1_++
+    ld      HL, (#_m_sequence1_)
     inc     HL
     ld      A, L
     cp      E
     jp      nz, RAND8_1
-    ld      HL, #_sMSequenceWork
+    ld      HL, #_M_SEQUENCE_WORK
 RAND8_1:
-    ld      (#_sMSequence_1), HL
+    ld      (#_m_sequence1_), HL
     ld      A, (HL)
 
-    // -------- *mMsequence_0
+    // -------- xor and out
     xor     A, D                    // D から復帰
     ld      (BC), A
     ld      L, A

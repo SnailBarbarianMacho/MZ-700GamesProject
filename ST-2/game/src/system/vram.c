@@ -9,13 +9,13 @@
 #include "vram.h"
 
 // ---------------------------------------------------------------- 変数
-static u8 sbVramTransEnabled;
+static u8 b_vram_trans_enabled_;
 #if DEBUG
-static u16 s8253Ch1Ct; // 処理時間計測に使う
+static u16 ct_8253_ch1_; // 処理時間計測に使う
 #endif
 
 // ---------------------------------------------------------------- マクロ
-#define _8253CH1CT (262 * 4)   // 8253のカウンタ. 1カウンタ1ライン. 262ラインで1フレーム
+#define CT_8253_CH1 (262 * 4)   // 8253のカウンタ. 1カウンタ1ライン. 262ラインで1フレーム
 
 // 一時的に使うワークエリア
 #define ADDR_TMP_SP    (VVRAM_TMP_WORK + 16) // 臨時スタックポインタ
@@ -46,11 +46,11 @@ void vramInit() __z88dk_fastcall __naked
 {
 __asm;
     ld      A, 1
-    ld      (_sbVramTransEnabled), A
+    ld      (_b_vram_trans_enabled_), A
 #if DEBUG
     ld      H, A
     ld      L, A
-    ld      (_s8253Ch1Ct), HL
+    ld      (_ct_8253_ch1_), HL
 #endif
     jp      _vvramClear // 仮想画面クリアして終了
 __endasm;
@@ -60,10 +60,10 @@ void vramTrans() __z88dk_fastcall __naked
 {
 __asm
     // ---------------- VRAM 転送許可
-    ld      A, (_sbVramTransEnabled)
+    ld      A, (_b_vram_trans_enabled_)
     and     A
     ld      A, 1
-    ld      (_sbVramTransEnabled), A// 次回は転送許可に
+    ld      (_b_vram_trans_enabled_), A// 次回は転送許可に
     ret     z
 
     // ---------------- 準備
@@ -78,12 +78,12 @@ __asm
 
     ld      C, (HL)
     ld      B, (HL)
-    ld      (_s8253Ch1Ct), BC  // デバッグ時はポーリング前のタイマ値を保存します
+    ld      (_ct_8253_ch1_), BC  // デバッグ時はポーリング前のタイマ値を保存します
 
     // カウンタの再セット
     // 8253 チャンネル 1 のクロックは, 水平周期と同じ.
     // MZ-700は 1/60 で 262 ラインなので, 1/20 秒にしたければ 262 * 3 にする
-    ld     BC, #_8253CH1CT
+    ld     BC, #CT_8253_CH1
     ld     (HL), C
     ld     (HL), B
 #endif
@@ -235,7 +235,7 @@ __endasm;
 
 void vramSetTransDisabled()__z88dk_fastcall
 {
-    sbVramTransEnabled = false;
+    b_vram_trans_enabled_ = false;
 }
 
 
@@ -262,10 +262,10 @@ __endasm;
 #if DEBUG
 u16 vramDebugGetProcessTime()
 {
-    //return (u16)(_8253CH1CT - s8253Ch1Ct) * 1000 / 15700;
-    //return (u16)(_8253CH1CT - s8253Ch1Ct) * 16 / 251;
-    //return (u16)(_8253CH1CT - s8253Ch1Ct) * 16 / 256;  近似値
-    return (u16)(_8253CH1CT - s8253Ch1Ct) * 65 / 1024;
+    //return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 1000 / 15700;
+    //return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 16 / 251;
+    //return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 16 / 256;  近似値
+    return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 65 / 1024;
 }
 #endif
 
@@ -303,11 +303,11 @@ __endasm;
 // ---------------------------------------------------------------- 塗りつぶし(fill)
 #pragma disable_warning 85
 #pragma save
-void vVramFillRect(const u8* const drawAddr, const u16 wh, const u16 code) __naked
+void vVramFillRect(const u8* const draw_addr, const u16 wh, const u16 code) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     HL                      // drawAddr
+    pop     HL                      // draw_addr
     pop     BC                      // wh
     pop     DE                      // code
     ld      A, C                    // h
@@ -419,12 +419,12 @@ __endasm;
 #pragma restore
 
 // ---------------------------------------------------------------- 描画(draw)(任意の矩形)
-void vVramDrawRect(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked
+void vVramDrawRect(const u8* const draw_addr, const u8* const stc_addr, const u16 wh) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
     pop     BC                      // wh
 
     // -------- TEXT
@@ -481,12 +481,12 @@ __endasm;
 }
 
 
-void vVramDrawRectTransparent(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked
+void vVramDrawRectTransparent(const u8* const draw_addr, const u8* const stc_addr, const u16 wh) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
     pop     BC                      // wh
 
     // -------- TEXT
@@ -540,13 +540,13 @@ __endasm;
 }
 
 
-void vramDrawRect(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked
+void vramDrawRect(const u8* const draw_addr, const u8* const stc_addr, const u16 wh) __naked
 {
 __asm
     ld      (VRAM_DRAW_RECT_SP_RESTORE + 1), SP   // VRAM を切り替えるので, SP 保存(自己書換)
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
     pop     BC                      // wh
 
     ld      SP, #ADDR_TMP_SP        // 臨時スタックポインタ
@@ -615,11 +615,11 @@ __endasm;
 
 
 // ---------------------------------------------------------------- 描画(draw)(1x1)
-void vVramDraw1x1(const u8* const drawAddr, const u16 code) __naked
+void vVramDraw1x1(const u8* const draw_addr, const u16 code) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     HL                      // drawAddr
+    pop     HL                      // draw_addr
     pop     DE                      // code
 
     // TEXT
@@ -643,12 +643,12 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(1x3)
-void vVramDraw1x3(const u8* const drawAddr, const u8* const srcAddr) __naked
+void vVramDraw1x3(const u8* const draw_addr, const u8* const stc_addr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
 
     // TEXT
     ldi
@@ -674,12 +674,12 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(3x3)
-void vVramDraw3x3(const u8* const drawAddr, const u8* const srcAddr) __naked
+void vVramDraw3x3(const u8* const draw_addr, const u8* const stc_addr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
 
     // TEXT
     ldi
@@ -734,7 +734,7 @@ __asm
 __endasm;
 }
 
-void vVramDraw3x3Transparent(const u8* const drawAddr, const u8* const srcAddr) __naked
+void vVramDraw3x3Transparent(const u8* const draw_addr, const u8* const stc_addr) __naked
 {
 
 // HL: source
@@ -789,8 +789,8 @@ label:
 
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
 
     ld      C, #(0x00 | (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)))
     VRAM_DRAW_3x3T(VRAM_DRAW_3x3T_00)
@@ -818,12 +818,12 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(4x4)
-void vVramDraw4x4(const u8* const drawAddr, const u8* const srcAddr) __naked
+void vVramDraw4x4(const u8* const draw_addr, const u8* const stc_addr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
     ld      BC, 0x04ff              // BC は ldi 命令でデクリメントするが, B は変化しない
 
     // TEXT
@@ -902,12 +902,12 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- 描画(draw)(5x5)
-void vVramDraw5x5(const u8* const drawAddr, const u8* const srcAddr) __naked
+void vVramDraw5x5(const u8* const draw_addr, const u8* const stc_addr) __naked
 {
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
     ld      BC, 0x05ff              // BC は ldi 命令でデクリメントするが, B は変化しない
 
     // TEXT
@@ -1018,7 +1018,7 @@ __endasm;
 }
 
 #if 0 //今回は使ってない
-void vVramDraw5x5Transparent(const u8* const drawAddr, const u8* const srcAddr) __naked
+void vVramDraw5x5Transparent(const u8* const draw_addr, const u8* const stc_addr) __naked
 {
 
 // HL: source
@@ -1067,8 +1067,8 @@ label:
 
 __asm
     pop     HL                      // リターン アドレス(捨てる)
-    pop     DE                      // drawAddr
-    pop     HL                      // srcAddr
+    pop     DE                      // draw_addr
+    pop     HL                      // stc_addr
 
     ld      BC, #(0x0500 | (VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)))
 VRAM_DRAW_5x5T_VLOOP:

@@ -42,8 +42,8 @@
 #define VRAM_HEIGHT             25      /// VRAM の高さ(文字)
 #define VRAM_TEXT_ADDR(x, y)    (VRAM_TEXT + VRAM_WIDTH * (y) + (x))   // 実 VRAM TEXT のアドレス. 要 hard.h
 #define VRAM_ATB_ADDR(x, y)     (VRAM_ATB  + VRAM_WIDTH * (y) + (x))   // 実 VRAM ATB  のアドレス. 要 hard.h
-#define VATB(fgCol, bgCol, atb)                     ((u8)(((fgCol) << 4) | (bgCol) | ((atb) << 7))) // atb を生成するマクロ
-#define VATB_CODE(fgCol, bgCol, atb, displayCode)   ((u16)(((fgCol) << 12) | ((bgCol) << 8) | ((atb) << 15) | (displayCode))) // text+atb を生成するマクロ
+#define VATB(fg_col, bg_col, atb)                    ((u8)(((fg_col) << 4) | (bg_col) | ((atb) << 7))) // atb を生成するマクロ
+#define VATB_CODE(fg_col, bg_col, atb, display_code) ((u16)(((fg_col) << 12) | ((bg_col) << 8) | ((atb) << 15) | (display_code))) // text+atb を生成するマクロ
 
 // ---------------------------------------------------------------- マクロ(仮想 VRAM)
 #define VVRAM_WIDTH             0x100       // 仮想 VRAM の幅
@@ -89,11 +89,11 @@ void vvramClear() __z88dk_fastcall __naked;
 // ---------------------------------------------------------------- 塗りつぶし(fill)
 /**
  * 仮想 VRAM の矩形領域を塗りつぶします
- * @param addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
  * @param wh ((W << 8) | H).   common.h の W8H8 マクロを使うと便利です
  * @param code ((ATB << 8) | ディスプレイコード). VATB_CODE() マクロを使うと便利です
  */
-void vVramFillRect(const u8* const drawAddr, const u16 wh, const u16 code) __naked;
+void vVramFillRect(const u8* const draw_addr, const u16 wh, const u16 code) __naked;
 
 /**
  * 実 VRAM の全画面を塗りつぶします. ウエイトがかかって遅いので注意です
@@ -104,79 +104,79 @@ void vramFill(const u16 code) __z88dk_fastcall __naked;
 // ---------------------------------------------------------------- 描画(draw)m x n
 /**
  * 仮想 VRAM の矩形領域を描画します
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス. TEXT が (w * h) 個分あって, 続いて ATB が (w * h) 個分あります
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param src_addr ソース アドレス. TEXT が (w * h) 個分あって, 続いて ATB が (w * h) 個分あります
  * @param wh ((W << 8) | H).   common.h の W8H8 マクロを使うと便利です
  */
-void vVramDrawRect(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked;
+void vVramDrawRect(const u8* const draw_addr, const u8* const src_addr, const u16 wh) __naked;
 
 /**
  * 仮想 VRAM の矩形領域を描画します. TEXT の値が 0x00 ならば描画しないでスキップします.
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス.「TEXT と ATB」 が (w * h) 個分あります. 但し TEXT = 0x00 ならば ATB はありません
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param src_addr ソース アドレス.「TEXT と ATB」 が (w * h) 個分あります. 但し TEXT = 0x00 ならば ATB はありません
  * @param wh ((W << 8) | H).   common.h の W8H8 マクロを使うと便利です
  */
-void vVramDrawRectTransparent(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked;
+void vVramDrawRectTransparent(const u8* const draw_addr, const u8* const src_addr, const u16 wh) __naked;
 
 /**
  * 実 VRAM の矩形領域を描画します. ウエイトがかかって遅いので注意です
- * @param drawAddr 画面左上のアドレス. VRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス. TEXT が (w * h) 個分あって, 続いて ATB が (w * h) 個分あります
+ * @param draw_addr 画面左上のアドレス. VRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param src_addr ソース アドレス. TEXT が (w * h) 個分あって, 続いて ATB が (w * h) 個分あります
  * @param wh ((W << 8) | H).   common.h の W8H8 マクロを使うと便利です
  */
-void vramDrawRect(const u8* const drawAddr, const u8* const srcAddr, const u16 wh) __naked;
+void vramDrawRect(const u8* const draw_addr, const u8* const src_addr, const u16 wh) __naked;
 
 
 // ---------------------------------------------------------------- 描画(draw)1 x n
 /**
  * 仮想 VRAM の 1x1 領域を描画します
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
  * @param code ((ATB << 8) | ディスプレイコード). VATB_CODE() マクロを使うと便利です
  */
-void vVramDraw1x1(const u8* const drawAddr, const u16 code) __naked;
+void vVramDraw1x1(const u8* const draw_addr, const u16 code) __naked;
 /**
  * 仮想 VRAM の 1x3 領域を描画します
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス. TEXT が (1 * 3) 個分あって, 続いて ATB が (1 * 3) 個分あります
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param stc_addr ソース アドレス. TEXT が (1 * 3) 個分あって, 続いて ATB が (1 * 3) 個分あります
  */
-void vVramDraw1x3(const u8* const drawAddr, const u8* const srcAddr) __naked;
+void vVramDraw1x3(const u8* const draw_addr, const u8* const stc_addr) __naked;
 
 // ---------------------------------------------------------------- 描画(draw)3 x 3
 /**
  * 仮想 VRAM の 3x3 領域を描画します
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス. TEXT が (3 * 3) 個分あって, 続いて ATB が (3 * 3) 個分あります
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param stc_addr ソース アドレス. TEXT が (3 * 3) 個分あって, 続いて ATB が (3 * 3) 個分あります
  */
-void vVramDraw3x3(const u8* const drawAddr, const u8* const srcAddr) __naked;
+void vVramDraw3x3(const u8* const draw_addr, const u8* const stc_addr) __naked;
 /**
  * 仮想 VRAM の 3x3 領域を描画します. TEXT の値が 0x00 ならば描画しないでスキップします.
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス.「TEXT と ATB」 が (w * h) 個分あります. 但し TEXT = 0x00 ならば ATB はありません
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param stc_addr ソース アドレス.「TEXT と ATB」 が (w * h) 個分あります. 但し TEXT = 0x00 ならば ATB はありません
  */
-void vVramDraw3x3Transparent(const u8* const drawAddr, const u8* const srcAddr) __naked;
+void vVramDraw3x3Transparent(const u8* const draw_addr, const u8* const stc_addr) __naked;
 
 // ---------------------------------------------------------------- 描画(draw)4 x 4, 5 x 5
 /**
  * 仮想 VRAM の 4x4 領域を描画します
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス. TEXT が (4 * 4) 個分あって, 続いて ATB が (4 * 4) 個分あります
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param stc_addr ソース アドレス. TEXT が (4 * 4) 個分あって, 続いて ATB が (4 * 4) 個分あります
  */
-void vVramDraw4x4(const u8* const drawAddr, const u8* const srcAddr) __naked;
+void vVramDraw4x4(const u8* const draw_addr, const u8* const stc_addr) __naked;
 
 /**
  * 仮想 VRAM の 5x5 領域を描画します
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス. TEXT が (4 * 4) 個分あって, 続いて ATB が (4 * 4) 個分あります
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param stc_addr ソース アドレス. TEXT が (4 * 4) 個分あって, 続いて ATB が (4 * 4) 個分あります
  */
-void vVramDraw5x5(const u8* const drawAddr, const u8* const srcAddr) __naked;
+void vVramDraw5x5(const u8* const draw_addr, const u8* const stc_addr) __naked;
 
 #if 0 //今回は使ってない
 /**
  * 仮想 VRAM の 5x5 領域を描画します. TEXT の値が 0x00 ならば描画しないでスキップします.
- * @param drawAddr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
- * @param srcAddr ソース アドレス.「TEXT と ATB」 が (w * h) 個分あります. 但し TEXT = 0x00 ならば ATB はありません
+ * @param draw_addr 画面左上のアドレス.  VVRAM_TEXT_ADDR() マクロを使うと便利です
+ * @param stc_addr ソース アドレス.「TEXT と ATB」 が (w * h) 個分あります. 但し TEXT = 0x00 ならば ATB はありません
  */
-void vVramDraw5x5Transparent(const u8* const drawAddr, const u8* const srcAddr) __naked;
+void vVramDraw5x5Transparent(const u8* const draw_addr, const u8* const stc_addr) __naked;
 #endif
 
 #endif

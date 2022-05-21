@@ -10,14 +10,14 @@
 #include "vram.h"
 #include "sys.h"
 #include "../game/bgm.h"
-#include "../scenes/sceneTitle.h"
+#include "../scenes/scene_title.h"
 
 // ---------------------------------------------------------------- 変数
-static void (*_sysSceneMainFunc)(u16 counter);     // シーン メイン関数
-u8      _sysCt;                 // システム カウンタ
-u16     _sysSceneCt;            // シーン カウンタ
-bool    _bSysGame;              // ゲームモード
-u8      _sysSceneWork[8];        // シーンが自由に使えるワーク
+static void (*sys_scene_main_func_)(u16 counter);     // シーン メイン関数
+u8      sys_ct_;                 // システム カウンタ
+u16     sys_scene_ct_;           // シーン カウンタ
+bool    b_sys_game_;             // ゲームモード
+u8      sys_scene_work_[8];      // シーンが自由に使えるワーク
 
 // ---------------------------------------------------------------- システム
 void sysInit()
@@ -29,21 +29,21 @@ void sysInit()
         *p = 0xff;
     }
 #endif
-    _bSysGame = false;
+    b_sys_game_ = false;
 }
 
 void sysMain()
 {
     // ゲーム モードでないならば,
-    if (_bSysGame == false) {
+    if (b_sys_game_ == false) {
         u8 trg = inputGetTrigger();
         // 右ボタンでスキップ
         if (trg & INPUT_MASK_R) {
-            _sysSceneCt = 0;
+            sys_scene_ct_ = 0;
         }
         // タイトル画面以外でスタートでタイトルへ
         if (trg & INPUT_MASK_P) {
-            if (_sysSceneMainFunc != sceneTitleMain) {
+            if (sys_scene_main_func_ != sceneTitleMain) {
                 vramFill(0x0000);
                 sysSetScene(sceneTitleInit, sceneTitleMain);
                 return;
@@ -51,21 +51,21 @@ void sysMain()
         }
     }
 
-    _sysSceneMainFunc(_sysSceneCt);
-    _sysSceneCt --;
-    _sysCt ++;
+    sys_scene_main_func_(sys_scene_ct_);
+    sys_scene_ct_ --;
+    sys_ct_ ++;
 }
 
 // ---------------------------------------------------------------- ゲーム モード
 
 // ---------------------------------------------------------------- シーン
-void sysSetScene(void (*initFunc)(), void (*mainFunc)(u16))
+void sysSetScene(void (*init_func)(), void (*main_func)(u16))
 {
-    _sysSceneMainFunc = mainFunc;
+    sys_scene_main_func_ = main_func;
     sdSetEnabled(false);
     sdPlayBgm(BGM_NONE);
-    for (int i = 0; i < sizeof(_sysSceneWork); i++) {
-        _sysSceneWork[i] = 0;
+    for (int i = 0; i < sizeof(sys_scene_work_); i++) {
+        sys_scene_work_[i] = 0;
     }
-    initFunc();
+    init_func();
 }

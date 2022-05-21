@@ -12,11 +12,11 @@
 #include "system/sound.h"
 #include "system/obj.h"
 #include "system/math.h"
-#include "scenes/sceneLogo.h"
+#include "scenes/scene_logo.h"
 #include "game/stars.h"
 #include "game/score.h"
-#include "game/gameMode.h"
-#include "objworks/objItem.h"
+#include "game/game_mode.h"
+#include "objworks/obj_item.h"
 
 void main() __naked
 {

@@ -30,15 +30,15 @@
 
 // SE シーケンサ記述構造体
 typedef struct s_SeSequencerDesc {
-    void (*main)(u8); // sdMake() で音を出す関数. 引数は自動decrementされるカウンタ. カウンタ=0 か, 優先順位高い SE が鳴ると終了. nullptr 可
-    u8 priority;      // 優先順位
-    const u8 ct;      // カウンタ初期値
+    void (*main_func)(u8); // sdMake() で音を出す関数. 引数は自動decrementされるカウンタ. カウンタ=0 か, 優先順位高い SE が鳴ると終了. nullptr 可
+    u8       priority;      // 優先順位
+    const u8 ct;            // カウンタ初期値
 } SeSequencerDesc;
 
 // ---------------------------------------------------------------- private 変数. 直接触らない
-extern const SeSequencerDesc _seSequencerTab[NR_SES];
+extern const SeSequencerDesc SE_SEQUENCE_TAB_[NR_SES];
 
 // ---------------------------------------------------------------- SE シーケンサ
-inline const SeSequencerDesc* seGetSequencerDesc(const u8 se) { return &_seSequencerTab[se]; }
+inline const SeSequencerDesc* seGetSequencerDesc(const u8 se) { return &SE_SEQUENCE_TAB_[se]; }
 
 #endif // SE_H_INCLUDED
