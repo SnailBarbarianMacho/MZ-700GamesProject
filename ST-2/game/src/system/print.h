@@ -81,6 +81,10 @@ void printU16Left(const u16 value) __z88dk_fastcall __naked;
 
 #if DEBUG
 /**
+ * 8 bit 値を 16 進 2 桁表示します. デバッグ用
+ */
+void printHex8(const u8 value) __z88dk_fastcall __naked;
+/**
  * 16 bit 値を 16 進 4 桁表示します. デバッグ用
  */
 void printHex16(const u16 value) __z88dk_fastcall __naked;

@@ -124,12 +124,12 @@ void sceneGameMain(u16 scene_ct)
         static const u8 mml0[] = { SD3_C3, 4, SD3_G3, 4, SD3_E3, 8, 0, };
 #if DEBUG
         // デバッグ時ポーズ, シーン動作, ゲーム中断
-        if (b_pause_ || (inputGetTrigger() & INPUT_MASK_P)) {
+        if (b_pause_ || (inputGetTrigger() & INPUT_MASK_PLAY)) {
             sd3Play(mml0, mml0, mml0, false);
             while (true) {
                 inputMain();
                 u8 inp = inputGetTrigger();
-                if (inp & INPUT_MASK_P) {// ポーズ解除
+                if (inp & INPUT_MASK_PLAY) {// ポーズ解除
                     b_pause_ = false;
                     sd3Play(mml0, mml0, mml0, false);
                     break;
@@ -138,7 +138,7 @@ void sceneGameMain(u16 scene_ct)
                     b_pause_ = true;
                     break;
                 }
-                if (inp & INPUT_MASK_S) {   // ゲーム中断
+                if (inp & INPUT_MASK_SEL) { // ゲーム中断
                     sysSetMode(false);
                     sysSetScene(sceneGameOverInitWithoutReflectHiScore, sceneGameOverMain);
                     return;
@@ -147,17 +147,17 @@ void sceneGameMain(u16 scene_ct)
         }
 #else
         // リリース時ポーズ, ゲーム中断
-        if (inputGetTrigger() & INPUT_MASK_P) {
-            vramDrawRect((u8*)VRAM_TEXT_ADDR((u16)(VRAM_WIDTH - CG_PAUSE_WIDTH) / 2, 10), sPause, W8H8(CG_PAUSE_WIDTH, CG_PAUSE_HEIGHT));
+        if (inputGetTrigger() & INPUT_MASK_PLAY) {
+            vramDrawRect((u8*)VRAM_TEXT_ADDR((u16)(VRAM_WIDTH - CG_PAUSE_WIDTH) / 2, 10), cg_Pause, W8H8(CG_PAUSE_WIDTH, CG_PAUSE_HEIGHT));
             sd3Play(mml0, mml0, mml0, false);
             while (true) {
                 inputMain();
                 u8 inp = inputGetTrigger();
-                if (inp & INPUT_MASK_P) {// ポーズ解除
+                if (inp & INPUT_MASK_PLAY) {   // ポーズ解除
                     sd3Play(mml0, mml0, mml0, false);
                     break;
                 }
-                if (inp & INPUT_MASK_S) {   // ゲーム中断
+                if (inp & INPUT_MASK_SEL) { // ゲーム中断
                     sysSetMode(false);
                     sysSetScene(sceneGameOverInitWithoutReflectHiScore, sceneGameOverMain);
                     return;
@@ -172,14 +172,14 @@ void sceneGameMain(u16 scene_ct)
         if (p_player->ct == 0) {// カウントダウン 0 ならゲームオーバー
             sysSetScene(sceneGameOverInit, sceneGameOverMain);
             return;
-        } else if (inputGetTrigger() & INPUT_MASK_P) { // コンティニュー
+        } else if (inputGetTrigger() & INPUT_MASK_PLAY) { // コンティニュー
             scoreContinue();
             objPlayerSetNormalStep(p_player);
         }
         break;
     case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル モード終了表示
     case OBJ_PLAYER_STEP_END_CARAVAN:  // キャラバン モード終了表示
-        if (inputGetTrigger() & INPUT_MASK_P) { // ゲームオーバー
+        if (inputGetTrigger() & INPUT_MASK_PLAY) { // ゲームオーバー
             sysSetScene(sceneGameOverInit, sceneGameOverMain);
             return;
         }

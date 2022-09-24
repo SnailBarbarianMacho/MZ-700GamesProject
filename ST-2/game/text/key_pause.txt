@@ -1,1 +1,1 @@
-{col=4}[{col=7}F1{col=4}]{col=7}{moveRight=10}... Pause
+{col=4}[{col=7}F1{col=4}]{col=7} ... Start/Pause/Resume

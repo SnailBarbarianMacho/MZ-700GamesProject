@@ -1,1 +1,1 @@
-{col=3}AM7J Joystick adapter supported
+{col=3}Supports AM7J and MZ-1X03{lf}(Joystick port A, auto detect)

@@ -45,17 +45,35 @@ void sceneTitleMain(u16 scene_ct)
 #include "../../text/title_bonus.h"
 #include "../../text/title_comma.h"
 #include "../../text/title_pts.h"
-    static const u8 str_version[] = {
-        DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
-        DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD, 0
-    };
-
     // -------- NWK Presents
     printSetAddr((u8*)VVRAM_TEXT_ADDR(3, 2)); printString(sceneTitleGetStrNwkPresents());
 
     // -------- コピーライトとバージョン
-    printSetAddr((u8*)VVRAM_TEXT_ADDR(13, 23)); printString(text_title_snail);
-    printSetAddr((u8*)VVRAM_TEXT_ADDR(27, 24)); printString(str_version); printU16Left(build_nr);
+    printSetAddr((u8*)VVRAM_TEXT_ADDR(10, 23)); printString(text_title_snail);
+    {
+#if VER_ALPHA != 0
+        static const u8 str_version[] = {
+            DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
+            DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD,
+            DC_CAPS, DC_A, DC_CAPS, DC_L, DC_P, DC_H, DC_A, DC_0 + VER_ALPHA, DC_PERIOD, 0
+        };
+        printSetAddr((u8*)VVRAM_TEXT_ADDR(20, 24));
+#elif VER_BETA != 0
+        static const u8 str_version[] = {
+            DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
+            DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD,
+            DC_CAPS, DC_B, DC_CAPS, DC_E, DC_T, DC_A, DC_0 + VER_BETA, DC_PERIOD, 0
+        };
+        printSetAddr((u8*)VVRAM_TEXT_ADDR(21, 24));
+#else
+        static const u8 str_version[] = {
+            DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
+            DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD, 0
+        };
+        printSetAddr((u8*)VVRAM_TEXT_ADDR(27, 24));
+#endif
+        printString(str_version); printU16Left(build_nr);
+    }
 
     // -------- スタートの点滅
     u8 flash = sysSceneGetWork(SYS_SCENE_WORK_START_CT) ? 0x01 : 0x08;
@@ -81,7 +99,7 @@ void sceneTitleMain(u16 scene_ct)
         if (30 < sysSceneGetWork(SYS_SCENE_WORK_START_CT)) {
            sysSetScene(sceneGameModeInit, sceneGameModeMain);
         }
-    } else if (inputGetTrigger() & INPUT_MASK_P) {
+    } else if (inputGetTrigger() & INPUT_MASK_PLAY) {
         sdSetEnabled(true);
         sdPlaySe(SE_START);
         sysSetMode(true);
@@ -96,11 +114,8 @@ void sceneTitleMain(u16 scene_ct)
 // ---------------------------------------------------------------- NWK Presents...
 const u8* sceneTitleGetStrNwkPresents()
 {
-    static const u8 scene_title_str_nwk_presents[] = {
-        DC_N, DC_W, DC_K, DC_SP,
-        DC_P, DC_CAPS, DC_R, DC_E, DC_S, DC_E, DC_N, DC_T, DC_S, 0,
-    };
-    return scene_title_str_nwk_presents;
+#include "../../text/nwk_presents.h"
+    return text_nwk_presents;
 }
 
 // ---------------------------------------------------------------- タイトル ロゴ表示

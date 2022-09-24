@@ -50,9 +50,9 @@ __asm
     ld      A, L
     or      A
     jp      z, SOUND_SET_ENABLED
-    ld      A, #MIO_ETC_GATE_MASK
+    ld      A, #MMIO_ETC_GATE_MASK
 SOUND_SET_ENABLED:
-    ld      HL, #MIO_ETC
+    ld      HL, #MMIO_ETC
     ld      (HL), A
 
     // ---------------- 後始末
@@ -190,11 +190,11 @@ __asm
 
     ld      H, ADDR_SD3_ATT_TAB >> 8// 減衰テーブル
     ld      C, #2                   // 合成波形
-    ld      A, #MIO_8253_CH0_MODE0  //
+    ld      A, #MMIO_8253_CH0_MODE0  //
 
     // -------------------------------- 波形合成&出力ループ
 SD3_LOOP:
-    ld      (#MIO_8253_CTRL), A     // 13
+    ld      (#MMIO_8253_CTRL), A     // 13
     SD3_MAIN(H, L, HL, B, SD3_SD_LEN0, SD3_MML0, SD3_LEN_END0, SD3_PULSE_END0, SD3_WAVE_CT0, SD3_END0)
     SD3_MAIN(B, C, BC, D, SD3_SD_LEN1, SD3_MML1, SD3_LEN_END1, SD3_PULSE_END1, SD3_WAVE_CT1, SD3_END1)
     SD3_MAIN(D, E, DE, E, SD3_SD_LEN2, SD3_MML2, SD3_LEN_END2, SD3_PULSE_END2, SD3_WAVE_CT2, SD3_END2)
@@ -202,11 +202,11 @@ SD3_LOOP:
     ld      A, C                    //  4   |
     sub     A, #3                   //  7   | if (C-3 >= 0) { C -= 3; 波形 '1'; }
     jr      nc, SD3_SD_ON           // 12/7 |
-      ld    A, #MIO_8253_CH0_MODE0  //  7   | 波形 '0'
+      ld    A, #MMIO_8253_CH0_MODE0  //  7   | 波形 '0'
       jp    SD3_LOOP                // 10   +- 計35
 SD3_SD_ON:
     ld      C, A                    //  4
-    ld      A, #MIO_8253_CH0_MODE3  //  7     波形 '1'
+    ld      A, #MMIO_8253_CH0_MODE3  //  7     波形 '1'
     jp      SD3_LOOP                // 10
 
     // ループ内の Tステート数
@@ -216,8 +216,8 @@ SD3_SD_ON:
 SD3_END:
     // -------------------------------- 後始末
     // 8253 を元の設定に戻します
-    ld      A, MIO_8253_CH0_MODE3
-    ld      (#MIO_8253_CTRL), A
+    ld      A, MMIO_8253_CH0_MODE3
+    ld      (#MMIO_8253_CTRL), A
 
     // バンクを切り替えて, 8253 を切り離します
     ld      C, 0xe1

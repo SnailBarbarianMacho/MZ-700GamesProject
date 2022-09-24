@@ -10,8 +10,8 @@
  * - 仮想 VRAM は次のようになってます:
  *                                        VVRAM_WIDTH = 0x100 固定
  *         <----------------------------------------------------------------------------------------->
- *       VVRAM_GAPX VRAM_WIDTH
- *           |        |
+ *     VVRAM_GAPX  VRAM_WIDTH  VVRAM_GAPX
+ *           |        |         |
  *         <--><------ ------><--><------ ------>
  * 0xfc00 +----------- ------------------ ------------------ ------------------ ---------------- ----+ ^
  * 0xfd00 |                                                                                          | |
@@ -37,6 +37,13 @@
 #include "../../../../src-common/common.h"
 #include "addr.h"
 
+// ---------------------------------------------------------------- 変数
+extern u8 b_vram_trans_enabled_;
+#if DEBUG
+extern u8  vram_8253_ct2_;
+extern u16 vram_trans_v_counter_;
+#endif
+
 // ---------------------------------------------------------------- マクロ(実 VRAM)
 #define VRAM_WIDTH              40      /// VRAM の幅(文字)
 #define VRAM_HEIGHT             25      /// VRAM の高さ(文字)
@@ -59,27 +66,26 @@
 void vramInit() __z88dk_fastcall __naked;
 
 /**
- * V-BLANK と同期を取り, 仮想 VRAM (TEXT, ATB) から VRAM に転送します
+ * 仮想 VRAM から VRAM に転送します
  * そのあと, 仮想 VRAM をクリアします
  * この API は, 約 1/30 ～ 1/60 sec かかります
  */
 void vramTrans() __z88dk_fastcall __naked;
 
 /** VRAM の転送を停止します. 次のフレームでは許可されます */
-void vramSetTransDisabled()__z88dk_fastcall;
-
-#if 0
-/** VBlank まで待ちます */
-void vramSyncVBlank()__z88dk_fastcall __naked;
-#endif
+inline void vramSetTransDisabled() { b_vram_trans_enabled_ = false; }
 
 // ---------------------------------------------------------------- デバッグ
 #if DEBUG
-/** 1フレームの処理時間 ms を返します.
+/** 前回の呼び出しからの処理時間 ms を返します.
  * - 30 FPS での場合, 33msec を越えると処理落ちです
  * - 20 FPS での場合, 50msec を越えると処理落ちです
  */
 u16 vramDebugGetProcessTime();
+
+/** 8253 ch2 の値を返します. デバッグ用. */
+inline u8  vramGet8253Ct2()      { return vram_8253_ct2_;        }
+inline u16 vramTransGetCounter() { return vram_trans_v_counter_; }
 #endif
 
 // ---------------------------------------------------------------- クリア

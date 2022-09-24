@@ -17,7 +17,7 @@
 #include "scene_instruction.h"
 
 // ---------------------------------------------------------------- マクロ
-#define INST_CT 350
+#define INST_CT 400
 
 // ---------------------------------------------------------------- 初期化
 void sceneInstructionInit()
@@ -62,7 +62,7 @@ void sceneInstructionMain(u16 scene_ct)
         { (u8*)VVRAM_TEXT_ADDR(4,  5), text_key_move,   40 },
         { (u8*)VVRAM_TEXT_ADDR(4,  9), text_key_shot,  110 },
         { (u8*)VVRAM_TEXT_ADDR(4, 11), text_key_joy,   150 },
-        { (u8*)VVRAM_TEXT_ADDR(4, 13), text_key_pause, 190 },
+        { (u8*)VVRAM_TEXT_ADDR(4, 18), text_key_pause, 220 },
         { nullptr, nullptr, 0 },
     };
     for (const struct s_Tab* pTab = tab; pTab->draw_addr; pTab++) {

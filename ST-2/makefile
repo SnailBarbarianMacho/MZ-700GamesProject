@@ -12,7 +12,6 @@
 # Target macros
 OUTFILE     := ST-2
 OUTFILE_BIN := ST-2.bin
-PROG_NAME 	:= ST-2
 
 # Loader macros
 LOADER_DIR			:= loader
@@ -67,8 +66,10 @@ all: $(OUTFILE_BIN)
 # Make combined binary
 ifeq ($(DEBUG), -DDEBUG=0)
   OUTFILE_MZT := $(OUTFILE).mzt
+  PROG_NAME   := ST-2
 else
   OUTFILE_MZT := $(OUTFILE)-debug.mzt
+  PROG_NAME   := ST-2-debug
 endif
 $(OUTFILE_BIN): $(GAME_OUTFILE_PAK) $(LOADER_OUTFILE_BIN)
 	@echo Marging ... [$@]
@@ -81,9 +82,8 @@ $(LOADER_DIR)/obj/deexo3.o:      $(LOADER_DIR)/deexo3.c      $(LOADER_DIR)/deexo
 $(LOADER_OUTFILE_BIN): $(LOADER_OBJS) $(LOADER_CRT0)
 	@echo Linking loader ... [$@]
 	@$(CC) +mz -mz80 -o $@ $(LOADER_OBJS) -crt0$(LOADER_CRT0) -zorg=$(LOADER_ORG) $(LFLAGS) -Ca-DSTACK=$(LOADER_STACK)
-#	@$(PHP) $(TOOLS)/make_mzt.php $@ $(PROG_NAME) $(LOADER_ORG) $(LOADER_ORG) $(LOADER_OUTFILE).mzt
 
-# Make game binary
+# Make game binary (compressed .pak file and uncompressed .mzt file)
 -include $(GAME_DEPENDS)   # dependency list, make cg, define $(GAME_OBJS)
 $(GAME_OUTFILE_PAK): $(GAME_OBJS) $(GAME_CRT0)
 	@echo Linking game ... [$@]
