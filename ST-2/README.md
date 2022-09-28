@@ -152,5 +152,6 @@ Sorry it's not in English. Please read it by machine translation etc.
   - 1UP の点滅はカーソル用タイマを使ってみました
 * 2022.09.24 v1.12 Beta1, Beta2
   - シャープ標準ジョイスティック(MZ-1X03)に対応
+    V-BLANK の間隔が NTSC と異なる PAL 環境でも動作するように調整(キャラクタの変更は無いので表示はおかしいままです)
   - ジョイスティックの B ボタンもショットに対応
   - ゲーム選択画面からデモモードに戻れるようにしました
