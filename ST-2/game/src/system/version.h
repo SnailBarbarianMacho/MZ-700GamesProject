@@ -14,6 +14,6 @@
 
 // αとかβとかある場合は 0 以外の値を入れます
 #define VER_ALPHA 0    // 1桁
-#define VER_BETA  1    // 1桁
+#define VER_BETA  2    // 1桁
 
 #endif // VERSION_H_INCLUDED

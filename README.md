@@ -32,6 +32,9 @@
   あまり役に立たないかもしれませんが, アセンブラを使った簡単なツールの作成の参考になります<br>
   Like when the power of the actual machine is turned on, it "dirts" the memory and resets it. There is no makefile. Make it with a batch file.<br>
   It may not be very useful, but it can be a reference for creating a simple tool using assembler.
+* **JoystickMZ1X03Test** <br>
+  シャープ純正ジョイスティック MZ-1X03 の動作テスト (デジタル, 検出機能付き) <br>
+  Operation test of genuine Sharp joystick MZ-1X03 (digital, with detection function)
 * **SoundTest** <br>
   三重和音サウンドテスト (波形 OR 合成版) <br>
   3 chord sound test.<br>

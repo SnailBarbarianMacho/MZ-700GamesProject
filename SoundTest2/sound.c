@@ -44,7 +44,7 @@ void sdSetEnabled(const bool bEnabled) __z88dk_fastcall __naked
     // (0xe008) = 0x00 or 0x01
 __asm
     // ---------------- 準備
-    BANK_VRAM_IO               // バンク切替
+    BANK_VRAM_MMIO(C)          // バンク切替
 
     // ---------------- 制御
     ld      A, L
@@ -56,7 +56,7 @@ SOUND_SET_ENABLED:
     ld      (HL), A
 
     // ---------------- 後始末
-    BANK_RAM                    // バンク切替
+    BANK_RAM(C)                 // バンク切替
     ret
 __endasm;
 }

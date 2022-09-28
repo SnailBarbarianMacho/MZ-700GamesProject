@@ -58,14 +58,6 @@ inline u8 inputGetJoy() { return input_joy_; }
 inline u8 inputGetJoyMode() { return input_joy_mode_; }
 
 // ---------------------------------------------------------------- MZ-1X13
-#if DEBUG
-/** シャープ純正ジョイスティックを入力します. デバッグ用
- * - VBLANK を待ち, 更に 63 ライン分 (約4msec) かかります
- * @return 未検出なら INPUT_MASK_NC が立ちます
- */
-u8 inputMZ1X03() __z88dk_fastcall __naked;
-#endif
-
 /** MZ-1X03 ボタンを読んで, VBLANK を待ち, 接続をテストして, 軸読み取り1をします */
 void inputMZ1X03ButtonVSyncAxis1() __z88dk_fastcall __naked;
 /** MZ-1X03 軸読み取り2をして, 結果を返します */
