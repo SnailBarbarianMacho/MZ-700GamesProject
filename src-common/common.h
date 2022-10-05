@@ -28,6 +28,7 @@ typedef unsigned char  bool;
 /** 構造体 s のメンバ m のオフセット位置をバイトで返します. z88dkでは, 何故か定数式ではありません... */
 #define OFFSET_OF(s, m) ((int)&(((s*)0)->m))
 
+// ---------------------------------------------------------------- static assert
 /** cond が 0(false) ならば, コンパイルを停止します
  * - 配列の大きさが負といって停止します
  * @example
@@ -38,19 +39,6 @@ typedef unsigned char  bool;
 #else
 #define STATIC_ASSERT(cond, msg)
 #endif
-
-/** 実行時に cond が 0(false) ならば, ソースと行数を表示して, 実行を停止します
- * - release ビルド
- * - assert() を実装する必要があります
- */
-#ifdef DEBUG
-#define ASSERT(cond) assert(cond, __FILE__, __LINE__)
-#else
-#define ASSERT(cond)
-#endif
-
-/* assert 本体. 別途用意してください */
-void assert(const bool cond, const char* const file, const u16 line) __naked;
 
 // ---------------------------------------------------------------- 引数を減らすための合同マクロ
 // z88dk は, 引数を 1 個にして __fastcall を付けた関数の引数は, HL レジスタ経由で渡されるのです

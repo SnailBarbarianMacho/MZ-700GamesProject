@@ -25,7 +25,7 @@ start:
         call	crt0_init_bss
 
 ; -------- スタックを設定してジャンプ(no return)
-        ld      sp, $2000
+        ld      sp, $c000
         jp      _main
 
 ; -------- 関数ポインタの飛び先
