@@ -1,12 +1,15 @@
 # Joystick MZ-1X03 test
 
+シャープ純正アナログ ジョイスティック MZ-1X03 の動作テスト プログラムです. 生データの表示とジョイスティックの検出を行います.<br>
+This is a program to test the operation of the genuine Sharp analog joystick MZ-1X03. Displays raw data and detects joystick.
+
 ## つかいかた / How to use
 
 ![usage](JoystickMZ1X03Test.png)
 
-- (1)... /VBLK 以降の JA1/JA2 の生データを 560 個表示します. 1 dot = 28 T states です.
+- (1)... /VBLK 以降の JA1/JA2 の生データを 560 個表示します. 値が '1' ならばドットを表示します. 1 dot = 28 T states です.
         白い部分が判定に有効な範囲, マゼンタの部分は /VBLK 外になります(NTSC のみ)<br>
-        Displays 560 JA1/JA2 raw data after /VBLK. 1 dot = 28 T states.
+        Displays 560 JA1/JA2 raw data after /VBLK. If the value is '1', a dot is displayed. 1 dot = 28 T states.
         White area is valid range for judgment, magenta area is outside of /VBLK (NTSC only).
 - (2)... シンプルなジョイスティック判定です. 方向とボタンを表示します. ジョイスティックが検出できなかった場合は 'XXXXXX' と表示します.<br>
         This is a simple joystick detection. Display the direction and button. If the joystick is not detected, display 'XXXXXX'.
