@@ -156,3 +156,4 @@ Sorry it's not in English. Please read it by machine translation etc.
     V-BLANK の間隔が NTSC と異なる PAL 環境でも動作するように調整(キャラクタの変更は無いので表示はおかしいままです)
   - ジョイスティックの B ボタンもショットに対応
   - ゲーム選択画面からデモモードに戻れるようにしました
+  - 中～大型～ボスが破壊数に含まれてない大バグ修正

@@ -296,10 +296,14 @@ __asm
 
     bit     #7, (HL)
     ld      DE, #CT_8253_CH1
-    ld      BC, #2279
+#if DEBUG
+    ld      BC, #2277 // 待ち時間(NTSC). デバッグ ビルドでは処理時間が足りてない...
+#else
+    ld      BC, #2277 // 待ち時間(NTSC). リリース ビルドでも 2279 では足りてない...
+#endif
     jr      nz, VRAM_VBLK_SYNC_19
     ld      DE, #CT_8253_CH1_PAL    // まだ /VBLK 中ならば PAL
-    ld      BC, #2715
+    ld      BC, #2715 // 待ち時間(PAL).
 VRAM_VBLK_SYNC_19:
 
     // -------- Vカウンタの設定(2)
@@ -360,6 +364,7 @@ __asm
     ld      H,  (HL)                // ch1 H
     ld      L,  A
     BANK_RAM(C)                     // バンク切替
+    // HL = 1～262
 #if 0 // カウンタと /VBLK の対比をチェックするデバッグ(VRAM_GET_VCOUNTER_TEST1でブレークをかける)
 #define VCT 260
     cmp     A, #(VCT & 0xff)
@@ -396,7 +401,6 @@ __asm
         ret
 __endasm;
     }
-
     vramTransInit_();
 
     if (inputGetJoyMode() < INPUT_JOY_MODE_MZ1X03_DETECTING) {
@@ -430,13 +434,14 @@ __endasm;
         // 22    |--...------...(8行x21)---|...BBBBBBBBBBBBBBBBBBB|=====...==|A|
         // 32 |-----...--(8行x21)-|BBBBBBBBB...BBBBBBBBBBBBBBBBBBB|=====...==|A|
 
-        u8 va = vramGetVCounter_(); // 0～32
-        vramTransMain_(va);
+        u8 vc = vramGetVCounter_(); // 0～32
+        u8 is = inputGetMZ1X03Insensitivity(); //  MZ-1X03 の感度の鈍さ (1敏感～4鈍い)
+        vramTransMain_(vc);
         // この時点で必ず /VBLK 外の筈!
-        inputMZ1X03ButtonVSyncAxis1();
-        vramTransMain_(4);
+        inputMZ1X03ButtonVSyncAxis1(is);
+        vramTransMain_(is);
         inputMZ1X03Axis2();
-        vramTransMain_(VRAM_HEIGHT - va - 4);
+        vramTransMain_(VRAM_HEIGHT - vc - is);
     }
 
 __asm

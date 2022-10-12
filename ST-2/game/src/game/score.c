@@ -198,6 +198,7 @@ void scoreMain() __z88dk_fastcall
 //    printHex9(inputGetTrigger());
     printHex8(inputGetJoy());
     printU8Right(inputGetJoyMode());
+//    printU16Left(objEnemyGetNrKilled());
 //    printHex16(vramGet8253Ct2());
 //    printHex16(vramTransGetCounter());
 //    printU16Right(vramGetVCounter());

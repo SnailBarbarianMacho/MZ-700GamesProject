@@ -19,19 +19,21 @@ extern u16  game_caravan_timer_;
 
 // ---------------------------------------------------------------- マクロ
 
-// ゲームモード
+// ゲーム モード
 #define GAME_MODE_EASY     0    //< イージー
 #define GAME_MODE_NORMAL   1    //< ノーマル
 #define GAME_MODE_HARD     2    //< ハード
 #define GAME_MODE_SURVIVAL 3    //< サバイバル
 #define GAME_MODE_CARAVAN  4    //< キャラバン
-#define NR_GAME_MODES      5
+#define GAME_MODE_MZ1X03_INSENSITIVITY 5 //< MZ1X03 感度の鈍さ
+#define NR_GAME_MODES      6
 
 #define GAME_FPS           32   // 正確ではないですが, 32 フレームで1秒としときます
 
 // ---------------------------------------------------------------- Setter/Getter
-/** ゲームモードをセットします
+/** ゲーム モードをセットします
  * - 同時に, 難易度,スコア カラー, キャラバン タイマーが変わります
+ * - 不正な値を入れても変なゲーム設定になるだけです
  * @param game_mode
  */
 void gameSetMode(const u8 game_mode) __z88dk_fastcall;

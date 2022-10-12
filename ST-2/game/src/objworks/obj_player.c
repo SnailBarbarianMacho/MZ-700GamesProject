@@ -91,13 +91,13 @@ bool objPlayerMain(Obj* const p_obj)
                 sx = -1;
             }
             if (inp & INPUT_MASK_R) {
-                sx = 1;
+                sx ++;
             }
             if (inp & INPUT_MASK_U) {
                 sy = -1;
             }
             if (inp & INPUT_MASK_D) {
-                sy = 1;
+                sy ++;
             }
             p_obj->u_geo.geo8.sxh = sx;
             p_obj->u_geo.geo8.syh = sy;

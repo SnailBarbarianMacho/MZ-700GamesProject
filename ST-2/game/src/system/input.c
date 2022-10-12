@@ -5,20 +5,18 @@
 
 #include "../../../../src-common/common.h"
 #include "../../../../src-common/hard.h"
+#include "assert.h"
 #include "input.h"
-#include "vram.h"//TEST
-#include "print.h"//TEST
+//#include "vram.h"//TEST
+//#include "print.h"//TEST
 
 // ---------------------------------------------------------------- 変数
 u8          input_;
 static u8   input_old_;              // 1フレーム前の input_
 u8          input_trg_;
-//u8          input_am7j_detected_;    // AM7J が検出できているか 0/!0 = No/Yes // todo 廃止予定
-//u8          input_am7j_ct_;          // AM7J 検出/未検出カウンタ　// todo 廃止予定
-//#define AM7J_CT 20                   // AM7J 検出/未検出に切り替わる連続回数// todo 廃止予定
 u8          input_joy_;
 u8          input_joy_mode_;
-
+u8          input_mz1x03_insensitivity_ = INPUT_MZ1X03_INSENSITIVITY_MAX;
 
 // ---------------------------------------------------------------- システム
 void inputInit() __z88dk_fastcall
@@ -28,6 +26,7 @@ void inputInit() __z88dk_fastcall
     input_trg_ = 0;
     input_joy_mode_ = INPUT_JOY_MODE_AM7J_DETECTING;
 }
+
 
 static const u8 INPUT_TAB_[] = {
     // strobe, count, mask0, input0, mask1, input1, ...
@@ -58,35 +57,35 @@ __asm
 
     // -------- Write strobe
 STROBE_LOOP:
-    ld      A, (HL)
+    ld      A,  (HL)             // strobe
     or      A
-    jr      z, STROBE_LOOP_END
+    jr      z,  STROBE_LOOP_END
     inc     HL
     ld      (DE), A             // strobe
     inc     E                   // DE = MMIO_8255_PORTB
-    ld      A, (DE)             // key data
-    ld      E, A
+    ld      A,  (DE)            // key data
+    ld      E,  A
 
-    ld      B, (HL)             // count
+    ld      B,  (HL)            // count
     inc     HL
 
     // -------- Read key
 KEY_LOOP:
-    ld      A, (HL)             // 該当ビットが 0 になる
+    ld      A,  (HL)            // 該当ビットが 0 になる
     inc     HL
-    and     A, E
+    and     A,  E
     jp      nz, KEY_LOOP_END
-    ld      A, (HL)
-    or      A, C                // input_
-    ld      C, A                // input_
+    ld      A,  (HL)
+    or      A,  C               // input_
+    ld      C,  A               // input_
 KEY_LOOP_END:
     inc     HL
-    djnz    B, KEY_LOOP
-    ld      E, #(MMIO_8255_PORTA & 0xff)
+    djnz    B,  KEY_LOOP
+    ld      E,  #(MMIO_8255_PORTA & 0xff)
     jp      STROBE_LOOP
 
 STROBE_LOOP_END:
-    ld      A, C
+    ld      A,  C
     ld      (_input_), A
     BANK_RAM(C)                 // バンク切替
     ret
@@ -268,7 +267,7 @@ __endasm;
 static void inputMain2_() __naked
 {
 __asm
-    // if (input_joy != INPUT_MASK_NC) { input_ |= input_joy_; }
+    // -------- if (input_joy != INPUT_MASK_NC) { input_ |= input_joy_; }
     ld      A,  (_input_joy_)
     cmp     A,  #INPUT_MASK_NC
     ld      B,  A
@@ -278,7 +277,7 @@ __asm
     ld      (_input_), A
 INPUT_MAIN_JOY_100:
 
-    // input_trg_ = input_ & ~input_old_;
+    // -------- input_trg_ = input_ & ~input_old_;
     ld      B,  A
     ld      A,  (_input_old_)
     cpl     A
@@ -350,24 +349,24 @@ void inputMain() __z88dk_fastcall
 
 // ---------------------------------------------------------------- MZ-1X03
 
-
-
-void inputMZ1X03ButtonVSyncAxis1() __z88dk_fastcall __naked
+#pragma disable_warning 85
+#pragma save
+void inputMZ1X03ButtonVSyncAxis1(const u8 mz1x03_insensitivity) __z88dk_fastcall __naked
 {
 __asm;
     BANK_VRAM_MMIO(C)                       // バンク切替
+
+    ld      E,  L                           // 引数保存
 
     // 現在 /VBLK = 'H' な筈なので, そのままボタンが読める筈!
     ld      D,  #(MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK)
     ld      HL, #MMIO_ETC
     ld      A,  (HL);                       // ****_*BA*
-    cpl                                     // 負論理
+    cpl                                     // 正論理に変換
     and     A,  D                           // 0000_0BA0
-#if 0 // /VBLK に突入してしまってボタンが読めなかったエラーのテスト(INPUT_MZ1X03_VBLK_TEST1 でブレークポイントかける)
-    cmp     A,  D
-    jp      nz, INPUT_MZ1X03_VBLK_TEST1 + 1
-INPUT_MZ1X03_VBLK_TEST1:
-    nop
+#if DEBUG // /VBLK に突入してしまってボタンが読めなかったら assert
+    cmp     A,  D                           // ボタンが読めなかったら JA1,JA2 は '0'(正論理変換後 '1') が読めてしまう
+    jp      z, _assert                      // HL=MMIO_ETC
 #endif
     rrca                                    // 0000_00BA
     ld      (INPUT_MZ1X03_BUTTON + 1), A    // 自己書き換え
@@ -378,29 +377,35 @@ INPUT_MZ1X03_VBLK_TEST1:
     // 現在 /VBLK = 'H' な筈なので, チェックはしないでいい筈!
 INPUT_MZ1X03_VBLK_SYNC11:
     and     A, (HL)                         // /VBLK = L になるまで待つ
-    jp      m,  INPUT_MZ1X03_VBLK_SYNC11    // '1' ならループ
+    jp      m,  INPUT_MZ1X03_VBLK_SYNC11    // 10   '1' ならループ
 
-    // -------- /VBLK 直後 100-200 T states が '0' でなければ, 非検出
+    // -------- /VBLK 直後 110-180 T states が '0' でなければ, 非検出
     ld      L,  #(MMIO_ETC & 0xff)          // 7
     ld      B,  #7                          // 7
 INPUT_MZ1X03_WAIT10:
     djnz    B,  INPUT_MZ1X03_WAIT10         // 13 * n - 5
-    // 小計 7+7+(13*7-5) = 100
+    // 小計 10+7+7+(13*7-5) = 110
 
-    ld      B,  #3                          // 7
+    ld      B,  #2                          // 7
 INPUT_MZ1X03_WAIT12:
-    ld      A,  (HL)                        // 4    ****_*YX*
-    and     A,  D                           //      0000_0YX0
-    jp      nz, INPUT_MZ1X03_NOT_DETECT10   // 10 接続されてるなら '0' が読める筈
-    djnz    B,  INPUT_MZ1X03_WAIT12         // 13 * n - 5
-    // 小計 7+((7+4+10+13)*3-5) = 104
+    ld      A,  (HL)                        // 7    ****_*YX*
+    and     A,  D                           // 4    0000_0YX0
+    jp      nz, INPUT_MZ1X03_NOT_DETECT10   // 10   接続されてるなら '0' が読める筈
+    djnz    B,  INPUT_MZ1X03_WAIT12         // 13/7
+    // 小計 7+((7+4+10+13)*2-5) = 70
 
-    // -------- /VBLK 直後 300 T states で '1' ならば左 or 上
-    ld      B,  #7                          // 7
+    // -------- その後 100 + (0～3) * 834 T states で '1' ならば左 or 上
+    ld      A,  #INPUT_MZ1X03_INSENSITIVITY_MAX// 7 1, 2, 3, 4
+    sub     A,  E                           // 4    3, 2, 1, 0
+    rrca                                    // 4
+    rrca                                    // 4    192,127,64,0
+    add     A,  #6                          // 7    196,132,69,5
+    ld      B,  A                           // 4
 INPUT_MZ1X03_WAIT13:
     djnz    B,  INPUT_MZ1X03_WAIT13         // 13 * n - 5
     ld      A,  (HL)                        // 7    ****_*YX*
-    // 小計 7+(13*7-5)+7 = 100
+    // 小計 7+4+4+4+7+4+(13*(64*0+6)-5)+7 = 110  理想 100
+    // 小計 7+4+4+4+7+4+(13*(64*3+5)-5)+7 = 2606 理想 2602
 
     and     A,  D                           //      0000_0YX0
     rrca                                    //      0000_00YX
@@ -416,6 +421,7 @@ INPUT_MZ1X03_NOT_DETECT10:
     ret
 __endasm;
 }
+#pragma restore
 
 
 void inputMZ1X03Axis2() __z88dk_fastcall __naked
@@ -434,10 +440,12 @@ __asm;
     or      A, E                            //      0000_yxYX
 section rodata_compiler
 INPUT_MZ1X03_TAB10:
-    db      INPUT_MASK_R | INPUT_MASK_D, INPUT_MASK_NC,               INPUT_MASK_NC              , INPUT_MASK_NC               // 0000, 0001, 0010, 0011
+//
+//                                                                                                                                yxYX
+    db      INPUT_MASK_R | INPUT_MASK_D, INPUT_MASK_NC              , INPUT_MASK_NC              , INPUT_MASK_NC               // 0000, 0001, 0010, 0011
     db                     INPUT_MASK_D, INPUT_MASK_L | INPUT_MASK_D, INPUT_MASK_NC              , INPUT_MASK_NC               // 0100, 0101, 0110, 0111
-    db      INPUT_MASK_R,                INPUT_MASK_NC,               INPUT_MASK_R | INPUT_MASK_U, INPUT_MASK_NC               // 1000, 1001, 1010, 1011
-    db      0,                           INPUT_MASK_L,                INPUT_MASK_U,                INPUT_MASK_L | INPUT_MASK_U // 1100, 1101, 1110, 1111
+    db      INPUT_MASK_R               , INPUT_MASK_NC              , INPUT_MASK_R | INPUT_MASK_U, INPUT_MASK_NC               // 1000, 1001, 1010, 1011
+    db      0                          , INPUT_MASK_L               , INPUT_MASK_U               , INPUT_MASK_L | INPUT_MASK_U // 1100, 1101, 1110, 1111
 section code_compiler
     ld      HL, INPUT_MZ1X03_TAB10
     ld      D,  #0x00

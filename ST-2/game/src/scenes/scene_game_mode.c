@@ -23,12 +23,14 @@ static u8 scene_game_mode_ = GAME_MODE_NORMAL;
 #include "../../text/game_mode_hard.h"
 #include "../../text/game_mode_survival.h"
 #include "../../text/game_mode_caravan.h"
+#include "../../text/game_mode_mz1x03_insensitivity.h"
 static const u8* STR_TAB[] = {
     text_game_mode_easy,
     text_game_mode_normal,
     text_game_mode_hard,
     text_game_mode_survival,
     text_game_mode_caravan,
+    text_game_mode_mz1x03_insensitivity,
 };
 #include "../../text/game_mode_back.h"
 
@@ -49,7 +51,7 @@ void sceneGameModeInit()
 void sceneGameModeMain(u16 scene_ct)
 {
 #include "../../text/game_mode.h"
-#define MENU_Y 8
+#define MENU_Y 7
     if (!sysSceneGetWork(SYS_SCENE_WORK_START_CT)) {
         // -------- タイトルに戻る
         u8 inp = inputGetTrigger();
@@ -64,6 +66,13 @@ void sceneGameModeMain(u16 scene_ct)
         for (u8 i = 0; i < COUNT_OF(STR_TAB); i++) {
             sceneGamePrintGameMode((u8*)VVRAM_TEXT_ADDR(5, MENU_Y + i * 2), i, true);
         }
+        printPutc(DC_0 + INPUT_MZ1X03_INSENSITIVITY_MAX + 1 - inputGetMZ1X03Insensitivity()); // MZ1X03 感度の鈍さ
+        u8 i = inputGet(); // 上下左右入力表示
+        if (i & INPUT_MASK_L) { printPutc(DC_CURSOR_LEFT);  }
+        if (i & INPUT_MASK_U) { printPutc(DC_CURSOR_UP);    }
+        if (i & INPUT_MASK_D) { printPutc(DC_CURSOR_DOWN);  }
+        if (i & INPUT_MASK_R) { printPutc(DC_CURSOR_RIGHT); }
+
         printSetAddr((u8*)VVRAM_TEXT_ADDR(9, 20));
         printString(text_game_mode_back);
 
@@ -78,6 +87,7 @@ void sceneGameModeMain(u16 scene_ct)
             scene_game_mode_ ++;
             if (scene_game_mode_ == COUNT_OF(STR_TAB)) { scene_game_mode_ = 0; }
         }
+        gameSetMode(scene_game_mode_);
         scoreGameStart();
 
         // -------- カーソル表示
@@ -85,13 +95,14 @@ void sceneGameModeMain(u16 scene_ct)
         printSetAtb(VATB(2, 0, 0)) ;
         printPutc((scene_ct & 4) ? DC_NICOCHAN_0 : DC_NICOCHAN_1);
 
-        // -------- スタート ボタン
-        if (scene_game_mode_ != NR_GAME_MODES) { // ゲーム開始
-            if (inp & (INPUT_MASK_A | INPUT_MASK_B | INPUT_MASK_PLAY)) {
-                sdPlaySe(SE_START);
+        // -------- 決定ボタンでスタート
+        if (inp & (INPUT_MASK_A | INPUT_MASK_B | INPUT_MASK_PLAY)) {
+            sdPlaySe(SE_START);
+            if (scene_game_mode_ != GAME_MODE_MZ1X03_INSENSITIVITY) { // ゲーム開始
                 sysSceneIncWork(SYS_SCENE_WORK_START_CT);
+            } else { // MZ-1X03 感度の鈍さ
+                inputDecMZ1X03Insensitivity();
             }
-            gameSetMode(scene_game_mode_);
         }
     } else {
         // -------- スタート
