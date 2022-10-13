@@ -99,7 +99,7 @@ void sceneTitleMain(u16 scene_ct)
         if (30 < sysSceneGetWork(SYS_SCENE_WORK_START_CT)) {
            sysSetScene(sceneGameModeInit, sceneGameModeMain);
         }
-    } else if (inputGetTrigger() & INPUT_MASK_PLAY) {
+    } else if (inputGetTrigger() & INPUT_MASK_START) {
         sdSetEnabled(true);
         sdPlaySe(SE_START);
         sysSetMode(true);

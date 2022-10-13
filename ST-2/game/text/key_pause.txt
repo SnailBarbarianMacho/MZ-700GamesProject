@@ -1,1 +1,0 @@
-{col=4}[{col=7}F1{col=4}]{col=7} ... Start/Pause/Resume

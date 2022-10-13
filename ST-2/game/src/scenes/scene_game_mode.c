@@ -55,7 +55,7 @@ void sceneGameModeMain(u16 scene_ct)
     if (!sysSceneGetWork(SYS_SCENE_WORK_START_CT)) {
         // -------- タイトルに戻る
         u8 inp = inputGetTrigger();
-        if (inp & INPUT_MASK_SEL) {
+        if (inp & INPUT_MASK_CANCEL) {
             sysSetMode(false);
             sysSetScene(sceneLogoInit, sceneLogoMain);
             return; // 表示しないで返す
@@ -96,7 +96,7 @@ void sceneGameModeMain(u16 scene_ct)
         printPutc((scene_ct & 4) ? DC_NICOCHAN_0 : DC_NICOCHAN_1);
 
         // -------- 決定ボタンでスタート
-        if (inp & (INPUT_MASK_A | INPUT_MASK_B | INPUT_MASK_PLAY)) {
+        if (inp & (INPUT_MASK_A | INPUT_MASK_B | INPUT_MASK_START)) {
             sdPlaySe(SE_START);
             if (scene_game_mode_ != GAME_MODE_MZ1X03_INSENSITIVITY) { // ゲーム開始
                 sysSceneIncWork(SYS_SCENE_WORK_START_CT);

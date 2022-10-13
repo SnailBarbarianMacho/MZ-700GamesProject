@@ -28,8 +28,8 @@ extern u8 input_mz1x03_insensitivity_;    // MZ-1X03 の感度の鈍さ (1敏感
 #define INPUT_MASK_R 0x08   // 右
 #define INPUT_MASK_D 0x10   // 下
 #define INPUT_MASK_U 0x20   // 上
-#define INPUT_MASK_PLAY 0x40  // Play/Pause/Back
-#define INPUT_MASK_SEL  0x80  // Select/GameOver
+#define INPUT_MASK_START  0x40  // Start/Pause/Resume
+#define INPUT_MASK_CANCEL 0x80  // Cancel/GameOver
 #define INPUT_MASK_NC   0x80  // ジョイスティックの場合, 未検出フラグになります
 #define INPUT_SHIFT_NC  0x7   // ジョイスティックの場合, 未検出フラグになります
 

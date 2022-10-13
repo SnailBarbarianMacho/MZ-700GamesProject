@@ -36,7 +36,7 @@ static const u8 INPUT_TAB_[] = {
     0xf4,      4, /* A */0x80, INPUT_MASK_L, /* B */0x40, INPUT_MASK_B, /* D */0x10, INPUT_MASK_R, /* H */0x01, INPUT_MASK_L,
     0xf6,      1, /* Space */0x10, INPUT_MASK_A,
     0xf7,      4, /* ↑ */0x20, INPUT_MASK_U, /* ↓ */0x10, INPUT_MASK_D, /* → */0x08, INPUT_MASK_R, /* ← */0x04, INPUT_MASK_L,
-    0xf9,      2, /* F1 */0x80, INPUT_MASK_PLAY, /* F2 */0x40, INPUT_MASK_SEL,
+    0xf9,      4, /* F1 */0x80, INPUT_MASK_START, /* F2 */0x40, INPUT_MASK_CANCEL, /* F3 */0x20, INPUT_MASK_START, /* F4 */0x10, INPUT_MASK_CANCEL,
     0,
 };
 

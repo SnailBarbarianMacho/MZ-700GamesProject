@@ -51,7 +51,8 @@ void sceneInstructionMain(u16 scene_ct)
 #include "../../text/key_move.h"
 #include "../../text/key_shot.h"
 #include "../../text/key_joy.h"
-#include "../../text/key_pause.h"
+#include "../../text/key_start.h"
+#include "../../text/key_cancel.h"
     s16 ct = INST_CT - scene_ct;
     static struct s_Tab {
         u8* const draw_addr;
@@ -62,7 +63,8 @@ void sceneInstructionMain(u16 scene_ct)
         { (u8*)VVRAM_TEXT_ADDR(4,  5), text_key_move,   40 },
         { (u8*)VVRAM_TEXT_ADDR(4,  9), text_key_shot,  110 },
         { (u8*)VVRAM_TEXT_ADDR(4, 11), text_key_joy,   150 },
-        { (u8*)VVRAM_TEXT_ADDR(4, 18), text_key_pause, 220 },
+        { (u8*)VVRAM_TEXT_ADDR(4, 18), text_key_start, 220 },
+        { (u8*)VVRAM_TEXT_ADDR(4, 20), text_key_cancel,250 },
         { nullptr, nullptr, 0 },
     };
     for (const struct s_Tab* pTab = tab; pTab->draw_addr; pTab++) {
