@@ -912,7 +912,41 @@ static const u8 HEX_TAB_[] = {
     DC_C, DC_D, DC_E, DC_F,
 };
 
-#ifndef RELEASE
+#if DEBUG
+#pragma disable_warning 85
+#pragma save
+void printHex8(const u8 value) __z88dk_fastcall __naked
+{
+__asm
+    // -------- HL' = ATB アドレス, C' = 色
+    ld      BC, (#_vram_print_addr_)
+    exx
+        ld  HL, (#_vram_print_addr_)
+        ld  BC, VRAM_WIDTH + VVRAM_GAPX
+        add HL, BC
+        ld  A, (#_vram_print_atb_)
+        ld  C, A
+    exx
+    // ---------------- 10 の桁
+    ld      A, L
+    rrca
+    rrca
+    rrca
+    rrca
+    and     #0x0f
+    call    PRINT_HEX_1
+    // ---------------- 1 の桁
+    ld      A, L
+    and     #0x0f
+    call    PRINT_HEX_1
+
+    ld      (#_vram_print_addr_), BC   // 表示位置の更新
+    ret
+__endasm;
+}
+#pragma restore
+
+
 #pragma disable_warning 85
 #pragma save
 void printHex16(const u16 value) __z88dk_fastcall __naked
@@ -933,11 +967,11 @@ __asm
     rrca
     rrca
     rrca
-    and     0x0f
+    and     #0x0f
     call    PRINT_HEX_1
     // ---------------- 100 の桁
     ld      A, H
-    and     0x0f
+    and     #0x0f
     call    PRINT_HEX_1
     // ---------------- 10 の桁
     ld      A, L
@@ -945,11 +979,11 @@ __asm
     rrca
     rrca
     rrca
-    and     0x0f
+    and     #0x0f
     call    PRINT_HEX_1
     // ---------------- 1 の桁
     ld      A, L
-    and     0x0f
+    and     #0x0f
     call    PRINT_HEX_1
 
     ld      (#_vram_print_addr_), BC   // 表示位置の更新

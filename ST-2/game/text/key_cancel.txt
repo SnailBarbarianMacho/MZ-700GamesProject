@@ -1,0 +1,1 @@
+{col=4}[{col=7}F2{col=4}][{col=7}F4{col=4}]{col=7} ... Cancel

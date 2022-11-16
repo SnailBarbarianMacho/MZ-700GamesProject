@@ -211,7 +211,7 @@ static void overhangDeadCheck3(Obj* const p_obj) __z88dk_fastcall
         p_obj->u_geo.geo.sx = 0;// 移動停止
         p_obj->u_geo.geo.sy = 0;// 移動停止
         p_obj->u_geo.geo.w  = 0;// 衝突判定を止める
-        p_obj->ct   = 1;       // 表示しない
+        p_obj->ct   = 1;        // 表示しない
         p_obj->u_obj_work.enemy.ct = 10;
         p_obj->step = STEP_DEAD;
     } else if (p_obj->b_hit) {
@@ -236,6 +236,7 @@ static void deadCheck458(Obj* const p_obj) __z88dk_fastcall
         // スコア処理
         u16 score = p_obj->u_obj_work.enemy.score;
         scoreAdd(score);
+        _objEnemyNrKilled++;
         if (100 <= score) { // 1000 点以上はスコアを表示
             objCreateEtc(objScoreInit, objScoreMain, objScoreDraw, p_obj);
         }

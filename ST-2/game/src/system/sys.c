@@ -42,7 +42,7 @@ void sysMain()
             sys_scene_ct_ = 0;
         }
         // タイトル画面以外でスタートでタイトルへ
-        if (trg & INPUT_MASK_P) {
+        if (trg & INPUT_MASK_START) {
             if (sys_scene_main_func_ != sceneTitleMain) {
                 vramFill(0x0000);
                 sysSetScene(sceneTitleInit, sceneTitleMain);

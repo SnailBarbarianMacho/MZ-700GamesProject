@@ -6,21 +6,28 @@
 #include "../../../../src-common/common.h"
 #include "../../../../src-common/hard.h"
 #include "addr.h"
+#include "input.h"
 #include "vram.h"
+#include "math.h"
 
 // ---------------------------------------------------------------- 変数
-static u8 b_vram_trans_enabled_;
+u8 b_vram_trans_enabled_;
 #if DEBUG
-static u16 ct_8253_ch1_; // 処理時間計測に使う
+static u16 ct_8253_ch12_val_;  // 8253 ch1/2 のカウント値(256 = 15.7ms)
+static u16 ct_8253_ch12_diff_; // 8253 ch1/2 の差分(256 = 15.7ms)
+u8  vram_8253_ct2_;            // 8253 ch2 のカウンタ
+u16 vram_trans_v_counter_;     // vramTrans() 時の Vカウンタ
 #endif
 
 // ---------------------------------------------------------------- マクロ
-#define CT_8253_CH1 (262 * 4)   // 8253のカウンタ. 1カウンタ1ライン. 262ラインで1フレーム
+#define CT_8253_CH1     262 // 8253 のカウンタ. 1 カウンタ 1 ライン. 262 ラインで 1 フレーム
+#define CT_8253_CH1_PAL 312 // PAL の場合
 
 // 一時的に使うワークエリア
 #define ADDR_TMP_SP    (VVRAM_TMP_WORK + 16) // 臨時スタックポインタ
 
-// ---------------------------------------------------------------- システム
+// ---------------------------------------------------------------- VRAM 転送サブルーチン
+// 10+10+10+4+10+10 = 54
 #define POP_10_BYTES_TO_REGISTERS() \
     pop     HL  \
     pop     DE  \
@@ -28,6 +35,7 @@ static u16 ct_8253_ch1_; // 処理時間計測に使う
     exx         \
     pop     DE  \
     pop     BC
+// 11+11+4+11+11+11 = 59
 #define PUSH_10_BYTES_FROM_REGISTERS() \
     push    BC  \
     push    DE  \
@@ -42,230 +50,414 @@ static u16 ct_8253_ch1_; // 処理時間計測に使う
     push    DE \
     push    DE
 
-void vramInit() __z88dk_fastcall __naked
-{
-__asm;
-    ld      A, 1
-    ld      (_b_vram_trans_enabled_), A
-#if DEBUG
-    ld      H, A
-    ld      L, A
-    ld      (_ct_8253_ch1_), HL
-#endif
-    jp      _vvramClear // 仮想画面クリアして終了
-__endasm;
-}
 
-void vramTrans() __z88dk_fastcall __naked
+/** VRAM 転送 の初期化 */
+static void vramTransInit_() __z88dk_fastcall __naked
 {
 __asm
-    // ---------------- VRAM 転送許可
-    ld      A, (_b_vram_trans_enabled_)
-    and     A
-    ld      A, 1
-    ld      (_b_vram_trans_enabled_), A// 次回は転送許可に
-    ret     z
+    BANK_VRAM_MMIO(C)                  // バンク切替
 
-    // ---------------- 準備
-    ld      (VRAM_TRANS_SP_RESTORE + 1), SP// SP 保存(自己書換)
-    BANK_VRAM_IO                        // バンク切替
-__endasm;
-
-__asm
-    // ---------------- デバッグ用タイマ
+    // ---------------- デバッグ用カウント計測
 #if DEBUG
-    ld     HL, #MIO_8253_CH1
-
+    // ch1 (1～262) を 0-255 に変換して, 下位バイトとし,
+    // ch2 の 8bit を上位バイトとして 16bit の値を作ります
+    // たまに ch1 と 2 の間でズレが起きるだろうが, デバッグだからいいか
+    // だいたい 1msec くらいの精度で値が出ればいい
+    ld      HL, #MMIO_8253_CTRL
+    ld      (HL), #MMIO_8253_CTRL_RL_LATCH_MASK |MMIO_8253_CTRL_CH1_MASK
+    dec     L       // ch2
+    ld      A, (HL) // ch2-L
+    ld      (_vram_8253_ct2_), A
+    ld      B, A
+    dec     L       // ch1
+    ld      E, (HL) // ch1 L
+    ld      D, (HL) // ch1 H
+    srl     D       // DE >>= 4 で, 0～262 が, 0～16 になります
+    rr      E
+    srl     E
+    srl     E
+    srl     E
+    ld      D, #0x00
+    ld      HL, #VRAM_TRANS_DEBUG_CT_TAB
+    add     HL, DE
     ld      C, (HL)
-    ld      B, (HL)
-    ld      (_ct_8253_ch1_), BC  // デバッグ時はポーリング前のタイマ値を保存します
-
-    // カウンタの再セット
-    // 8253 チャンネル 1 のクロックは, 水平周期と同じ.
-    // MZ-700は 1/60 で 262 ラインなので, 1/20 秒にしたければ 262 * 3 にする
-    ld     BC, #CT_8253_CH1
-    ld     (HL), C
-    ld     (HL), B
+section rodata_compiler
+VRAM_TRANS_DEBUG_CT_TAB:
+    db      0x00, 0x0f, 0x1e, 0x2d
+    db      0x3c, 0x4b, 0x5a, 0x69
+    db      0x78, 0x87, 0x96, 0xa5
+    db      0xb4, 0xc3, 0xd2, 0xe1
+    db      0xf0
+section code_compiler
+    ld      HL, (_ct_8253_ch12_val_)
+    ld      (_ct_8253_ch12_val_), BC
+    sbc     HL, BC // 1くらいは誤差!  カウンタはカウントダウンしていくので, 前の値の方が大きい
+    ld      (_ct_8253_ch12_diff_), HL
 #endif
-__endasm;
-
-__asm
-    // -------- アドレス初期化
+    // ---------------- vramTransMain_() のアドレス初期化
     ld      HL, #VVRAM_TEXT_ADDR(0, 0)
-    ld      (VRAM_TRANS_SRC_0 + 1), HL  // 転送元(自己書換)
+    ld      (VRAM_TRANS_TEXT_SRC_0 + 1), HL  // 転送元(自己書換)
     ld      HL, #VRAM_TEXT_ADDR(10, 0)
-    ld      (VRAM_TRANS_DST_0 + 1), HL  // 転送先(自己書換)
+    ld      (VRAM_TRANS_TEXT_DST_0 + 1), HL  // 転送先(自己書換)
 
-    // ----------------
-    // V-Blank を待ちます. 既に V-Blank 中ならばそのまま行っちゃいます
-    // 8253 ポート C bit 7 == 0 ならば, ブランキング中
-
-    // VRAM 転送速度と画面リフレッシュ速度は同じなので,
-    // 画面の乱れが少ないなら, 同期を待たなくてもいいようです
+    // ---------------- V-Blank (/VBLK の立下がり)を待ちます. (遅いのでボツ)
 #if 0
-    ld      HL, #MIO_8255_PORTC
-VRAM_BLANK_0:
-    ld      A, (HL)
-    rlca
-    jp      c, VRAM_BLANK_0             // V表示中なら待つ
+    // 速度低下が著しいならば, 多少の画面の乱れは無視して同期を待たなくてもいいです.
+    //
+    // 時間計測結果(Debug, Caravan, 最初のステージ)
+    // ---------------------------------------------------------
+    // V-Blank 待ち有り, 200 ライン = 50msec
+    // V-Blank 待ち無し, 200 ライン = 38msec
+    // V-Blank 待ち無し, 262 ライン = 41msec
+    xor     A
+    ld      HL,    #MMIO_8255_PORTC
+VBLK_SYNC0:
+    or      (HL)                            // /VBLK = H になるまで待つ
+    jp      A, p,    VBLK_SYNC0
+VBLK_SYNC1:
+    and     (HL)                            // /VBLK = L になるまで待つ
+    jp      A, m,    VBLK_SYNC1
 #endif
 
-    // ----------------
-    // 転送!
-    // 10 バイト転送 x 4 で 1行分転送します
-    // ---- loop
-    ld      A, VRAM_HEIGHT              // ループ カウンタ
-VRAM_TRANS_LOOP:
-
-    // ---- TEXT 1 番目の 10 bytes
-VRAM_TRANS_SRC_0:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      (VRAM_TRANS_SRC_1 + 1), SP  // 転送元(自己書換)
-VRAM_TRANS_DST_0:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #20                     // 転送先アドレス移動
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_1 + 1), HL  // 転送先(自己書換)
-
-    // ---- TEXT 2 番目の 10 bytes
-VRAM_TRANS_SRC_1:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      (VRAM_TRANS_SRC_2 + 1), SP  // 転送元(自己書換)
-VRAM_TRANS_DST_1:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #20                     // 転送先アドレス移動
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_2 + 1), HL  // 転送先(自己書換)
-
-    // ---- TEXT 3 番目の 10 bytes
-VRAM_TRANS_SRC_2:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      (VRAM_TRANS_SRC_3 + 1), SP  // 転送元(自己書換)
-VRAM_TRANS_DST_2:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #20                     // 転送先アドレス移動
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_3 + 1), HL  // 転送先(自己書換)
-
-    // ---- TEXT 4 番目の 10 bytes
-VRAM_TRANS_SRC_3:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      HL, VVRAM_GAPX              // 転送元アドレスを, 仮想 ATB に移動
-    add     HL, SP
-    ld      (VRAM_TRANS_SRC_4 + 1), HL  // 転送元(自己書換)
-VRAM_TRANS_DST_3:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #(0x0800 - 20)          // 転送先アドレスを, ATB に移動します
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_4 + 1), HL  // 転送先(自己書換)
-
-    // ---- ATB 1 番目の 10 bytes
-VRAM_TRANS_SRC_4:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      (VRAM_TRANS_SRC_5 + 1), SP  // 転送元(自己書換)
-VRAM_TRANS_DST_4:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #20                     // 転送先アドレス移動
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_5 + 1), HL  // 転送先(自己書換)
-
-    // ---- ATB 2 番目の 10 bytes
-VRAM_TRANS_SRC_5:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      (VRAM_TRANS_SRC_6 + 1), SP  // 転送元(自己書換)
-VRAM_TRANS_DST_5:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #20                     // 転送先アドレス移動
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_6 + 1), HL  // 転送先(自己書換)
-
-    // ---- ATB 3 番目の 10 bytes
-VRAM_TRANS_SRC_6:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      (VRAM_TRANS_SRC_7 + 1), SP  // 転送元(自己書換)
-VRAM_TRANS_DST_6:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #20                     // 転送先アドレス移動
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_7 + 1), HL  // 転送先(自己書換)
-
-    // ---- ATB 4 番目の 10 bytes
-VRAM_TRANS_SRC_7:
-    ld      SP, #0x0000                 // 転送元
-    POP_10_BYTES_TO_REGISTERS()
-    ld      HL, VVRAM_WIDTH - VRAM_WIDTH - VVRAM_GAPX - VRAM_WIDTH  // 転送元アドレスを, TEXT の次の行に移動
-    add     HL, SP
-    ld      (VRAM_TRANS_SRC_0 + 1), HL  // 転送元(自己書換)
-VRAM_TRANS_DST_7:
-    ld      SP, #0x0000                 // 転送先
-    PUSH_10_BYTES_FROM_REGISTERS()
-    ld      HL, #(-0x0800 + VRAM_WIDTH - 20) // 転送先アドレスを TEXT の次の行に移動します
-    add     HL, SP
-    ld      (VRAM_TRANS_DST_0 + 1), HL  // 転送先(自己書換)
-
-    // ---- loop end
-    dec     A
-    jp      nz, VRAM_TRANS_LOOP
-__endasm;
-
-__asm
-    // ---------------- 終了
-    BANK_RAM                        // バンク切替
-VRAM_TRANS_SP_RESTORE:
-    ld      SP, #0x0000             // SP 復活
-
-    jp      _vvramClear // 仮想画面クリアして終了
-__endasm;
-}
-
-
-void vramSetTransDisabled()__z88dk_fastcall
-{
-    b_vram_trans_enabled_ = false;
-}
-
-
-#if DEBUG
-void vramSyncVBlank()__z88dk_fastcall __naked
-{
-__asm
-    BANK_VRAM_IO                    // バンク切替
-
-    ld      HL, #MIO_8255_PORTC
-    xor     A
-VRAM_BLANK_1:
-    or      (HL)
-    jp      p, VRAM_BLANK_1
-
-    BANK_RAM                        // バンク切替
-
+    BANK_RAM(C)                             // バンク切替
     ret
 __endasm;
 }
+
+
+/** VRAM 転送本体
+ * @param lines キャラクタ行数. 0 なら何も転送しない
+ */
+#pragma disable_warning 85
+#pragma save
+static void vramTransMain_(const u8 lines) __z88dk_fastcall __naked
+{
+    // 転送!
+    // 10 バイト転送 x 4 で 1行分転送します
+__asm
+    ld      A, L                             // ループ カウンタ
+    or      A
+    ret     z
+    ld      (VRAM_TRANS_SP_RESTORE + 1), SP; // スタック保存
+    BANK_VRAM_MMIO(C)                        // バンク切替
+
+VRAM_TRANS_LOOP:
+    // ---- TEXT 0 番目の 10 bytes
+VRAM_TRANS_TEXT_SRC_0:
+    ld      SP, #0x0000                     // 転送元
+    POP_10_BYTES_TO_REGISTERS()
+    ld      (VRAM_TRANS_TEXT_SRC_1 + 1), SP // 次の転送元(自己書換)
+VRAM_TRANS_TEXT_DST_0:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()          //
+    ld      HL, #20                         // 転送先アドレス移動
+    add     HL, SP                          //
+    ld      (VRAM_TRANS_TEXT_DST_1 + 1), HL // 次の転送先(自己書換)
+
+    // ---- TEXT 1 番目の 10 bytes
+VRAM_TRANS_TEXT_SRC_1:
+    ld      SP, #0x0000                     // 転送元
+    POP_10_BYTES_TO_REGISTERS()             //
+    ld      (VRAM_TRANS_TEXT_SRC_2 + 1), SP // 転送元(自己書換)
+VRAM_TRANS_TEXT_DST_1:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()          //
+    ld      HL, #20                         // 転送先アドレス移動
+    add     HL, SP                          //
+    ld      (VRAM_TRANS_TEXT_DST_2 + 1), HL // 転送先(自己書換)
+
+    // ---- TEXT 2 番目の 10 bytes
+VRAM_TRANS_TEXT_SRC_2:
+    ld      SP, #0x0000                     // 転送元
+    POP_10_BYTES_TO_REGISTERS()
+    ld      (VRAM_TRANS_TEXT_SRC_3 + 1), SP // 転送元(自己書換)
+VRAM_TRANS_TEXT_DST_2:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()
+    ld      HL, #20                         // 転送先アドレス移動
+    add     HL, SP
+    ld      (VRAM_TRANS_TEXT_DST_3 + 1), HL // 転送先(自己書換)
+
+    // ---- TEXT 3 番目の 10 bytes
+VRAM_TRANS_TEXT_SRC_3:
+    ld      SP, #0x0000                     // 転送元
+    POP_10_BYTES_TO_REGISTERS()
+    ld      HL, #VVRAM_GAPX                 // 転送元アドレスを, 仮想 ATB に移動
+    add     HL, SP
+    ld      (VRAM_TRANS_ATB_SRC_0 + 1), HL  // 転送元(自己書換)
+VRAM_TRANS_TEXT_DST_3:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()
+    ld      HL, #(VRAM_ATB - VRAM_TEXT) - 20// 転送先アドレスを ATB に移動
+    add     HL, SP
+    ld      (VRAM_TRANS_ATB_DST_0 + 1), HL  // 転送先(自己書換)
+
+    // ---- ATB 0 番目の 10 bytes
+VRAM_TRANS_ATB_SRC_0:
+    ld      SP, #0x0000                     // 転送先
+    POP_10_BYTES_TO_REGISTERS()
+    ld      (VRAM_TRANS_ATB_SRC_1 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_ATB_DST_0:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()
+    ld      HL, #20                         // 転送先アドレス移動
+    add     HL, SP
+    ld      (VRAM_TRANS_ATB_DST_1 + 1), HL  // 転送先(自己書換)
+
+    // ---- ATB 1 番目の 10 bytes
+VRAM_TRANS_ATB_SRC_1:
+    ld      SP, #0x0000                     // 転送元
+    POP_10_BYTES_TO_REGISTERS()
+    ld      (VRAM_TRANS_ATB_SRC_2 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_ATB_DST_1:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()
+    ld      HL, #20                         // 転送先アドレス移動
+    add     HL, SP
+    ld      (VRAM_TRANS_ATB_DST_2 + 1), HL  // 転送先(自己書換)
+
+    // ---- ATB 2 番目の 10 bytes
+VRAM_TRANS_ATB_SRC_2:
+    ld      SP, #0x0000                     // 転送元
+    POP_10_BYTES_TO_REGISTERS()
+    ld      (VRAM_TRANS_ATB_SRC_3 + 1), SP  // 転送元(自己書換)
+VRAM_TRANS_ATB_DST_2:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()
+    ld      HL, #20                         // 転送先アドレス移動
+    add     HL, SP
+    ld      (VRAM_TRANS_ATB_DST_3 + 1), HL  // 転送先(自己書換)
+
+    // ---- ATB 3 番目の 10 bytes
+VRAM_TRANS_ATB_SRC_3:
+    ld      SP, #0x0000                     // 転送元
+    POP_10_BYTES_TO_REGISTERS()
+    ld      HL, #VVRAM_WIDTH - VRAM_WIDTH - VVRAM_GAPX - VRAM_WIDTH  // 転送元アドレスを, 仮想 TEXT の次の行に移動
+    add     HL, SP
+    ld      (VRAM_TRANS_TEXT_SRC_0 + 1), HL // 転送元(自己書換)
+VRAM_TRANS_ATB_DST_3:
+    ld      SP, #0x0000                     // 転送先
+    PUSH_10_BYTES_FROM_REGISTERS()
+    ld      HL, #(VRAM_TEXT - VRAM_ATB) + VRAM_WIDTH - 20// 転送先アドレスを TEXT の次行に移動
+    add     HL, SP
+    ld      (VRAM_TRANS_TEXT_DST_0 + 1), HL // 転送先(自己書換)
+
+    // ---- Loop end
+    dec     A
+    jp      nz, VRAM_TRANS_LOOP
+
+VRAM_TRANS_SP_RESTORE:
+    ld      sp, #0000
+    BANK_RAM(C)                             // バンク切替
+    ret
+__endasm;
+}
+#pragma restore
+
+
+
+// ---------------------------------------------------------------- システム
+void vramInit() __z88dk_fastcall __naked
+{
+__asm
+    ld      A,   1
+    ld      (_b_vram_trans_enabled_), A
+
+    ld      (VRAM_INIT_SP_RESTORE + 1), SP// SP 保存(自己書換)
+    ld      SP, #ADDR_TMP_SP
+
+    // ---- 8253 の CH1 を, 現在のスキャンラインを知るのに使います
+    // デバッグ時は CH1 と CH2 を使って, 1フレームでかかった時間を知るのに使います.
+    // CH1 は モード2 (ct=262),
+    // CH2 は モード0 (ct=65535)
+    // で運用します
+    BANK_VRAM_MMIO(C)           // バンク切替
+
+    // -------- V カウンタの設定(1)
+    ld      HL, #MMIO_8255_PORTC
+#if DEBUG
+    ld      L,  #(MMIO_8253_CTRL & 0xff)
+    ld      (HL), #MMIO_8253_CTRL_RL_L_MASK | MMIO_8253_CTRL_CH2_MASK | MMIO_8253_CTRL_MODE0_MASK// デバッグ時のみ使用
+    dec     L                   // ch2 カウンタ
+    ld      (HL), #0x00
+    ld      L,  #(MMIO_8255_PORTC & 0xff)
 #endif
+
+    // -------- NTSC/PAL の判別
+    // /VBLK の長さが,
+    // NTSC: 228   * 62  = 14136 (T state)
+    // PAL:  227.2 * 112 = 25446
+    // なので, /VBLK の立下がりを検出してから約 20000 経過してまだ VBLK だったら PAL と判定します
+
+    //  /VBLK の立下がりを待ッた後, 約 20000 だけ待って /VBLK をチェック
+    ld      BC, #768
+    call    VRAM_VSYNC_WAIT
+    // 小計 (6+4+4+12)*768-5+10 = 19973
+
+    bit     #7, (HL)
+    ld      DE, #CT_8253_CH1
+#if DEBUG
+    ld      BC, #2277 // 待ち時間(NTSC). デバッグ ビルドでは処理時間が足りてない...
+#else
+    ld      BC, #2277 // 待ち時間(NTSC). リリース ビルドでも 2279 では足りてない...
+#endif
+    jr      nz, VRAM_VBLK_SYNC_19
+    ld      DE, #CT_8253_CH1_PAL    // まだ /VBLK 中ならば PAL
+    ld      BC, #2715 // 待ち時間(PAL).
+VRAM_VBLK_SYNC_19:
+
+    // -------- Vカウンタの設定(2)
+    // NTSC: 228 * (62+198)  = 59280 だけ待ってからカウント開始
+    // PAL:  228 * (112+198) = 70680 だけ待ってからカウント開始
+    call    VRAM_VSYNC_WAIT
+    // 小計 (6+4+4+12)*2279-5+10 = 59259
+    // 小計 (6+4+4+12)*2280-5+10 = 59285
+    // 小計 (6+4+4+12)*2715-5+10 = 70595
+
+    // ch1 カウンタを設定してカウント開始!
+    ld      L,    #(MMIO_8253_CTRL & 0xff)
+    ld      (HL), #MMIO_8253_CTRL_RL_LH_MASK | MMIO_8253_CTRL_CH1_MASK | MMIO_8253_CTRL_MODE2_MASK
+    ld      L,    #(MMIO_8253_CH1 & 0xff)
+    ld      (HL), E                 // Ch1 カウンタ L
+    ld      (HL), D                 // Ch1 カウンタ H カウント開始
+
+    BANK_RAM(C)                     // バンク切替
+
+VRAM_INIT_SP_RESTORE:
+    ld      SP, #0x0000
+    jp      _vvramClear             // 仮想画面クリアして終了
+
+
+// /VBLK の立下がりを待って, その後規定カウント待ちます
+// @param BANK MMIO に切り替わってること
+// @param HL: MMIO_8255_PORTC
+// @param BC: カウンタ (6+4+4+12)*BC-5+10 だけ待ちます
+// @broken A, BC
+VRAM_VSYNC_WAIT:
+    xor     A
+VVW_VBLK_01:
+    or      A,  (HL)                // /VBLK = H になるまで待つ
+    jp      p,  VVW_VBLK_01         // '0' ならばループ
+VVW_VBLK_02:
+    and     A,  (HL)                // /VBLK = L になるまで待つ
+    jp      m,  VVW_VBLK_02         // '1' ならばループ
+
+VVW_WAIT_00:
+    dec     BC                      // 6
+    ld      A,  B                   // 4
+    or      A,  C                   // 4
+    jr      nz, VVW_WAIT_00         // 12/7
+    ret                             // 10
+__endasm;
+}
+
+
+static u8 vramGetVCounter_() __z88dk_fastcall __naked
+{
+__asm
+    BANK_VRAM_MMIO(C)               // バンク切替
+    // カウンタ ラッチ モードを使ってデータを読みだす
+    ld      HL, #MMIO_8253_CTRL
+    ld      (HL), #MMIO_8253_CTRL_RL_LATCH_MASK | MMIO_8253_CTRL_CH1_MASK
+    ld      L,  #(MMIO_8253_CH1 & 0xff)
+    ld      A,  (HL)                // ch1 L
+    ld      H,  (HL)                // ch1 H
+    ld      L,  A
+    BANK_RAM(C)                     // バンク切替
+    // HL = 1～262
+#if 0 // カウンタと /VBLK の対比をチェックするデバッグ(VRAM_GET_VCOUNTER_TEST1でブレークをかける)
+#define VCT 260
+    cmp     A, #(VCT & 0xff)
+    jp      nz, VRAM_GET_VCOUNTER_TEST1 + 1
+    ld      A, H
+    cmp     A, #(VCT >> 8)
+    jp      nz, VRAM_GET_VCOUNTER_TEST1 + 1
+VRAM_GET_VCOUNTER_TEST1 + 1
+    nop;
+#undef VCT
+#endif
+    // 1 引いて 8 で割る
+    dec     HL
+    srl     H
+    rr      L
+    srl     L
+    srl     L
+    // 21 に飽和して, L を返す if (21 < L) { L = 21 }
+    ld      A, #(VRAM_HEIGHT - 4)
+    cmp     A, L
+    ret     nc
+    ld      L, A
+    ret
+__endasm;
+}
+
+
+void vramTrans() __z88dk_fastcall __naked
+{
+    // ---------------- VRAM 転送許可
+    if (!b_vram_trans_enabled_) {
+        b_vram_trans_enabled_ = true; // 次は転送許可
+__asm
+        ret
+__endasm;
+    }
+    vramTransInit_();
+
+    if (inputGetJoyMode() < INPUT_JOY_MODE_MZ1X03_DETECTING) {
+        // AM7J モード
+        vramTransMain_(VRAM_HEIGHT);
+    } else {
+        // MZ-1X03 を検出するモード
+        //
+        // V ... /VBLK H->L 立下がり待ち
+        // B ... ボタンチェック+/VBLK立下がり+検出チェック+1回目の軸チェック
+        // A ... 2回目の軸チェック
+        // - ... 画面転送
+        // = ... 画面転送 8行x4
+
+        // NTSC 版
+        // v-count  ...|182|183|...|190|191|...|196|197|198|199|200|201|.......|261| 0 | 1 |...
+        // 8253 ch1 ...| 17| 16|...| 9 | 8 |...| 3 | 2 | 1 |262|261|260|.......|200|199|198|...
+        // PAL 版
+        // v-count  ...|182|183|...|190|191|...|196|197|198|199|200|201|.......|311| 0 | 1 |...
+        // 8253 ch1 ...| 17| 16|...| 9 | 8 |...| 3 | 2 | 1 |312|311|310|.......|200|199|198|...
+        //          ..._____..._____________..._________________                    ________...
+        // /VBLK           :           :                       |________...____..._|
+        // (ch1-1)/8       :           :                       :
+        // 0               :           :                   |BBBBBB|=====...==|A|------------...(8行x21)
+        // 0               :           : |BB...BBBBBBBBBBBBBBBBBBB|=====...==|A|------------...(8行x21)
+        // 1               :           |----...(8行x1)-----|BBBBBB|=====...==|A|------------...(8行x20)
+        // 1               :        |-------...(8行x1)--|BBBBBBBBB|=====...==|A|------------...(8行x20)
+        // 2               |-...------------...(8行x2)-----|BBBBBB|=====...==|A|------------...(8行x19)
+        // 2            |----...------------...(8行x2)--|BBBBBBBBB|=====...==|A|------------...(8行x19)
+        // 21     |-...------...------------...(8行x21)-|BBBBBBBBB|=====...==|A|
+        // 22    |--...------...(8行x21)---|...BBBBBBBBBBBBBBBBBBB|=====...==|A|
+        // 32 |-----...--(8行x21)-|BBBBBBBBB...BBBBBBBBBBBBBBBBBBB|=====...==|A|
+
+        u8 vc = vramGetVCounter_(); // 0～32
+        u8 is = inputGetMZ1X03Insensitivity(); //  MZ-1X03 の感度の鈍さ (1敏感～4鈍い)
+        vramTransMain_(vc);
+        // この時点で必ず /VBLK 外の筈!
+        inputMZ1X03ButtonVSyncAxis1(is);
+        vramTransMain_(is);
+        inputMZ1X03Axis2();
+        vramTransMain_(VRAM_HEIGHT - vc - is);
+    }
+
+__asm
+    // ---------------- 終了
+    jp      _vvramClear // 仮想画面クリアして終了
+__endasm;
+}
+
 
 // ---------------------------------------------------------------- デバッグ
 #if DEBUG
 u16 vramDebugGetProcessTime()
 {
-    //return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 1000 / 15700;
-    //return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 16 / 251;
-    //return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 16 / 256;  近似値
-    return (u16)(CT_8253_CH1 - ct_8253_ch1_) * 65 / 1024;
+    // 256 = 15.7ms
+    //return ct_8253_ch12_diff_ * 15.7 / 256; // 正確な値
+    return ct_8253_ch12_diff_ / 16;  // 近似値
 }
 #endif
 
@@ -299,6 +491,7 @@ VRAM_CLEAR_SP_RESTORE:
     ret
 __endasm;
 }
+
 
 // ---------------------------------------------------------------- 塗りつぶし(fill)
 #pragma disable_warning 85
@@ -381,7 +574,7 @@ void vramFill(const u16 code) __z88dk_fastcall __naked
     // 1/60 sec でクリアされます.
 __asm
     ld      (VRAM_FILL_SP_RESTORE + 1), SP// SP 保存(自己書換)
-    BANK_VRAM_IO                    // バンク切替
+    BANK_VRAM_MMIO(C)               // バンク切替
 
     ld      BC, HL                  // ATB + TEXT
     ld      SP, #VRAM_TEXT_ADDR(10, 0)
@@ -410,13 +603,14 @@ VRAM_FILL_LOOP:
         dec A
         jr  nz, VRAM_FILL_LOOP
 
-    BANK_RAM                        // バンク切替
+    BANK_RAM(C)                     // バンク切替
 VRAM_FILL_SP_RESTORE:
     ld      SP, #0x0000             // SP 復活
     ret
 __endasm;
 }
 #pragma restore
+
 
 // ---------------------------------------------------------------- 描画(draw)(任意の矩形)
 void vVramDrawRect(const u8* const draw_addr, const u8* const stc_addr, const u16 wh) __naked
@@ -551,7 +745,7 @@ __asm
 
     ld      SP, #ADDR_TMP_SP        // 臨時スタックポインタ
     ld      A, C                    // h 保存
-    BANK_VRAM_IO                    // バンク切替 C 破壊
+    BANK_VRAM_MMIO(C)                 // バンク切替(C 破壊)
     ld      C, A                    // h 復帰
 
     // -------- TEXT
@@ -606,7 +800,7 @@ RVRAM_DRAW_RECT_ATB_LOOP_Y:
     //exx   よく考えてみたら最後の exx は不要
 
     // -------- 終了
-    BANK_RAM                        // バンク切替
+    BANK_RAM(C)                     // バンク切替
 VRAM_DRAW_RECT_SP_RESTORE:
     ld      SP, #0x0000             // SP 復帰
     ret

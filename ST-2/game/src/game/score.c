@@ -11,9 +11,7 @@
 #include "../system/sound.h"
 #include "../system/math.h"
 #include "../system/print.h"
-#if DEBUG
 #include "../system/input.h"
-#endif
 #include "../game/game_mode.h"
 #include "../objworks/obj_item.h"
 #include "../objworks/obj_enemy.h"
@@ -77,14 +75,15 @@ void scoreInit() __z88dk_fastcall
 static u8 cursorBlank() __naked
 {
 __asm
-    BANK_VRAM_IO
-    LD      A, (#MIO_8255_PORTC)
-    BANK_RAM
-    AND     A, #MIO_8255_PORTC_556OUT_MASK
+    BANK_VRAM_MMIO(C)           // バンク切替
+    LD      A, (#MMIO_8255_PORTC)
+    BANK_RAM(C)                 // バンク切替
+    AND     A, #MMIO_8255_PORTC_556OUT_MASK
     LD      L, A
     RET
 __endasm;
 }
+
 
 void scoreMain() __z88dk_fastcall
 {
@@ -148,8 +147,19 @@ void scoreMain() __z88dk_fastcall
     if (!sysIsGameMode()) {
         // -------- ゲーム オーバー表示
 #include "../../text/game_over.h"
+#include "../../text/input_am7j.h"
+#include "../../text/input_mz1x03.h"
         printSetAddr((u8*)VVRAM_TEXT_ADDR(15, 15));
         printString(text_game_over);
+
+        // -------- AM7J / MZ-1X03 検出表示
+        if (INPUT_JOY_MODE_AM7J_DETECTED <= inputGetJoyMode() && inputGetJoyMode() < INPUT_JOY_MODE_MZ1X03_DETECTING) {
+            printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 24));
+            printString(text_input_am7j);
+        } else if (INPUT_JOY_MODE_MZ1X03_DETECTED <= inputGetJoyMode() && inputGetJoyMode() <= INPUT_JOY_MODE_MAX) {
+            printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 24));
+            printString(text_input_mz1x03);
+        }
     } else {
         // -------- レベル表示
         printSetAddr((u8*)VVRAM_TEXT_ADDR(25, 0));
@@ -182,9 +192,17 @@ void scoreMain() __z88dk_fastcall
 
 #if DEBUG
     // 入力, 処理時間, 現在のシーン表示
-    //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 22));
-    //printHex16(inputGet());
-    //printHex16(inputGetTrigger());
+#if 1 // 入力と Vカウンタ表示
+    printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 22));
+    printHex8(inputGet());
+//    printHex9(inputGetTrigger());
+    printHex8(inputGetJoy());
+    printU8Right(inputGetJoyMode());
+//    printU16Left(objEnemyGetNrKilled());
+//    printHex16(vramGet8253Ct2());
+//    printHex16(vramTransGetCounter());
+//    printU16Right(vramGetVCounter());
+#endif
 
     static const u8 str_ms[] = { DC_CAPS, DC_M, DC_S, DC_CAPS, 0 };
     printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 23));

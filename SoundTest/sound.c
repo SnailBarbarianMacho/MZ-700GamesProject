@@ -44,19 +44,19 @@ void sdSetEnabled(const bool bEnabled) __z88dk_fastcall __naked
     // (0xe008) = 0x00 or 0x01
 __asm
     // ---------------- 準備
-    BANK_VRAM_IO               // バンク切替
+    BANK_VRAM_MMIO(C)          // バンク切替
 
     // ---------------- 制御
     ld      A, L
     or      A
     jp      z, SOUND_SET_ENABLED
-    ld      A, #MIO_ETC_GATE_MASK
+    ld      A, #MMIO_ETC_GATE_MASK
 SOUND_SET_ENABLED:
-    ld      HL, #MIO_ETC
+    ld      HL, #MMIO_ETC
     ld      (HL), A
 
     // ---------------- 後始末
-    BANK_RAM                    // バンク切替
+    BANK_RAM(C)                 // バンク切替
     ret
 __endasm;
 }
@@ -115,7 +115,7 @@ void sd3Play(const u8* mml0, const u8* mml1, const u8* mml2) __naked
     // @param LABEL_SD_SD_LEN                           音長の上位 8bit
     // @param LABEL_SD_MML                              MML ポインタ(自己書換)
     // @param LABEL_SD_WAVE_CT                          波長カウンタ(自己書換)
-    // 暗黙:                            C               パルス値 MIO_8253_CH0_MODE0 or MIO_8253_CH0_MODE3
+    // 暗黙:                            C               パルス値 MMIO_8253_CH0_MODE0 or MMIO_8253_CH0_MODE3
     // 暗黙:                            H               ADDR_SD3_ATT_TAB の上位 8 bit
     // 破壊:                            A, L
     // 未使用:                          IX, IY, I, A'
@@ -152,7 +152,7 @@ LABEL_SD_LEN_END:                                                               
     ld      A, (HL)                             /*  7 |                             */ \
     cp      A, wave_ct_reg                      /*  4 |                             */ \
     jp      c, LABEL_SD_PULSE_END               /* 10 +-計29                        */ \
-        ld  C, MIO_8253_CH0_MODE3               /*  7                               */ \
+        ld  C, MMIO_8253_CH0_MODE3               /*  7                               */ \
 LABEL_SD_PULSE_END:                                                                    \
     /* ---------------- 波長ループの終わり                                          */ \
     dec     wave_ct_reg                         /*  4 |                             */ \
@@ -178,14 +178,14 @@ __asm
     ld      H, ADDR_SD3_ATT_TAB >> 8 // 減衰テーブル
     // -------------------------------- 波形合成&出力ループ
 SD3_LOOP:
-    ld      C, #MIO_8253_CH0_MODE0  // 7
+    ld      C, #MMIO_8253_CH0_MODE0  // 7
     SD3_MAIN(H, L, HL, B, SD3_SD_LEN0, SD3_MML0, SD3_LEN_END0, SD3_PULSE_END0, SD3_WAVE_CT0, SD3_END0)
     SD3_MAIN(B, C, BC, D, SD3_SD_LEN1, SD3_MML1, SD3_LEN_END1, SD3_PULSE_END1, SD3_WAVE_CT1, SD3_END1)
     SD3_MAIN(D, E, DE, E, SD3_SD_LEN2, SD3_MML2, SD3_LEN_END2, SD3_PULSE_END2, SD3_WAVE_CT2, SD3_END2)
 SD3_LOOP_END:
     // ---------------- 波形出力
     ld      A, C                    //  4 |
-    ld      (#MIO_8253_CTRL), A     // 13 |
+    ld      (#MMIO_8253_CTRL), A     // 13 |
     jp      SD3_LOOP                // 10 +- 計 17
 
     // ループ内の Tステート数(周波数)
@@ -194,8 +194,8 @@ SD3_LOOP_END:
 SD3_END:
     // -------------------------------- 後始末
     // 8253 を元の設定に戻します
-    ld      A, MIO_8253_CH0_MODE3
-    ld      (#MIO_8253_CTRL), A
+    ld      A, MMIO_8253_CH0_MODE3
+    ld      (#MMIO_8253_CTRL), A
 
     // バンクを切り替えて, 8253 を切り離します
     ld      C, 0xe1

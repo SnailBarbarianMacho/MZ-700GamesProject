@@ -91,13 +91,13 @@ bool objPlayerMain(Obj* const p_obj)
                 sx = -1;
             }
             if (inp & INPUT_MASK_R) {
-                sx = 1;
+                sx ++;
             }
             if (inp & INPUT_MASK_U) {
                 sy = -1;
             }
             if (inp & INPUT_MASK_D) {
-                sy = 1;
+                sy ++;
             }
             p_obj->u_geo.geo8.sxh = sx;
             p_obj->u_geo.geo8.syh = sy;
@@ -140,7 +140,7 @@ bool objPlayerMain(Obj* const p_obj)
 #if RAPID_FIRE_PERIOD == 0
         objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, p_obj);
 #else
-        if (inp & INPUT_MASK_A) {
+        if (inp & (INPUT_MASK_A | INPUT_MASK_B)) {
             if (RAPID_FIRE_PERIOD <= obj_player_rapid_fire_timer_) {
                 objCreatePlayerBullet(objPlayerBulletInit, objPlayerBulletMain, objPlayerBulletDraw, p_obj);
                 obj_player_rapid_fire_timer_ = 0;
@@ -179,7 +179,7 @@ bool objPlayerMain(Obj* const p_obj)
 
     case OBJ_PLAYER_STEP_CONTINUE:  // コンティニュー カウントダウン
         if (p_obj->ct != 0) {       // ゲーム オーバーへの画面遷移は sceneGame でやる
-            if (inputGetTrigger() & INPUT_MASK_A) { // 時間短縮
+            if (inputGetTrigger() & (INPUT_MASK_A | INPUT_MASK_B)) { // 時間短縮
                 p_obj->ct = p_obj->ct & 0xe0;
                 if (p_obj->ct == 0) {
                     p_obj->ct++;

@@ -45,12 +45,12 @@ static const u16 CHIME_TAB_[] = {
 // ---------------------------------------------------------------- ゲーム モード
 void gameSetMode(const u8 game_mode) __z88dk_fastcall
 {
-    game_mode_            = game_mode;
-    game_hard_            = (game_mode >= GAME_MODE_HARD) ? 1 : 0;
-    b_game_caravan_       = game_mode == GAME_MODE_CARAVAN;
-    b_game_inc_left_      = (b_game_caravan_ || (game_mode == GAME_MODE_SURVIVAL)) ? false : true;
-    game_caravan_timer_   = CARAVAN_TIME * GAME_FPS;
-    p_game_caravan_chime_ = CHIME_TAB_;
+    game_mode_             = game_mode;
+    game_hard_             = (game_mode >= GAME_MODE_HARD) ? 1 : 0;
+    b_game_caravan_        = game_mode == GAME_MODE_CARAVAN;
+    b_game_inc_left_       = (b_game_caravan_ || (game_mode == GAME_MODE_SURVIVAL)) ? false : true;
+    game_caravan_timer_    = CARAVAN_TIME * GAME_FPS;
+    p_game_caravan_chime_  = CHIME_TAB_;
     game_caravan_chime_ct_ = 100 * GAME_FPS;
 }
 

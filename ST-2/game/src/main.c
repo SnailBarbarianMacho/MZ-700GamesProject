@@ -31,8 +31,7 @@ void main() __naked
     starsInit();
     objItemInitTab();
     gameSetMode(GAME_MODE_NORMAL);
-    while (1)
-    {
+    while (1) {
         sdSeMain(); // サウンドは 1 フレームに 2 回呼ぶ. 最初は SE→BGMの順, 2回目はその逆
         sdBgmMain();
         starsMain();// 背景なので表示優先一番低い
