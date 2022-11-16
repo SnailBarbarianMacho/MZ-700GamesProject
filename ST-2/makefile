@@ -12,6 +12,7 @@
 # Target macros
 OUTFILE     := ST-2
 OUTFILE_BIN := ST-2.bin
+OUTFILE_MZ  := ST-2
 
 # Loader macros
 LOADER_DIR			:= loader
@@ -66,10 +67,10 @@ all: $(OUTFILE_BIN)
 # Make combined binary
 ifeq ($(DEBUG), -DDEBUG=0)
   OUTFILE_MZT := $(OUTFILE).mzt
-  PROG_NAME   := ST-2
+  PROG_NAME   := $(OUTFILE_MZ)
 else
   OUTFILE_MZT := $(OUTFILE)-debug.mzt
-  PROG_NAME   := ST-2-debug
+  PROG_NAME   := $(OUTFILE_MZ)-debug
 endif
 $(OUTFILE_BIN): $(GAME_OUTFILE_PAK) $(LOADER_OUTFILE_BIN)
 	@echo Marging ... [$@]
