@@ -4,9 +4,19 @@
  * @author Snail Barbarian Macho (NWK)
  */
 #include "../src-common/common.h"
+#include "../src-common/hard.h"
 #include "sound.h"
 
-void main() __naked
+static void bankRomVramMmio(void) __naked
+{
+__asm
+    BANK_ROM_VRAM_MMIO  C
+    jp      0x0006          // CALL LETNL
+__endasm;
+}
+
+
+void main(void)
 {
     soundInit();
     sdSetEnabled(true);
@@ -37,6 +47,5 @@ void main() __naked
         0,
     };
     sd3Play(mml0, mml1, mml2);
-
-    while (1);
+    bankRomVramMmio();
 }
