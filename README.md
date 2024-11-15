@@ -1,5 +1,7 @@
 # MZ-700 Game Projects
 
+![title](MZ-700GamesProject.png)
+
 * ある日唐突に MZ-700 で動くゲームを作ってみたくなったので, 作りました！<br>
   One day I suddenly wanted to make a game that runs on the MZ-700.
   Nowadays, there are Z80 cross-compilers and emulators. So I made it.
