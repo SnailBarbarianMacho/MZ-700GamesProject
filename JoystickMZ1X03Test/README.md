@@ -1,7 +1,7 @@
 # Joystick MZ-1X03 test
 
-シャープ純正アナログ ジョイスティック MZ-1X03 の動作テスト プログラムです. 生データの表示とジョイスティックの検出を行います.<br>
-This is a program to test the operation of the genuine Sharp analog joystick MZ-1X03. Displays raw data and detects joystick.
+シャープ純正アナログ ジョイスティック MZ-1X03 の動作テスト プログラムです. 生データの表示とジョイスティックの自動検出を行います.<br>
+This is a program to test the operation of the genuine Sharp analog joystick MZ-1X03. Displays raw data and detects joystick automatically.
 
 ## つかいかた / How to use
 

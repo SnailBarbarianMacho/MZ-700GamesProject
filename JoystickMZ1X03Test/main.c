@@ -1,5 +1,5 @@
 /**
- * 三重和音サウンド テスト
+ * Joystick MZ-1X03 test
  *
  * @author Snail Barbarian Macho (NWK)
  */
@@ -25,45 +25,78 @@
 #define INPUT_AXIS_NR_SAMPLES (80*7)  // サンプリング数. 4 の倍数でないと暴走する
 static u8 axis_data[INPUT_AXIS_NR_SAMPLES];
 
+static void clearBss_(void);
+static void clearScreen_(void);
+static void dispAxis_(void);
+static void dispInput_(void);
+
+void main(void) __naked
+{
+    clearBss_();
+    clearScreen_();
+    // -------- メインループ
+    while (1) {
+        dispAxis_();
+        dispInput_();
+    }
+}
+
+
+static void clearBss_(void)
+{
+__asm
+    extern __BSS_head
+    extern __BSS_END_head
+    ld  HL, __BSS_head
+    ld  DE, __BSS_head + 1
+    ld  BC, __BSS_END_head - __BSS_head - 1
+    ld  (HL), 0x00
+    ldir
+    BANK_VRAM_MMIO  C
+__endasm;
+}
+
+
 /** シャープ純正ジョイスティックの軸をサンプリングします
  * - VBLANK を待ち, 更に 512x28 T states かかります
  */
-static void inputMZ1X03Axis_() __z88dk_fastcall __naked
+static void inputMZ1X03Axis_(void) __z88dk_fastcall __naked
 {
 __asm
-    ld      DE, #_axis_data
-    ld      BC, #INPUT_AXIS_NR_SAMPLES
+    ld      DE, 0 + _axis_data
+    ld      BC, 0 + INPUT_AXIS_NR_SAMPLES
     // -------- /VBLK の立下がりを待つ
     xor     A
-    ld      HL, #MMIO_8255_PORTC
+    ld      HL, 0 + MMIO_8255_PORTC
 INPUT_MZ1X03_VBLK_SYNC10:
-    or      A, (HL)                 // /VBLK = H になるまで待つ
+    or      A, (HL)                                     // /VBLK = H になるまで待つ
     jp      p,  INPUT_MZ1X03_VBLK_SYNC10
 INPUT_MZ1X03_VBLK_SYNC11:
-    and     A, (HL)                 // /VBLK = L になるまで待つ
+    and     A, (HL)                                     // /VBLK = L になるまで待つ
     jp      m,  INPUT_MZ1X03_VBLK_SYNC11
 
     // -------- 軸サンプリング
-    ld      L,  #((MMIO_ETC + 1) & 0xff)  // 7
+    ld      L,  (MMIO_ETC + 1) & 0xff                   // 7
+
 
 INPUT_MZ1X03_SAMPLE_LOOP:
-    dec     L                       // 4
-    ldi                             // 16
-    nop                             // 4
-    nop                             // 4        小計28
+    dec     L                                           // 4
+    ldi                                                 // 16
+    nop                                                 // 4
+    nop                                                 // 4        小計28
 
-    dec     L                       // 4
-    ldi                             // 16
-    nop                             // 4
-    nop                             // 4        小計28
+    dec     L                                           // 4
+    ldi                                                 // 16
+    nop                                                 // 4
+    nop                                                 // 4        小計28
 
-    dec     HL                      // 6
-    ldi                             // 16
-    nop                             // 4        小計26
+    dec     HL                                          // 6
+    ldi                                                 // 16
+    nop                                                 // 4        小計26
 
-    dec     L                       // 4
-    ldi                             // 16       BC!=0 ならば P/V=1(PE)
-    jp      pe, INPUT_MZ1X03_SAMPLE_LOOP// 10/10    小計30
+    dec     L                                           // 4
+    ldi                                                 // 16       BC!=0 ならば P/V=1(PE)
+    jp      pe, INPUT_MZ1X03_SAMPLE_LOOP                // 10/10    小計30
 
     ret
 __endasm;
@@ -74,57 +107,57 @@ __endasm;
  * - VBLANK を待ち, 更に 63 ライン分 (約4msec) かかります
  * @return 00UD_RLBA. 未検出なら INPUT_MASK_NC が立ちます
  */
-static u8 inputMZ1X03Simple_() __z88dk_fastcall __naked
+static u8 inputMZ1X03Simple_(void) __z88dk_fastcall __naked
 {
 __asm
     // -------- /VBLK の立下がりを待つ
     xor     A
-    ld      HL, #MMIO_8255_PORTC
+    ld      HL, 0 + MMIO_8255_PORTC
 INPUT_MZ1X03_VBLK_SYNC00:
-    or      A, (HL)                 // /VBLK = H になるまで待つ
+    or      A, (HL)                                     // /VBLK = H になるまで待つ
     jp      p,  INPUT_MZ1X03_VBLK_SYNC00
 INPUT_MZ1X03_VBLK_SYNC01:
-    and     A, (HL)                 // /VBLK = L になるまで待つ
+    and     A, (HL)                                     // /VBLK = L になるまで待つ
     jp      m,  INPUT_MZ1X03_VBLK_SYNC01
 
     // -------- /VBLK 直後 150 くらいで '0' が読めなかったら未検出扱い
-    ld      L,  #(MMIO_ETC & 0xff)  // 7
+    ld      L,  MMIO_ETC & 0xff                         // 7
 
-    ld      B,  #10                 // 7
+    ld      B,  10                                      // 7
 INPUT_MZ1X03_WAIT:
-    djnz    B,  INPUT_MZ1X03_WAIT   // 13 * 10 - 5
-    ld      A, (HL)                 // 7
-    and     A,  #(MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK)// 7
+    djnz    B,  INPUT_MZ1X03_WAIT                       // 13 * 10 - 5
+    ld      A, (HL)                                     // 7
+    and     A,  0 + MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK// 7
     jp      nz, INPUT_MZ1X03_NOT_DETECT                 // 10 接続されてないなら '1' が読める筈
     // 小計 7+7+(13*10-5)+7+7+10 = 163
 
     // -------- /VBLK 直後 300 で '1' ならば左 or 上
-    ld      B,  #11                 // 7
+    ld      B,  11                                      // 7
 INPUT_MZ1X03_WAIT1:
-    djnz    B,  INPUT_MZ1X03_WAIT1  // 13 * 11 - 5
-    ld      A, (HL)                 // 7    ****_*YX*
+    djnz    B,  INPUT_MZ1X03_WAIT1                      // 13 * 11 - 5
+    ld      A, (HL)                                     // 7    ****_*YX*
     // 小計 7+(13*11-5)+7 = 157
 
     // -------- /VBLK ここから更に 7000 くらいで '0' ならば右 or 下
-    ld      E,  #7                  // 7
+    ld      E,  7                                       // 7
 INPUT_MZ1X03_WAIT2:
-    ld      B,  #76                 // 7
+    ld      B,  76                                      // 7
 INPUT_MZ1X03_WAIT3:
-    djnz    B,  INPUT_MZ1X03_WAIT3  // 13 * 76 - 5
-    dec     E                       // 4
-    jp      NZ, INPUT_MZ1X03_WAIT2  // 10
-    ld      D, (HL)                 // 7    ****_*yx*
+    djnz    B,  INPUT_MZ1X03_WAIT3                      // 13 * 76 - 5
+    dec     E                                           // 4
+    jp      NZ, INPUT_MZ1X03_WAIT2                      // 10
+    ld      D,  (HL)                                    // 7    ****_*yx*
     // 小計 7+((7+13*76-5)+4+10)*4 = 7035
 
     // -------- 上下左右判定
 INPUT_MZ1X03:
-    and     A,  #(MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK)
-    rrca                            //      0000_00YX
-    ld      E, A
-    ld      A, D                    //      ****_*yx*
-    and     A,  #(MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK)
-    add     A, A                    //      0000_yx00
-    or      A, E                    //      0000_yxYX
+    and     A,  0 + MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK
+    rrca                                                //      0000_00YX
+    ld      E,  A
+    ld      A,  D                                       //      ****_*yx*
+    and     A,  0 + MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK
+    add     A,  A                                       //      0000_yx00
+    or      A,  E                                       //      0000_yxYX
 section rodata_compiler
 INPUT_MZ1X03_TAB:
     db      INPUT_MASK_R | INPUT_MASK_D, INPUT_MASK_NC,               INPUT_MASK_NC              , INPUT_MASK_NC               // 0000, 0001, 0010, 0011
@@ -133,17 +166,17 @@ INPUT_MZ1X03_TAB:
     db      0,                           INPUT_MASK_L,                INPUT_MASK_U,                INPUT_MASK_L | INPUT_MASK_U // 1100, 1101, 1110, 1111
 section code_compiler
     ld      HL, INPUT_MZ1X03_TAB
-    ld      D,  #0x00
+    ld      D,  0x00
     ld      E,  A
     add     HL, DE
-    ld      E,  (HL)                //      00UD_RL00
-    bit     #INPUT_SHIFT_NC, E
-    jp      nz, INPUT_MZ1X03_NOT_DETECT // 未検出 (違うプロトコルのジョイスティックが繋がってる可能性)
+    ld      E,  (HL)                                    //      00UD_RL00
+    bit     INPUT_SHIFT_NC, E
+    jp      nz, INPUT_MZ1X03_NOT_DETECT                 // 未検出 (違うプロトコルのジョイスティックが繋がってる可能性)
 
     // -------- /VBLK 外になるまで待つ
-    ld      HL, #MMIO_8255_PORTC
+    ld      HL, 0 + MMIO_8255_PORTC
 INPUT_MZ1X03_VBLK_SYNC2:
-    bit     #MMIO_8255_PORTC_VBLK_SHIFT, (HL)// /VBLK = H になるまで待つ
+    bit     MMIO_8255_PORTC_VBLK_SHIFT, (HL)            // /VBLK = H になるまで待つ
     jp      Z,  INPUT_MZ1X03_VBLK_SYNC2
 
     // -------- 少し待ってからボタンを読む
@@ -151,18 +184,18 @@ INPUT_MZ1X03_VBLK_SYNC2:
 INPUT_MZ1X03_WAIT4:
     djnz    B,  INPUT_MZ1X03_WAIT4
 
-    ld      L,  #(MMIO_ETC & 0xff)
-    ld      A,  (HL)                //      ****_**BA*
-    cpl     A                       // ビット反転
-    and     A,  #(MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK)
-    rrca                            //      0000_00BA
-    or      A,  E                   //      00UD_RLBA
+    ld      L,  MMIO_ETC & 0xff
+    ld      A,  (HL)                                    //      ****_**BA*
+    cpl     A                                           // ビット反転
+    and     A,  0 + MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK
+    rrca                                                //      0000_00BA
+    or      A,  E                                       //      00UD_RLBA
     ld      L,  A
     ret
 
     // -------- 未検出
 INPUT_MZ1X03_NOT_DETECT:
-    ld      L, #INPUT_MASK_NC
+    ld      L,  INPUT_MASK_NC
     ret
 
 __endasm;
@@ -189,7 +222,7 @@ static void printHex_(volatile u8* addr, const u8 val)
 
 
 /** 画面クリア */
-static void clearScreen_()
+static void clearScreen_(void)
 {
     volatile u8* vt = (volatile u8*)VRAM_TEXT;
     volatile u8* va = (volatile u8*)VRAM_ATB;
@@ -231,12 +264,13 @@ static void clearScreen_()
 
 
 /** 軸サンプリングデータ表示 */
-static void dispAxis_()
+static void dispAxis_(void)
 {
     inputMZ1X03Axis_();
     volatile u8* v1 = (volatile u8*)VRAM_TEXT_JA1;
     volatile u8* v2 = (volatile u8*)VRAM_TEXT_JA2;
     u8* a = axis_data;
+
     for (int i = 0; i < INPUT_AXIS_NR_SAMPLES; i += 2) {
         u8 d1 = *a++;
         u8 d2 = *a++;
@@ -267,8 +301,9 @@ static void dispAxis_()
     printHex_((volatile u8*)(VRAM_TEXT_JA2 - 40 + 4), v);
 }
 
+
 /** ボタン&簡易表示 */
-static void dispInput_()
+static void dispInput_(void)
 {
     u8           joy = inputMZ1X03Simple_();
     volatile u8* v   = (volatile u8*)VRAM_TEXT_DETECT;
@@ -283,16 +318,5 @@ static void dispInput_()
         *v++ = (joy & INPUT_MASK_L) ? DC_CURSOR_LEFT  : DC_MINUS;
         *v++ = (joy & INPUT_MASK_B) ? DC_B            : DC_MINUS;
         *v   = (joy & INPUT_MASK_A) ? DC_A            : DC_MINUS;
-    }
-}
-
-
-void main() __naked
-{
-    clearScreen_();
-    // -------- メインループ
-    while (1) {
-        dispAxis_();
-        dispInput_();
     }
 }

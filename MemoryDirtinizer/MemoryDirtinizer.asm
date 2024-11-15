@@ -1,7 +1,7 @@
 ; Memory Dirtinizer
 ;
 ; @author Snail Barbarian Macho (NWK)
-; @date 2012.xx.xx
+; @date 2021.10.19
 
 ; -------- コード開始
 start:
