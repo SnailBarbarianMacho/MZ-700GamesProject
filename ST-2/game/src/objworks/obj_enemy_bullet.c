@@ -2,6 +2,7 @@
  * プレイヤー弾オブジェクト
  * @author Snail Barbarian Macho (NWK)
  */
+
 #include "../../../../src-common/common.h"
 #include "../system/addr.h"
 #include "../system/obj.h"
@@ -20,8 +21,11 @@
 void objEnemyBulletInit(Obj* const p_obj, Obj* const p_parent)
 {
     // -------- 位置の確定
+#pragma disable_warning 110 // 除算最適化警告
+#pragma save
     s8 x = p_parent->u_geo.geo8.xh + p_parent->u_geo.geo.w / 2 - 1;
     s8 y = p_parent->u_geo.geo8.yh + p_parent->u_geo.geo.h / 2 - 1;
+#pragma restore
     p_obj->u_geo.geo8.xh = x;
     p_obj->u_geo.geo8.yh = y;
     p_obj->u_geo.geo8.xl = 0x80;
@@ -46,8 +50,11 @@ void objEnemyBulletInit(Obj* const p_obj, Obj* const p_parent)
 void objEnemyBulletInitWithoutVelocity(Obj* const p_obj, Obj* const p_parent)
 {
     // -------- 位置の確定
+#pragma disable_warning 110 // 除算最適化警告
+#pragma save
     p_obj->u_geo.geo8.xh = p_parent->u_geo.geo8.xh + p_parent->u_geo.geo.w / 2 - 1;
     p_obj->u_geo.geo8.yh = p_parent->u_geo.geo8.yh + p_parent->u_geo.geo.h / 2 - 1;
+#pragma restore
     p_obj->u_geo.geo8.xl = 0x80;
     p_obj->u_geo.geo8.yl = 0x80;
     // -------- 寸法
@@ -112,20 +119,23 @@ void objEnemyBulletDraw(Obj* const p_obj, u8* draw_addr)
         }
     }
 #else // ASM 版(重ね合わせ処理付き)
-#define DRAW_BULLET(label, pat)     \
-    ld      A, (HL)                 \
-    cmp     A, B        ; B = 0xf0  \
-    jr      nc, label               \
-    ld      A, B        ; B = 0xf0  \
-    ;                               \
-label:                              \
-    or      A, pat                  \
-    ld      (HL), A
-
-STATIC_ASSERT(2 == OBJ_OFFSET_GEO8_XL,                      Asm1); // ※1 修正
-STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL, Asm2); // ※2 修正
-
+STATIC_ASSERT(2 == OBJ_OFFSET_GEO8_XL,                      "Asm1"); // ※1 修正
+STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL, "Asm2"); // ※2 修正
 __asm
+
+    macro DRAW_BULLET pat
+        local   label
+        ld      A, (HL)
+        cmp     A, B        ; B = 0xf0
+        jr      nc, label
+        ld      A, B        ; B = 0xf0
+        ;
+    label:
+        or      A, pat
+        ld      (HL), A
+    endm
+
+
     pop     HL                      // リターン アドレス(捨てる)
     pop     DE                      // p_obj
     pop     HL                      // draw_addr
@@ -139,7 +149,7 @@ __asm
     jp      nc, BULLET_DRAW_2
 
     ld      A, E                                            // ※2
-    add     A, #(OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL)   // ※2
+    add     A, 0 + OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL  // ※2
     ld      E, A                                            // ※2
 
     ld      A, (DE)                 // p_obj->u_geo.geo8.yl
@@ -149,7 +159,7 @@ __asm
     // -------- パターン 0
     // TEXT
     ld      (HL), 0xff
-    ld      A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
+    ld      A, 0 + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)
     add     A, L
     ld      L, A
 
@@ -165,10 +175,10 @@ __asm
 BULLET_DRAW_1:
     // -------- パターン 1
     // TEXT
-    DRAW_BULLET(BULLET_DRAW_1_1, 0x0c)
+    DRAW_BULLET 0x0c
     inc     H
-    DRAW_BULLET(BULLET_DRAW_1_2, 0x03)
-    ld      A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
+    DRAW_BULLET 0x03
+    ld      A, 0 + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)
     add     A, L
     ld      L, A
 
@@ -185,7 +195,7 @@ BULLET_DRAW_1:
 
 BULLET_DRAW_2:
     ld      A, E                                            // ※2
-    add     A, #(OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL)   // ※2
+    add     A, 0 + OBJ_OFFSET_GEO8_YL - OBJ_OFFSET_GEO8_XL  // ※2
     ld      E, A                                            // ※2
 
     ld      A, (DE)                 // p_obj->u_geo.geo8.yl
@@ -194,10 +204,10 @@ BULLET_DRAW_2:
 
     // -------- パターン 2
     // TEXT
-    DRAW_BULLET(BULLET_DRAW_2_1, 0x0a)
+    DRAW_BULLET 0x0a
     inc     L
-    DRAW_BULLET(BULLET_DRAW_2_2, 0x05)
-    ld      A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
+    DRAW_BULLET 0x05
+    ld      A, 0 + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)
     add     A, L
     ld      L, A
 
@@ -215,14 +225,14 @@ BULLET_DRAW_2:
 BULLET_DRAW_3:
     // -------- パターン 3
     // TEXT
-    DRAW_BULLET(BULLET_DRAW_3_1, 0x08)
+    DRAW_BULLET 0x08
     inc     L
-    DRAW_BULLET(BULLET_DRAW_3_2, 0x04)
+    DRAW_BULLET 0x04
     inc     H
-    DRAW_BULLET(BULLET_DRAW_3_3, 0x01)
+    DRAW_BULLET 0x01
     dec     L
-    DRAW_BULLET(BULLET_DRAW_3_4, 0x02)
-    ld      A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
+    DRAW_BULLET 0x02
+    ld      A, 0 + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)
     add     A, L
     ld      L, A
 
@@ -276,7 +286,7 @@ __asm
     pop     HL                      // リターン アドレス(捨てる)
     pop     HL                      // p_obj
     pop     DE                      // xy
-    ld      A, #(OBJ_OFFSET_GEO_Y + 2)  // ※1
+    ld      A, 0 + OBJ_OFFSET_GEO_Y + 2 // ※1
     add     A, L                        // ※1
     ld      L, A                        // ※1
     ld      SP, HL                      // p_obj->u_geo.geo.y + 2 位置にスタックを置く. ワークが call で壊れるけどヨシ!
@@ -293,7 +303,7 @@ __asm
     sub     A, D                        //       pObjPlayer->u_geo.geo8.xh + 1 - x
     ld      B, A                        // dx =  pObjPlayer->u_geo.geo8.xh + 1 - x
     // HL += 5
-    ld      A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※3
+    ld      A, 0 + OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH  // ※3
     add     A, L                                            // ※3
     ld      L, A                                            // ※3
     // L = dy
@@ -311,9 +321,9 @@ __asm
 
     // -------- atan2, cos, sin
     call    _atan2;                     // L:角度. A, BC, HL 破壊. p_obj->u_geo.geo.sy 破壊
-    ld      H, #(ADDR_COS_TAB >> 8)
+    ld      H, ADDR_COS_TAB >> 8
     ld      B, (HL)                     // B = sx
-    ld      H, #(ADDR_SIN_TAB >> 8)
+    ld      H, ADDR_SIN_TAB >> 8
     ld      A, (HL)                     // A = sy
 
     // -------- sy 書込

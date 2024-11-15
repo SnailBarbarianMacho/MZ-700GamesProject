@@ -16,13 +16,13 @@ void assert(u16 val) __z88dk_fastcall __naked
 {
 __asm
     BANK_VRAM_MMIO(C)
-    ld      SP, #VRAM_TEXT + 40
+    ld      SP, 0 + VRAM_TEXT + 40
 
     // -------- TEXT
     push    HL
-    ld      HL, #ASSERT_STR
-    ld      DE, #VRAM_TEXT
-    ld      BC, #7
+    ld      HL, 0 + ASSERT_STR
+    ld      DE, 0 + VRAM_TEXT
+    ld      BC, 7
     ldir
     pop     HL
 
@@ -37,10 +37,10 @@ __asm
     call    ASSERT_DISP_NIBBLE_L
 
     // -------- ATB
-    ld      HL, #VRAM_ATB
-    ld      B,  #7+4
+    ld      HL, 0 + VRAM_ATB
+    ld      B,  7 + 4
 ASSERT_ATB_LOOP:
-    ld      (HL), #0x02
+    ld      (HL), 0x02
     inc     L
     djnz    B, ASSERT_ATB_LOOP
 
@@ -53,12 +53,12 @@ ASSERT_DISP_NIBBLE_H:
     rrca
     rrca                // fall through
 ASSERT_DISP_NIBBLE_L:
-    and     A,  #0x0f
-    cp      A,  #10
+    and     A,  0x0f
+    cp      A,  10
     jr      c,  ASSERT_DN_100
-    add     A,  #(DC_A - 10 - DC_0)
+    add     A,  0 + DC_A - 10 - DC_0
 ASSERT_DN_100:
-    add     A,  #DC_0
+    add     A,  0 + DC_0
     ld      (DE), A
     inc     E
     ret

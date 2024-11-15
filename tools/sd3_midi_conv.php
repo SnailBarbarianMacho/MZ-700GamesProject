@@ -5,9 +5,14 @@ declare(strict_types = 1);
  * おざなり MIDI → sd3Play() 形式の MML に変換. C ソースの形で出力します
  * 使い方は, Usage: 行を参照してください
  *
- * - FORMAT 1 のみ対応
+ * - MIDI FORMAT 1 のみ対応
+ * - 同時発音は最大3音
+ * - 音程は C2～B4 (3オクターブ)ですが C4 以降の高い音は聞きづらいかも
  * - ノード以外の殆どのイベントは解析しません(スキップします)
  * - midi ファイル名の末端が '_barX' ならば, X 小節単位に分割します
+ *
+ * -  ソースは, トラックに分解されたデータ(mml1_x, mml2_x, mml3_x, xは分割小節番号0～) です.
+ * - 再生速度にマクロ L の定義が必要です. 出力されるソースを観てください.
  *
  * @author Snail Barbarian Macho (NWK) 2021.09.06
  */
@@ -35,62 +40,62 @@ if (count($argv) != 3) {
     exit(1);
 }
 
-$inMidiFile = $argv[1];
-$outCFile   = $argv[2];
+$in_midi_file = $argv[1];
+$out_c_file   = $argv[2];
 
 // midi ファイル名の末端が '_barX' ならば, X 小節単位に分割します
-$nrBars = 100000; // 1変数当たりの小節数(デフォルトは大きい値)
+$nr_bars = 100000; // 1変数当たりの小節数(デフォルトは大きい値)
 $matches = [];
-if (preg_match('/_bar([0-9]+)$/', pathinfo($inMidiFile, PATHINFO_FILENAME), $matches) === 1) {
-    $nrBars = (int)$matches[1];
-    if ($nrBars < 1) {
+if (preg_match('/_bar([0-9]+)$/', pathinfo($in_midi_file, PATHINFO_FILENAME), $matches) === 1) {
+    $nr_bars = (int)$matches[1];
+    if ($nr_bars < 1) {
         fwrite(STDERR, "Invalid value nr_bars\n");
         exit(1);
     }
 }
 
 // ファイル存在チェック
-if (file_exists($inMidiFile) === false) {
-    fwrite(STDERR, "File not found[$inMidiFile]\n");
+if (file_exists($in_midi_file) === false) {
+    fwrite(STDERR, "File not found[$in_midi_file]\n");
     exit(1);
 }
 
 // MIDI ファイル読込
-$midiData = file_get_contents($inMidiFile);
-if ($midiData === false) {
-    fwrite(STDERR, "File read error[$inMidiFile]\n");
+$midi_data = file_get_contents($in_midi_file);
+if ($midi_data === false) {
+    fwrite(STDERR, "File read error[$in_midi_file]\n");
     exit(1);
 }
 
 // unpackで作られる配列は 1 からなので, arrat_merge() で 0 からにします
-$reader = new MidiReader(array_merge(unpack('C*', $midiData)));
+$reader = new MidiReader(array_merge(unpack('C*', $midi_data)));
 
 // ヘッダ チャンク読込
-$midiHeaderInfo = readMidiHeader($reader);
-if ($midiHeaderInfo === false) {
-    fwrite(STDERR, "MIDI header chunk error[$inMidiFile]\n");
+$midi_header_info = readMidiHeader($reader);
+if ($midi_header_info === false) {
+    fwrite(STDERR, "MIDI header chunk error[$in_midi_file]\n");
     exit(1);
 }
 
 // トラック チャンク読込
-$timeDiv = $midiHeaderInfo['timeDivision']; // 時間単位 = 四分音符 / $timeDiv
-for ($i = 0; $i < $midiHeaderInfo['nrTracks']; $i++) {
+$time_div = $midi_header_info['time_div']; // 時間単位 = 四分音符 / $time_div
+for ($i = 0; $i < $midi_header_info['nr_tracks']; $i++) {
     debugEcho('Track[' . $i + 1 . "]\n");
-    $midiTrackInfo = readMidiTrack($reader, $timeDiv);
-    if ($midiTrackInfo === false) {
-        fwrite(STDERR, "MIDI track chunk error[$inMidiFile]\n");
+    $midi_track_info = readMidiTrack($reader, $time_div);
+    if ($midi_track_info === false) {
+        fwrite(STDERR, "MIDI track chunk error[$in_midi_file]\n");
         exit(1);
     }
 }
 
-$outStr = outHeader($reader, $argv[0], $timeDiv, $nrBars);
+$out_str = outHeader($reader, $argv[0], $time_div, $nr_bars);
 $mmlss = $reader->getMml();
-if ($nrBars == 1) {
-    $outStr .= outMml1($mmlss);
+if ($nr_bars == 1) {
+    $out_str .= outMml1($mmlss);
 } else {
-    $outStr .= outMmlN($mmlss, $nrBars);
+    $out_str .= outMmlN($mmlss, $nr_bars);
 }
-file_put_contents($outCFile, $outStr);
+file_put_contents($out_c_file, $out_str);
 
 
 // --------------------------------
@@ -100,12 +105,12 @@ file_put_contents($outCFile, $outStr);
  */
 function readMidiHeader(MidiReader $reader): false|array
 {
-    //echo(var_export($midiData, true). "\n");
+    //echo(var_export($midi_data, true). "\n");
 
     // チャンク タイプ(MThd)のチェック
-    $chunkType = $reader->read4byte();
-    if ($chunkType !== 0x4d546864) {
-        $reader->printError("Invalid header chunk type:[" . sprintf('0x%08x', $chunkType) . "]", -4);
+    $chunk_type = $reader->read4byte();
+    if ($chunk_type !== 0x4d546864) {
+        $reader->printError("Invalid header chunk type:[" . sprintf('0x%08x', $chunk_type) . "]", -4);
         return false;
     }
     // データ長
@@ -124,18 +129,18 @@ function readMidiHeader(MidiReader $reader): false|array
     }
 
     // トラック数
-    $nrTracks = $reader->read2byte();
+    $nr_tracks = $reader->read2byte();
 
     // 時間分割
-    $timeDivision = $reader->read2byte();
-    if ($timeDivision >= 0x8000) {
+    $time_div = $reader->read2byte();
+    if ($time_div >= 0x8000) {
         $reader->printError("Invalid header chunk. Time Division(Absolute time)is not supported", -2);
         return false;
     }
 
-    $info['nrTracks'] = $nrTracks;
-    $info['timeDivision'] = $timeDivision; // 四分音符の分解能. 主に 480
-    // echo(var_export($midiHeaderInfo, true). "\n");
+    $info['nr_tracks'] = $nr_tracks;
+    $info['time_div'] = $time_div; // 四分音符の分解能. 主に 480
+    // echo(var_export($midi_header_info, true). "\n");
     return $info;
 }
 
@@ -144,14 +149,14 @@ function readMidiHeader(MidiReader $reader): false|array
  * @param MidiReader $reader MIDI バイトデータの配列リーダー
  * @return false|array 成功したら MIDI 情報, 失敗したら false を返します
  */
-function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
+function readMidiTrack(MidiReader $reader, int $time_div): false|array
 {
     $idx = 14;
 
     // チャンク タイプ(MTrk)のチェック
-    $chunkType = $reader->read4byte();
-    if ($chunkType !== 0x4d54726b) {
-        $reader->printError("Invalid track chunk type:[" . sprintf('0x%08x', $chunkType) . "]", -4);
+    $chunk_type = $reader->read4byte();
+    if ($chunk_type !== 0x4d54726b) {
+        $reader->printError("Invalid track chunk type:[" . sprintf('0x%08x', $chunk_type) . "]", -4);
         return false;
     }
 
@@ -160,9 +165,9 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
     $info = [];
 
     while (true) {
-        $deltaTime = $reader->readDeltaTime();
+        $delta_time = $reader->readDeltaTime();
         $event     = $reader->read1byte();
-        if ($deltaTime === false) {
+        if ($delta_time === false) {
             $reader->printError("EOF(Meta Event Type)");
             return false;
         }
@@ -193,7 +198,7 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
         case 0x8e://          fall through
         case 0x8f://          fall through
             {
-                $ret = readNote($reader, $deltaTime, $event & 0x0f, false,  $timeDivision);
+                $ret = readNote($reader, $delta_time, $event & 0x0f, false,  $time_div);
                 if ($ret == false) {
                     return false;
                 }
@@ -217,7 +222,7 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
         case 0x9e://          fall through
         case 0x9f://
             {
-                $ret = readNote($reader, $deltaTime, $event & 0x0f, true, $timeDivision);
+                $ret = readNote($reader, $delta_time, $event & 0x0f, true, $time_div);
                 if ($ret == false) {
                     return false;
                 }
@@ -241,7 +246,7 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
         case 0xbe://                fall through
         case 0xbf://
             {
-                $ret = readControlChange($reader, $deltaTime, $event & 0x0f);
+                $ret = readControlChange($reader, $delta_time, $event & 0x0f);
                 if ($ret == false) {
                     return false;
                 }
@@ -265,7 +270,7 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
         case 0xce://                fall through
         case 0xcf://
         {
-            $ret = readProgramChange($reader, $deltaTime, $event & 0x0f);
+            $ret = readProgramChange($reader, $delta_time, $event & 0x0f);
             if ($ret == false) {
                 return false;
             }
@@ -289,7 +294,7 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
         case 0xee://                    fall through
         case 0xef://
         {
-            $ret = readPitchWheelChange($reader, $deltaTime, $event & 0x0f);
+            $ret = readPitchWheelChange($reader, $delta_time, $event & 0x0f);
             if ($ret == false) {
                 return false;
             }
@@ -299,7 +304,7 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
         case 0xf0: // SysEx
         case 0xf7: // SysEx fall througn
             {
-                $ret = skipSysExEvent($reader, $deltaTime);
+                $ret = skipSysExEvent($reader, $delta_time);
                 if ($ret == false) {
                     return false;
                 }
@@ -307,7 +312,7 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
             break;
         case 0xff: // Meta Event
             {
-                $ret = skipMetaEvent($reader, $deltaTime, $timeDivision);
+                $ret = skipMetaEvent($reader, $delta_time, $time_div);
                 if ($ret == false) {
                     return false;
                 } else if ($ret === -1) {
@@ -326,12 +331,12 @@ function readMidiTrack(MidiReader $reader, int $timeDivision): false|array
  * @param int $ch チャンネル番号
  * @param bool $bOn true/false ON/OFF
  */
-function readNote(MidiReader $reader, int $deltaTime, int $ch, bool $bOn, int $timeDivision): bool
+function readNote(MidiReader $reader, int $delta_time, int $ch, bool $bOn, int $time_div): bool
 {
     $index    = $reader->getIndex() - 1;
-    $noteNr   = $reader->read1byte();
+    $note_nr  = $reader->read1byte();
     $velocity = $reader->read1byte();
-    if ($noteNr === false) {
+    if ($note_nr === false) {
         $reader->printError("EOF(Note number)", -1);
         return false;
     }
@@ -339,9 +344,9 @@ function readNote(MidiReader $reader, int $deltaTime, int $ch, bool $bOn, int $t
         $reader->printError("EOF(Note velocity)");
         return false;
     }
-    $noteName =  NOTE_STR_TAB[$noteNr];
-    if (($noteNr < 31) || (67 < $noteNr)) {  // G1 ～ G4 まで
-        $reader->printError("Invalid Note number[$noteNr($noteName)]. The range of notes is 31(G1) to 67(G4).", -1);
+    $note_name = NOTE_STR_TAB[$note_nr];
+    if (($note_nr < 31) || (67 < $note_nr)) {  // G1 ～ G4 まで
+        $reader->printError("Invalid Note number[$note_nr($note_name)]. The range of notes is 31(G1) to 67(G4).", -1);
         return false;
     }
     if (0x80 <= $velocity) {
@@ -350,12 +355,12 @@ function readNote(MidiReader $reader, int $deltaTime, int $ch, bool $bOn, int $t
     }
 
     if ($bOn) {
-        $reader->noteOn($noteName, $timeDivision);
+        $reader->noteOn($note_name, $time_div);
     } else {
-        $reader->noteOff($noteName, $timeDivision, false);
+        $reader->noteOff($note_name, $time_div, false);
     }
 
-    debugNoteEcho($reader->makeInfoHeadStr() . 'Note ' . sprintf('%3s', $noteName) . ($bOn ? ' On ' : ' Off') . " velocity[$velocity]\n");
+    debugNoteEcho($reader->makeInfoHeadStr() . 'Note ' . sprintf('%3s', $note_name) . ($bOn ? ' On ' : ' Off') . " velocity[$velocity]\n");
     return true;
 }
 
@@ -364,12 +369,12 @@ function readNote(MidiReader $reader, int $deltaTime, int $ch, bool $bOn, int $t
  * チャンネル メッセージ(コントロール チェンジ)
  * @param int $ch チャンネル番号
  */
-function readControlChange(MidiReader $reader, int $deltaTime, int $ch): bool
+function readControlChange(MidiReader $reader, int $delta_time, int $ch): bool
 {
-    $index = $reader->getIndex() - 1;
-    $ctrlNr = $reader->read1byte();
-    $data   = $reader->read1byte();
-    if ($ctrlNr === false) {
+    $index   = $reader->getIndex() - 1;
+    $ctrl_nr = $reader->read1byte();
+    $data    = $reader->read1byte();
+    if ($ctrl_nr === false) {
         $reader->printError("EOF(Control number)");
         return false;
     }
@@ -377,8 +382,8 @@ function readControlChange(MidiReader $reader, int $deltaTime, int $ch): bool
         $reader->printError("EOF(Control data)");
         return false;
     }
-    if (0x80 <= $ctrlNr) {
-        $reader->printError("Invalid Control number[$ctrlNr]", -1);
+    if (0x80 <= $ctrl_nr) {
+        $reader->printError("Invalid Control number[$ctrl_nr]", -1);
         return false;
     }
     if (0x80 <= $data) {
@@ -386,7 +391,7 @@ function readControlChange(MidiReader $reader, int $deltaTime, int $ch): bool
         return false;
     }
 
-    debugEcho($reader->makeInfoHeadStr() . "Control Change nr[$ctrlNr] data[$data]\n");
+    debugEcho($reader->makeInfoHeadStr() . "Control Change nr[$ctrl_nr] data[$data]\n");
     return true;
 }
 
@@ -396,19 +401,19 @@ function readControlChange(MidiReader $reader, int $deltaTime, int $ch): bool
  * チャンネル メッセージ(プログラム チェンジ)
  * @param int $ch チャンネル番号
  */
-function readProgramChange(MidiReader $reader, int $deltaTime, int $ch): bool
+function readProgramChange(MidiReader $reader, int $delta_time, int $ch): bool
 {
-    $index = $reader->getIndex() - 1;
-    $progNr = $reader->read1byte();
-    if ($progNr === false) {
+    $index   = $reader->getIndex() - 1;
+    $prog_nr = $reader->read1byte();
+    if ($prog_nr === false) {
         $reader->printError("EOF(Program number)");
         return false;
     }
-    if (0x80 <= $progNr) {
-        $reader->printError("Invalid Program number[$progNr]", -1);
+    if (0x80 <= $prog_nr) {
+        $reader->printError("Invalid Program number[$prog_nr]", -1);
         return false;
     }
-    debugEcho($reader->makeInfoHeadStr() . "Program Change nr[$progNr]\n");
+    debugEcho($reader->makeInfoHeadStr() . "Program Change nr[$prog_nr]\n");
     return true;
 }
 
@@ -417,7 +422,7 @@ function readProgramChange(MidiReader $reader, int $deltaTime, int $ch): bool
  * チャンネル メッセージ(ピッチ ホイール チェンジ)
  * @param int $ch チャンネル番号
  */
-function readPitchWheelChange(MidiReader $reader, int $deltaTime, int $ch): bool
+function readPitchWheelChange(MidiReader $reader, int $delta_time, int $ch): bool
 {
     $index = $reader->getIndex() - 1;
     $data1 = $reader->read1byte();
@@ -451,11 +456,11 @@ function readPitchWheelChange(MidiReader $reader, int $deltaTime, int $ch): bool
  * Time Signature 以外は全て無視します
  * @return bool|int bool の場合は成功/失敗. トラック チャンクの終了を検出したら -1 を返す
  */
-function skipMetaEvent(MidiReader $reader, int $deltaTime, int $timeDivision): bool|int
+function skipMetaEvent(MidiReader $reader, int $delta_time, int $time_div): bool|int
 {
     $index = $reader->getIndex() - 1;
-    $type = $reader->read1byte();
-    $len  = $reader->read1byte();
+    $type  = $reader->read1byte();
+    $len   = $reader->read1byte();
     if ($type === false) {
         $reader->printError("EOF(Meta Event Type)");
         return false;
@@ -464,63 +469,63 @@ function skipMetaEvent(MidiReader $reader, int $deltaTime, int $timeDivision): b
         $reader->printError("EOF(Mata Length)");
         return false;
     }
-    $eventName = '';
-    $eventInfo = '';
-    $bInvalid = false;
+    $event_name = '';
+    $event_info = '';
+    $b_invalid  = false;
 
     switch ($type) {
     default:
         $reader->printError("Invalid Meta event type[$type]", -2);
         return false;
     case 0x01:  // コメント イベント
-        $eventName = "Text";
+        $event_name = "Text";
         break;
     case 0x02:
-        $eventName = "Copyright";
+        $event_name = "Copyright";
         break;
     case 0x03:
-        $eventName = "Sequence/Track name";
+        $event_name = "Sequence/Track name";
         break;
     case 0x04:
-        $eventName = "Instrument name";
+        $event_name = "Instrument name";
         break;
     case 0x05:
-        $eventName = "Lyrics";
+        $event_name = "Lyrics";
         break;
     case 0x06:
-        $eventName = "Marker";
+        $event_name = "Marker";
         break;
     case 0x07:
-        $eventName = "Queue Point";
+        $event_name = "Queue Point";
         break;
     case 0x20:
-        $eventName = "Channel Prefix";
-        if ($len !== 1) { $bInvalid = true; }
+        $event_name = "Channel Prefix";
+        if ($len !== 1) { $b_invalid = true; }
         break;
     case 0x21:
-        $eventName = "Post Prefix";
-        if ($len !== 1) { $bInvalid = true; }
+        $event_name = "Post Prefix";
+        if ($len !== 1) { $b_invalid = true; }
         break;
     case 0x2f:
-        $eventName = "End of Track";
-        if ($len !== 0) { $bInvalid = true; }
+        $event_name = "End of Track";
+        if ($len !== 0) { $b_invalid = true; }
         break;
     case 0x51:
-        $eventName = "Set Tempo";
-        if ($len != 3) { $bInvalid = true; }
+        $event_name = "Set Tempo";
+        if ($len != 3) { $b_invalid = true; }
         break;
     case 0x54:
-        $eventName = "SMPTE Offset";
-        if ($len != 5) { $bInvalid = true; }
+        $event_name = "SMPTE Offset";
+        if ($len != 5) { $b_invalid = true; }
         break;
     case 0x58:
-        $eventName = "Time Signature";
-        if ($len != 4) { $bInvalid = true; break; }
+        $event_name = "Time Signature";
+        if ($len != 4) { $b_invalid = true; break; }
         {
             $numerator = $reader->read1byte();      // 分子(1 小節内の音符数)
             $fraction  = 2 ** $reader->read1byte();  // 分母(音符の種類. 3 なら, 2 ^ 3 = 8 分音符)
             $metronome = $reader->read1byte(); // メトロノーム間隔(無視)
-            $midiClock = $reader->read1byte(); // MIDI クロック中の 32分音符の数(通常8)(無視)
+            $midi_clk  = $reader->read1byte(); // MIDI クロック中の 32分音符の数(通常8)(無視)
             if ($numerator === false) {
                 $reader->printError("EOF(Time Sigunature numerator)");
                 return false;
@@ -529,28 +534,28 @@ function skipMetaEvent(MidiReader $reader, int $deltaTime, int $timeDivision): b
                 $reader->printError("EOF(Time Sigunature fraction)");
                 return false;
             }
-            $eventInfo = "$numerator/$fraction";
+            $event_info = "$numerator/$fraction";
             $len = 0;
-            $reader->setBarTime((int)((4 / $fraction) * $numerator * $timeDivision));
+            $reader->setBarTime((int)((4 / $fraction) * $numerator * $time_div));
         }
         break;
     case 0x59:
-        $eventName = "Key Signature";
-        if ($len != 2) { $bInvalid = true; }
+        $event_name = "Key Signature";
+        if ($len != 2) { $b_invalid = true; }
         break;
     case 0x7f:
-        $eventName = "Sequencer Specific Meta Event";
+        $event_name = "Sequencer Specific Meta Event";
         break;
 
     } // switch ($eventType)
 
-    if ($bInvalid) {
-        $reader->printError("Invalid $eventName", -1);
+    if ($b_invalid) {
+        $reader->printError("Invalid $event_name", -1);
         return false;
     }
 
     $reader->relativeSeek($len);
-    debugEcho($reader->makeInfoHeadStr() . "Meta Event[" . sprintf("0x%02x", $type) . "($eventName)] len[$len] $eventInfo\n");
+    debugEcho($reader->makeInfoHeadStr() . "Meta Event[" . sprintf("0x%02x", $type) . "($event_name)] len[$len] $event_info\n");
     return ($type == 0x2f) ? -1 : true;
 }
 
@@ -560,7 +565,7 @@ function skipMetaEvent(MidiReader $reader, int $deltaTime, int $timeDivision): b
  * すべて無視します
  * @return bool 成功/失敗
  */
-function skipSysExEvent($reader, int $deltaTime)
+function skipSysExEvent($reader, int $delta_time)
 {
     $index = $reader->getIndex();
     $len   = $reader->readVariableLengthNumber();
@@ -587,18 +592,18 @@ function debugNoteEcho(string $msg): void
 }
 
 // -------------------------------- 出力
-function outHeader(MidiReader $reader, string $appName, int $timeDiv, int $nrBars): string
+function outHeader(MidiReader $reader, string $app_name, int $time_div, int $nr_bars): string
 {
-    $lenHist = $reader->getLengthHistgram();
-    $ret  = "/* This file is made by **** $appName ****.  DO NOT MODIFY! */\n";
+    $len_hist = $reader->getLengthHistgram();
+    $ret  = "/* This file is made by **** $app_name ****.  DO NOT MODIFY! */\n";
     $ret .= "//#define L 8 // 四分音符の長さ\n";
 
-    foreach($lenHist as $key => $val) {
-        $ret .= sprintf('#define L%-7s', $key) . "((u32)L * $key / " . $timeDiv . ")    // L * " . ($key / $timeDiv) . "\n";
+    foreach($len_hist as $key => $val) {
+        $ret .= sprintf('#define L%-7s', $key) . "((u32)L * $key / " . $time_div . ")    // L * " . ($key / $time_div) . "\n";
     }
 
     $ret .= "// 1小節の長さは, L" . $reader->getBarTime() .  " 相当です\n";
-    $ret .= "// 1変数当たりの小節数: $nrBars\n";
+    $ret .= "// 1変数当たりの小節数: $nr_bars\n";
 
     return $ret;
 }
@@ -611,8 +616,8 @@ function outHeader(MidiReader $reader, string $appName, int $timeDiv, int $nrBar
 function outMml1(array $mmlss): string
 {
     // データ比較用のコメント無し文字列を作成
-    $mmlss_noComment = $mmlss;
-    foreach ($mmlss_noComment as &$mmls) {
+    $mmlss_no_comment = $mmlss;
+    foreach ($mmlss_no_comment as &$mmls) {
         foreach ($mmls as &$mml) {
             $mml = preg_replace('/\/\*.*?\*\//s', '', $mml);
             $mml = preg_replace('/[ \t\r\n　]/s', '', $mml);
@@ -620,15 +625,15 @@ function outMml1(array $mmlss): string
     }
 
     // 同じ文字列かを比較. 超手抜き
-    foreach ($mmlss_noComment as $trackNr1 => &$mmls1) {
-        foreach ($mmls1 as $barNr1 => &$mml1) {
-            foreach ($mmlss_noComment as $trackNr2 => &$mmls2) {
-                foreach ($mmls2 as $barNr2 => &$mml2) {
-                    if (($trackNr1 === $trackNr2) && ($barNr1 === $barNr2)) { continue; }
+    foreach ($mmlss_no_comment as $track_nr1 => &$mmls1) {
+        foreach ($mmls1 as $bar_nr1 => &$mml1) {
+            foreach ($mmlss_no_comment as $track_nr2 => &$mmls2) {
+                foreach ($mmls2 as $bar_nr2 => &$mml2) {
+                    if (($track_nr1 === $track_nr2) && ($bar_nr1 === $bar_nr2)) { continue; }
                     if (strcmp($mml1, $mml2) === 0) {
-                        //echo('mml' . $trackNr1 . '_' . $barNr1 . '[' . $mml1 . '] and mml' . $trackNr2 . '_' . $barNr2 . '[' . $mml2 . "] are same.\n");
-                        $mml2 = 'mml' . $trackNr1 . '_' . $barNr1;
-                        $mmlss[$trackNr2][$barNr2] = $mml2;
+                        //echo('mml' . $track_nr1 . '_' . $bar_nr1 . '[' . $mml1 . '] and mml' . $track_nr2 . '_' . $bar_nr2 . '[' . $mml2 . "] are same.\n");
+                        $mml2 = 'mml' . $track_nr1 . '_' . $bar_nr1;
+                        $mmlss[$track_nr2][$bar_nr2] = $mml2;
                     }
                 }
             }
@@ -637,14 +642,14 @@ function outMml1(array $mmlss): string
 
     // 出力
     $ret = '';
-    foreach ($mmlss as $trackNr => $mmls) {
-        $ret .= "\n// track $trackNr\n";
-        foreach ($mmls as $barNr => $mml) {
-            $varName = 'mml' . $trackNr . "_" . $barNr;
+    foreach ($mmlss as $track_nr => $mmls) {
+        $ret .= "\n// track $track_nr\n";
+        foreach ($mmls as $bar_nr => $mml) {
+            $var_name = 'mml' . $track_nr . "_" . $bar_nr;
             if (str_starts_with($mml, 'mml')) {
-                $ret .= '#define ' . $varName . ' ' . $mml . "\n";
+                $ret .= '#define ' . $var_name . ' ' . $mml . "\n";
             } else {
-                $ret .= 'static const u8 ' . $varName . '[] = { ' . $mml . "0 }; \n";
+                $ret .= 'static const u8 ' . $var_name . '[] = { ' . $mml . "0 }; \n";
             }
         }
     }
@@ -659,49 +664,49 @@ function outMml1(array $mmlss): string
  * }; の様に出力します
  * @param array $mmlss mml文字列[トラック数][小節数]
  */
-function outMmlN(array $mmlss, int $nrBars): string
+function outMmlN(array $mmlss, int $nr_bars): string
 {
     $mmlss2 = [[]];
 
     // 小節を結合します
-    foreach ($mmlss as $trackNr => $mmls) {
+    foreach ($mmlss as $track_nr => $mmls) {
         $str = '';
         $ct  = 0;
-        foreach ($mmls as $barNr => $mml) {
+        foreach ($mmls as $bar_nr => $mml) {
             $str .= '    ' . $mml . "\n";
             $ct++;
-            if ($nrBars <= $ct) {
+            if ($nr_bars <= $ct) {
                 $ct = 0;
-                $mmlss2[$trackNr][] = $str;
+                $mmlss2[$track_nr][] = $str;
                 $str = '';
             }
         }
         if ($str !== '') {
-            $mmlss2[$trackNr][] = $str;
+            $mmlss2[$track_nr][] = $str;
         }
     }
 
     // データ比較用のコメント無し文字列を作成
-    $mmlss2_noComment = $mmlss2;
-    foreach ($mmlss2_noComment as &$mmls) {
+    $mmlss2_no_comment = $mmlss2;
+    foreach ($mmlss2_no_comment as &$mmls) {
         foreach ($mmls as &$mml) {
             $mml = preg_replace('/\/\*.*?\*\//s', '', $mml);
             $mml = preg_replace('/[ \t\r\n　]/s', '', $mml);
         }
     }
 
-    //echo(var_export($mmlss2_noComment, true));
+    //echo(var_export($mmlss2_no_comment, true));
 
     // 同じ文字列かを比較. 超手抜き
-    foreach ($mmlss2_noComment as $trackNr1 => &$mmls1) {
-        foreach ($mmls1 as $barNr1 => &$mml1) {
-            foreach ($mmlss2_noComment as $trackNr2 => &$mmls2) {
-                foreach ($mmls2 as $barNr2 => &$mml2) {
-                    if (($trackNr1 === $trackNr2) && ($barNr1 === $barNr2)) { continue; }
+    foreach ($mmlss2_no_comment as $track_nr1 => &$mmls1) {
+        foreach ($mmls1 as $bar_nr1 => &$mml1) {
+            foreach ($mmlss2_no_comment as $track_nr2 => &$mmls2) {
+                foreach ($mmls2 as $bar_nr2 => &$mml2) {
+                    if (($track_nr1 === $track_nr2) && ($bar_nr1 === $bar_nr2)) { continue; }
                     if (strcmp($mml1, $mml2) === 0) {
-                        //echo('mml' . $trackNr1 . '_' . $barNr1 . '[' . $mml1 . '] and mml' . $trackNr2 . '_' . $barNr2 . '[' . $mml2 . "] are same.\n");
-                        $mml2 = 'mml' . $trackNr1 . '_' . $barNr1;
-                        $mmlss2[$trackNr2][$barNr2] = $mml2;
+                        //echo('mml' . $track_nr1 . '_' . $bar_nr1 . '[' . $mml1 . '] and mml' . $track_nr2 . '_' . $bar_nr2 . '[' . $mml2 . "] are same.\n");
+                        $mml2 = 'mml' . $track_nr1 . '_' . $bar_nr1;
+                        $mmlss2[$track_nr2][$bar_nr2] = $mml2;
                     }
                 }
             }
@@ -710,14 +715,14 @@ function outMmlN(array $mmlss, int $nrBars): string
 
     // 出力
     $ret = '';
-    foreach ($mmlss2 as $trackNr => $mmls) {
-        $ret .= "\n// track $trackNr\n";
-        foreach ($mmls as $barNr => $mml) {
-            $varName = 'mml' . $trackNr . "_" . $barNr;
+    foreach ($mmlss2 as $track_nr => $mmls) {
+        $ret .= "\n// track $track_nr\n";
+        foreach ($mmls as $bar_nr => $mml) {
+            $var_name = 'mml' . $track_nr . "_" . $bar_nr;
             if (str_starts_with($mml, 'mml')) {
-                $ret .= '#define ' . $varName . ' ' . $mml . "\n";
+                $ret .= '#define ' . $var_name . ' ' . $mml . "\n";
             } else {
-                $ret .= 'static const u8 ' . $varName . "[] = {\n" . $mml . "    0 };\n";
+                $ret .= 'static const u8 ' . $var_name . "[] = {\n" . $mml . "    0 };\n";
             }
         }
     }
@@ -726,27 +731,27 @@ function outMmlN(array $mmlss, int $nrBars): string
 
 // -------------------------------- MIDI データを読んで, MML を貯えこむクラス
 class MidiReader {
-    private array $data    = [];
-    private int   $index   = 0;
-    private int   $time    = 0;     // 絶対時間
-    private int   $noteTime = 0;    // 最初のノートが出現した時間
-    private int   $barTime = 0;     // 1 小節分の時間(0:小節時間は計算しない)
-    private array $tracks  = [];    // 各トラックの状況. 内容はコンストラクタ参照
-    private array $lenHist = [];    // 音長ヒストグラム [長さ => 1]
+    private array $data      = [];
+    private int   $index     = 0;
+    private int   $time      = 0;     // 絶対時間
+    private int   $note_time = 0;     // 最初のノートが出現した時間
+    private int   $bar_time  = 0;     // 1 小節分の時間(0:小節時間は計算しない)
+    private array $tracks    = [];    // 各トラックの状況. 内容はコンストラクタ参照
+    private array $len_hist  = [];    // 音長ヒストグラム [長さ => 1]
 
     public function __construct(array $data) {
-        $this->data    = $data;
-        $this->index   = 0;
-        $this->time    = 0;
-        $this->noteTime = 0;
-        $this->barTime = 0;
-        $this->tracks  = [
+        $this->data      = $data;
+        $this->index     = 0;
+        $this->time      = 0;
+        $this->note_time = 0;
+        $this->bar_time  = 0;
+        $this->tracks    = [
             // 使用中フラグ, ノート名, 開始時間, mml 文字列
-            [ 'bInUse' => false, 'noteName' => '',  'time' => 0, 'mmls' => [ '' ], 'barTime' => 0, 'barNr' => 0 ],
-            [ 'bInUse' => false, 'noteName' => '',  'time' => 0, 'mmls' => [ '' ], 'barTime' => 0, 'barNr' => 0 ],
-            [ 'bInUse' => false, 'noteName' => '',  'time' => 0, 'mmls' => [ '' ], 'barTime' => 0, 'barNr' => 0 ],
+            [ 'b_in_use' => false, 'note_name' => '',  'time' => 0, 'mmls' => [ '' ], 'bar_time' => 0, 'bar_nr' => 0 ],
+            [ 'b_in_use' => false, 'note_name' => '',  'time' => 0, 'mmls' => [ '' ], 'bar_time' => 0, 'bar_nr' => 0 ],
+            [ 'b_in_use' => false, 'note_name' => '',  'time' => 0, 'mmls' => [ '' ], 'bar_time' => 0, 'bar_nr' => 0 ],
         ];
-        $this->lenHist  = [];
+        $this->len_hist  = [];
     }
 
     // -------- ノード関連
@@ -756,101 +761,107 @@ class MidiReader {
     }
     public function getBarTime(): int
     {
-        return $this->barTime;
+        return $this->bar_time;
     }
 
-    public function setBarTime(int $barTime): void
+    public function setBarTime(int $bar_time): void
     {
-        $this->barTime = $barTime;
-        $this->barTimeAdd = 0;
+        $this->bar_time = $bar_time;
+        $this->bar_time_add = 0;
     }
 
-    public function noteOn(string $noteName, int $timeDivision): void
+    public function noteOn(string $note_name, int $time_div): void
     {
-        if ($this->noteTime === 0) {
-            $this->noteTime = $this->time;
+        if ($this->note_time === 0) {
+            $this->note_time = $this->time;
             foreach ($this->tracks as &$track) {
                 $track['time'] = $this->time;
             }
         }
-        $this->checkTime($timeDivision);
+        $this->checkTime($time_div);
 
         // 今鳴ってる同じ音を止める. もしそのような音が無くても警告しない
-        $this->noteOff($noteName, $timeDivision, true);
+        $this->noteOff($note_name, $time_div, true);
         // 空いてるトラックに入れる. 全部ふさがってたら警告します
         // 残りの空きトラックも同じ音を入れる
-        $bInUse = true;
-        foreach ($this->tracks as $trackNr => &$track) {
-            if ($track['bInUse'] !== false) {               // 使用中
+        $b_in_use = true;
+        foreach ($this->tracks as $track_nr => &$track) {
+            if ($track['b_in_use'] !== false) {               // 使用中
                 continue;
             }
-            if ($track['noteName'] !== '') {                // そのトラックで, 何か音が鳴ってたら OFF します
-                $this->trackNoteOff($trackNr, $track);
+            if ($track['note_name'] !== '') {                // そのトラックで, 何か音が鳴ってたら OFF します
+                $this->trackNoteOff($track_nr, $track);
             }
             if ($track['time'] !== $this->time) {           // 無音部分があります !
-                $this->printError('No-sound gap detected! node[' . $noteName . '] track[' . $trackNr . '] end time[' . $track['time'] . '] start time[' . $this->time . ']');
+                $this->printError('No-sound gap detected! node[' . $note_name . '] track[' . $track_nr . '] end time[' . $track['time'] . '] start time[' . $this->time . ']');
                 exit(1);
             }
-            $track['bInUse']   = $bInUse;                   // 有効になるのは最初のトラックだけ
-            $track['noteName'] = $noteName;
-            $track['time']     = $this->time;
-            $bInUse = false;
+            $track['b_in_use']  = $b_in_use;                // 有効になるのは最初のトラックだけ
+            $track['note_name'] = $note_name;
+            $track['time']      = $this->time;
+            $b_in_use = false;
         }
         // トラックに入りきれなかった音は警告
-        if ($bInUse) {
-            $this->printWarn('Over track! note[' . $noteName . ']');
+        if ($b_in_use) {
+            $this->printWarn('Over track! note[' . $note_name . ']');
         }
     }
 
-    public function noteOff(string $noteName, int $timeDivision, bool $bIgnoreWarn): void
+    public function noteOff(string $note_name, int $time_div, bool $bIgnoreWarn): void
     {
         // 今鳴ってるのと同じノートの音を全部止めます
         $bOff = false;
-        $this->checkTime($timeDivision);
+        $this->checkTime($time_div);
 
-        foreach ($this->tracks as $trackNr => &$track) {
-            if ($track['noteName'] === $noteName) {
-                $this->trackNoteOff($trackNr, $track);
+        foreach ($this->tracks as $track_nr => &$track) {
+            if ($track['note_name'] === $note_name) {
+                $this->trackNoteOff($track_nr, $track);
                 $bOff = true;
             }
         }
 
         // 存在しないノードがあった場合は警告
         if (($bIgnoreWarn === false) && ($bOff === false)) {
-            $this->printWarn('Note[' . $noteName . '] is not turned ON');
+            $this->printWarn('Note[' . $note_name . '] is not turned ON');
         }
     }
 
-    private function trackNoteOff(int $trackNr, array &$track): void
+    private function trackNoteOff(int $track_nr, array &$track): void
     {
         {
             $len  = $this->time - $track['time'];
             if ($len == 0) { return; }  // 長さ 0 の音はないだろうと思いますが, 念のため
-            $mmlLastIndex = count($track['mmls']) - 1;
-            $track['mmls'][$mmlLastIndex] .= 'SD3_' . $track['noteName'] . ', L' . $len. ', ';
-            //echo('time[' . $this->time . '] ノートOFF ['. $track['noteName'] . '] len[' . $len . "]\n");
-            //if ($trackNr == 0) echo('time[' . $this->time . '] ノートOFF index['. $mmlLastIndex . ']=[' . $track['mmls'][$mmlLastIndex] . "]\n");
+            $mml_last_idx = count($track['mmls']) - 1;
 
-            $track['noteName'] = '';
-            $track['bInUse']   = false;
-            $track['barTime'] += $len;
-            $track['time']    += $len; // 終了時間を記録しておく
-            $this->lenHist[$len] = 1;
+            // 波長→音長の順に出力
+            $track['mmls'][$mml_last_idx] .= 'SD3_' . $track['note_name'] . ', L' . $len. ', ';
+
+            // 音長→波長の順に出力
+            //$track['mmls'][$mml_last_idx] .= 'L' . $len. ', SD3_' . $track['note_name'] . ', ';
+
+            //echo('time[' . $this->time . '] ノートOFF ['. $track['note_name'] . '] len[' . $len . "]\n");
+            //if ($track_nr == 0) echo('time[' . $this->time . '] ノートOFF index['. $mml_last_idx . ']=[' . $track['mmls'][$mml_last_idx] . "]\n");
+
+            $track['note_name'] = '';
+            $track['b_in_use']  = false;
+            $track['bar_time'] += $len;
+            $track['time']     += $len; // 終了時間を記録しておく
+            $this->len_hist[$len] = 1;
         }
 
         // 小節単位で改行
-        if ($this->barTime !== 0) {
-            while ($this->barTime <= $track['barTime']) {
-                $mmlLastIndex = count($track['mmls']) - 1;
-                $track['barTime'] -= $this->barTime;
-                $track['mmls'][$mmlLastIndex] .= '/* 小節' . $track['barNr'] ;
-                if ($track['barTime'] !== 0) {
-                    $track['mmls'][$mmlLastIndex] .= ' ※最後の音符が, [' . $track['barTime'] . '] だけ次の小節にはみ出してます';
+        if ($this->bar_time !== 0) {
+            while ($this->bar_time <= $track['bar_time']) {
+                $mml_last_idx = count($track['mmls']) - 1;
+                $track['bar_time'] -= $this->bar_time;
+                $track['mmls'][$mml_last_idx] .= '/* 小節' . $track['bar_nr'] ;
+                if ($track['bar_time'] !== 0) {
+                    $track['mmls'][$mml_last_idx] .= ' ※最後の音符が, [' . $track['bar_time'] . '] だけ次の小節にはみ出してます';
                 }
-                $track['mmls'][$mmlLastIndex] .= ' */';
-                //if ($trackNr == 0) echo('['. $track['mmls'][$mmlLastIndex] . "]\n");
+                $track['mmls'][$mml_last_idx] .= ' */';
+                //if ($track_nr == 0) echo('['. $track['mmls'][$mml_last_idx] . "]\n");
                 $track['mmls'][] = '';// 次の小節を追加
-                $track['barNr']++;
+                $track['bar_nr']++;
             }
         }
     }
@@ -858,11 +869,11 @@ class MidiReader {
     public function getMml(): array
     {
         $ret = [];
-        foreach ($this->tracks as $trackNr => $track) {
-            $ret[$trackNr] = [];
+        foreach ($this->tracks as $track_nr => $track) {
+            $ret[$track_nr] = [];
             foreach ($track['mmls'] as $mml) {
                 if ($mml === '') { break; }
-                $ret[$trackNr][] = $mml;
+                $ret[$track_nr][] = $mml;
             }
             //echo (var_export($ret[count($ret)-1], true) . "\n");
         }
@@ -871,17 +882,17 @@ class MidiReader {
 
     public function getLengthHistgram(): array
     {
-        ksort($this->lenHist);
-        return $this->lenHist;
+        ksort($this->len_hist);
+        return $this->len_hist;
     }
 
-    /** $this->time が, $timeDivision の 1/4, 1/3 の倍数でなければエラー終了 */
-    public function checkTime($timeDivision): void
+    /** $this->time が, $time_div の 1/4, 1/3 の倍数でなければエラー終了 */
+    public function checkTime($time_div): void
     {
-        if ($this->noteTime != 0) {
-            $td1_4 = $timeDivision / 4;
-            $td1_3 = $timeDivision / 3;
-            $t = $this->time - $this->noteTime;
+        if ($this->note_time != 0) {
+            $td1_4 = $time_div / 4;
+            $td1_3 = $time_div / 3;
+            $t = $this->time - $this->note_time;
             if (((int)($t / $td1_4) * $td1_4 !== $t) &&
                 ((int)($t / $td1_3) * $td1_3 !== $t)) {
                 $this->printError('Invalid time[' . $t . ']. The time must be a multiple of ' . $td1_4 . ' or ' . $td1_3 . ".\n");
@@ -993,14 +1004,14 @@ class MidiReader {
 
     // -------- 情報関連
     /** バイト位置, 時間, 小節番号を含む情報文字列を返します */
-    public function makeInfoHeadStr(int $indexOffset = 0): string
+    public function makeInfoHeadStr(int $idx_offset = 0): string
     {
 
-        $ret = sprintf('addr[0x%08x', $this->index - $indexOffset) . '] time[' . sprintf('%6d', $this->time) . ']';
-        if ($this->barTime !== 0) {
-            $nTime = $this->time - $this->noteTime;
-            $bar = (int)($nTime / $this->barTime);
-            $ret .= '(bar[' . sprintf('%2d', $bar) . '] + time[' . sprintf('%4d', $nTime - $bar * $this->barTime) . '])';
+        $ret = sprintf('addr[0x%08x', $this->index - $idx_offset) . '] time[' . sprintf('%6d', $this->time) . ']';
+        if ($this->bar_time !== 0) {
+            $note_time = $this->time - $this->note_time;
+            $bar = (int)($note_time / $this->bar_time);
+            $ret .= '(bar[' . sprintf('%2d', $bar) . '] + time[' . sprintf('%4d', $note_time - $bar * $this->bar_time) . '])';
         }
         $ret .= ': ';
         return $ret;

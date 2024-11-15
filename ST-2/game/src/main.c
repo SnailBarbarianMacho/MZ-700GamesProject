@@ -18,7 +18,7 @@
 #include "game/game_mode.h"
 #include "objworks/obj_item.h"
 
-void main() __naked
+void main(void) __naked
 {
     sysInit();
     sysSetScene(sceneLogoInit, sceneLogoMain);

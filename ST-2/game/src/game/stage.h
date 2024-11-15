@@ -28,17 +28,17 @@ void stgInit(u8 nr_skipped_stages)__z88dk_fastcall;
  * - 場合によってはステージ クリアとか, エンディングにシーンが移行します
  * @return STG_STATUS_XXXX を返します
  */
-u8 stgSubInit();
+u8 stgSubInit(void);
 /** 現在のステージ数を返します */
-inline u8 stgGetStageNr() { return stg_nr_; }
+inline u8 stgGetStageNr(void) { return stg_nr_; }
 
 // ---------------------------------------------------------------- 敵数
 /** 敵数を減らします. 残りが 0 でなければ true. 0 になったら サブ ステージを初期化し, ステージクリアなら false を返します */
-inline u8 stgDecrementEnemies() {
+inline u8 stgDecrementEnemies(void) {
     stg_nr_enemies_--;
     return stg_nr_enemies_;
 }
 /** 現在の敵数を返します */
-inline u8 stgGetNrEnemies() { return stg_nr_enemies_; }
+inline u8 stgGetNrEnemies(void) { return stg_nr_enemies_; }
 
 #endif  // STAGE_H_INCLUDED

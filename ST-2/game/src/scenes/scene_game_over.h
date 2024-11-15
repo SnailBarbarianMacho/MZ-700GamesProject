@@ -8,8 +8,8 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- 初期化, メイン
-void sceneGameOverInit();
-void sceneGameOverInitWithoutReflectHiScore();
+void sceneGameOverInit(void);
+void sceneGameOverInitWithoutReflectHiScore(void);
 void sceneGameOverMain(u16 scene_ct);
 
 #endif  // SCENE_GAME_OVER_H_INCLUDED

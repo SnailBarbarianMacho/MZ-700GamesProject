@@ -44,21 +44,21 @@ extern u8 input_mz1x03_insensitivity_;    // MZ-1X03 の感度の鈍さ (1敏感
 
 // ---------------------------------------------------------------- システム
 /** 入力の初期化を行います */
-void inputInit() __z88dk_fastcall;
+void inputInit(void) __z88dk_fastcall;
 /** 入力生データを更新します. システムのほか, ポーズ時も使用 */
-void inputMain() __z88dk_fastcall;
+void inputMain(void) __z88dk_fastcall;
 
 // ---------------------------------------------------------------- 入力
 /** 入力生データを入手します. INPUT_MASK_XXXX の bitwise or */
-inline u8 inputGet() { return input_; }
+inline u8 inputGet(void) { return input_; }
 /** 入力 OFF->ON データを入手します. INPUT_MASK_XXXX の bitwise or */
-inline u8 inputGetTrigger() { return input_trg_; }
+inline u8 inputGetTrigger(void) { return input_trg_; }
 
 /** ジョイスティックで検出した値を返します. 未検出の場合は 0x00 */
-inline u8 inputGetJoy() { return input_joy_; }
+inline u8 inputGetJoy(void) { return input_joy_; }
 
 /** ジョイスティック検出モード兼カウンタを返します */
-inline u8 inputGetJoyMode() { return input_joy_mode_; }
+inline u8 inputGetJoyMode(void) { return input_joy_mode_; }
 
 // ---------------------------------------------------------------- MZ-1X13
 /** MZ-1X03 ボタンを読んで, VBLANK を待ち, 接続をテストして, 感度の鈍さの分だけ待って, 軸読み取り1をします
@@ -72,12 +72,12 @@ inline u8 inputGetJoyMode() { return input_joy_mode_; }
  * */
 void inputMZ1X03ButtonVSyncAxis1(const u8 mz1x03_insensitivity) __z88dk_fastcall __naked;
 /** MZ-1X03 軸読み取り2をして, 結果を返します */
-void inputMZ1X03Axis2() __z88dk_fastcall __naked;
+void inputMZ1X03Axis2(void) __z88dk_fastcall __naked;
 
 /** MZ-1X03 感度の鈍さ(1敏感～4鈍い)を返します */
-inline u8 inputGetMZ1X03Insensitivity() { return input_mz1x03_insensitivity_; }
+inline u8 inputGetMZ1X03Insensitivity(void) { return input_mz1x03_insensitivity_; }
 /** MZ-1X03 感度の鈍さ(1敏感～4鈍い) を -1 します */
-inline void inputDecMZ1X03Insensitivity()
+inline void inputDecMZ1X03Insensitivity(void)
 {
     input_mz1x03_insensitivity_ --;
     if (input_mz1x03_insensitivity_ == 0) {

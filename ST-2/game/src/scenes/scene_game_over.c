@@ -14,23 +14,26 @@
 #include "scene_game_over.h"
 
 // ---------------------------------------------------------------- 初期化
-void sceneGameOverInit()
+void sceneGameOverInit(void)
 {
     scoreReflectHiScore();
     sceneGameOverInitWithoutReflectHiScore();
 }
 
-void sceneGameOverInitWithoutReflectHiScore() // 強制ゲームオーバー時は, ハイスコアへの反映は無し
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_O, DC_V, DC_E, DC_R, 0, };
+#endif
+void sceneGameOverInitWithoutReflectHiScore(void) // 強制ゲームオーバー時は, ハイスコアへの反映は無し
 {
 #if DEBUG
-    static const u8 str[] = { DC_O, DC_V, DC_E, DC_R, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     sysSetMode(false);
     objInit();
     sysSetSceneCounter(20);
     sdPlayBgm(BGM_NONE);
 }
+
 
 // ---------------------------------------------------------------- メイン
 void sceneGameOverMain(u16 scene_ct)

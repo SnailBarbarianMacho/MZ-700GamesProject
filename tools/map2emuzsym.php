@@ -4,9 +4,12 @@ declare(strict_types = 1);
 /**
  * z88dk map ファイルを EmuZ700 でも読めるシンボルファイルに変換
  *
- * l_bgm1Init_00103 = $1F4A ; addr, local, , bgm_c, code_compiler, game/src/game/bgm.c:330
- * を
- * $1F4A l_bgm1Init_00103
+ * 「l_bgm1Init_00103 = $1F4A ; addr, local, , bgm_c, code_compiler, game/src/game/bgm.c:330」
+ *
+ * を, アドレス順にソートして
+ *
+ * 「1F4A l_bgm1Init_00103」
+ *
  * に直すだけ
  *
  * 使い方は, Usage: 行を参照してください
@@ -21,24 +24,25 @@ if (count($argv) != 3)
     fwrite(STDERR, 'Usage: php ' . $argv[0] . " in.map out.emuz.sym\n");
     exit(1);
 }
-$inMapFilename = $argv[1];
-$outSymFilename = $argv[2];
+$in_map_filename  = $argv[1];
+$out_sym_filename = $argv[2];
 
-if (file_exists($inMapFilename) === false) {
-    fwrite(STDERR, "file not found[$inMapFilename]\n");
+if (file_exists($in_map_filename) === false) {
+    fwrite(STDERR, "file not found[$in_map_filename]\n");
     exit(1);
 }
 
-// -------------------------------- 入力
-$fhmap = fopen($inMapFilename, 'r');
-$outText = '';
+// -------------------------------- 入力&整形
+$fhmap = fopen($in_map_filename, 'r');
+$out_lines = [];
 while ($line = fgets($fhmap)) {
     $line = preg_replace( '/ +/', ' ', $line);
     $words = explode(' ', $line);
     $addr = substr($words[2], 1, 4);
-    $outText .= $addr . ' ' . $words[0] . "\n";
+    $out_lines[] = $addr . ' ' . $words[0];
 }
 fclose($fhmap);
 
-// -------------------------------- 出力
-file_put_contents($outSymFilename, $outText);
+// -------------------------------- ソート&出力
+asort($out_lines);
+file_put_contents($out_sym_filename, implode("\n", $out_lines));

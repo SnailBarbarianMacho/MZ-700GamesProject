@@ -17,7 +17,6 @@
 #include "obj_item.h"
 
 
-
 // ---------------------------------------------------------------- 定数, 変数
 u16 obj_item_nr_generated_;
 u16 obj_item_nr_obtained_;
@@ -35,14 +34,14 @@ static const u8 ITEM_TAB_[] = {
 #define SZ_TAB 0x40
 
 // ---------------------------------------------------------------- システム
-void objItemInitTab()
+void objItemInitTab(void)
 {
-    STATIC_ASSERT(sizeof(ITEM_TAB_) == SZ_TAB, ITEM_TAB);
+    STATIC_ASSERT(sizeof(ITEM_TAB_) == SZ_TAB, "ITEM_TAB");
     //memcpy((u8*)ADDR_ITEM_TAB, sTab, SZ_TAB)
 __asm
-    ld  HL, #_ITEM_TAB_
-    ld  DE, #(ADDR_ITEM_TAB)
-    ld  BC, #(SZ_TAB)   // 流石にインラインアセンブラ内では sizeof 演算子は使えなかった
+    ld  HL, 0 + _ITEM_TAB_
+    ld  DE, 0 + ADDR_ITEM_TAB
+    ld  BC, 0 + SZ_TAB  // 流石にインラインアセンブラ内では sizeof 演算子は使えなかった
     ldir
 __endasm;
 }
@@ -137,15 +136,15 @@ void objItemDraw(Obj* const p_obj, u8* draw_addr)
 #else   // ASM 版
 void objItemDraw(Obj* const p_obj, u8* draw_addr) __naked
 {
-STATIC_ASSERT(3 <= OBJ_OFFSET_GEO8_YL,                                  Asm1); // ※1 を修正
-STATIC_ASSERT(4 <= OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL, Asm2); // ※2 を修正
+    STATIC_ASSERT(3 <= OBJ_OFFSET_GEO8_YL,                                  "Asm1"); // ※1 を修正
+    STATIC_ASSERT(4 <= OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL, "Asm2"); // ※2 を修正
 __asm
     pop     HL                          // リターン アドレス(捨てる)
     pop     DE                          // p_obj
 
     // ---- u_geo.geo8.yl からテキストを選ぶ
     ld      A, E                        // ※1
-    add     A, #(OBJ_OFFSET_GEO8_YL)    // ※1
+    add     A, 0 + OBJ_OFFSET_GEO8_YL   // ※1
     ld      E, A                        // ※1
     ld      A, (DE)                     // A = yl
 
@@ -156,7 +155,7 @@ __asm
     rlca                                // A = 0x00, 0x01, 0x02, 0x03
     rlca                                // A = 0x00, 0x02, 0x04, 0x06
 
-    ld      H, #(ADDR_ITEM_TAB >> 8)
+    ld      H, 0 + ADDR_ITEM_TAB >> 8
     ld      L, A
     ld      B, (HL)                     // BC = TEXT
     inc     L
@@ -165,7 +164,7 @@ __asm
 
     // ---- u_geo.geo8.yl と step から ATB を選ぶ
     ld      A, E                                                        // ※2
-    add     A, #(OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL)   // ※2
+    add     A, 0 + OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL  // ※2
     ld      E, A                                                        // ※2
     ld      A, (DE)                     // A = step(1, 2, ..., 6)
     add     A, A                        // A =      2, 4, ..., 12
@@ -184,7 +183,7 @@ __asm
     inc     H
     ld      (HL), C
     ld      A, L
-    add     A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
+    add     A, 0 + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)
     ld      L, A
     ld      (HL), E
     dec     H
@@ -201,13 +200,13 @@ __asm
 OBJ_ITEM_DRAW_1:
     // ---- step から ATB を選ぶ
     ld      A, E                                                        // ※2
-    add     A, #(OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL)   // ※2
+    add     A, 0 + OBJ_OFFSET_WORK_ITEM_SUB_LEVEL - OBJ_OFFSET_GEO8_YL  // ※2
     ld      E, A                                                        // ※2
     ld      A, (DE)                     // A = step(1, 2, ..., 6)
     add     A, A                        // A =      2, 4, ..., 12
     add     A, A                        // A =      4, 8, ..., 24
     add     A, A                        // A =      8, 16, ..., 48
-    ld      H, #(ADDR_ITEM_TAB >> 8)
+    ld      H, ADDR_ITEM_TAB >> 8
     ld      L, A
     ld      D, (HL)                     // D = ATB
 
@@ -215,7 +214,7 @@ OBJ_ITEM_DRAW_1:
     pop     HL                      // draw_addr
     ld      (HL), DC_L
     ld      A, L
-    add     A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0))
+    add     A, 0 + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0)
     ld      L, A
     ld      (HL), D
 

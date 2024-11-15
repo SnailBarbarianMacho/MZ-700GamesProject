@@ -1,13 +1,41 @@
 <?php
 
 declare(strict_types = 1);
+#require_once 'nwk-classes/utils/utils.class.php';
+#require_once 'nwk-classes/utils/error.class.php';
+
 /**
- * 手抜き依存関係リスト作成
- * - gcc -MM xx.c でもいいんですが,
- *   それだけの為に, いちいち gcc を入れるのが面倒なので, 独自の機能を追加して作りました
- * - cg    対応 (cg/ 以下のヘッダは, cgedit ファイルと依存関係を作成する)
- * - music 対応 (music/ 以下のヘッダは, MIDI ファイルと依存関係を作成する)
- * - text  対応 (text/ 以下のヘッダは, テキスト ファイルと依存関係を作成する)
+ * - --prog は ソース(.z80ana.c, .c)からバイナリ(.bin)を作る依存リストとclean時の削除リストを作成
+ *   例: game/src/ game/obj/ OBJS CLEAN_PROG_FILES
+ *   game/obj/a.o:  game/src/system/a.c
+ *   game/obj/b.o:  game/src/system/b.c game/src/system/x.h game/cg/c.txt game/text/t.txt
+ *   game/obj/c.o:  game/src/system/c.c
+ *   game/src/system/c.c:  game/src/system/c.z80ana.c game/src/system/x.h
+ *   OBJS := game/obj/a.o game/obj/b.o
+ *   CLEAN_PROG_FILES := game/obj/a.o game/obj/b.o game/obj/c.o game/src/system/c.c
+ *
+ * - --cg は各 cgedit データ(.cgedit.txt, .cgedit.json) を変換して複数のヘッダ(.h)を作る依存リストを作成
+ *   例: -cgedit game/cg/ CG_FUNC
+ *   game/cg/a.h game/cg/b.h: game/cg/a.cgedit.txt game/cg/a.cgedit.json
+ *      $(call CG_FUNC)
+ *   game/cg/c.h game/cg/d.h: game/cg/b.cgedit.txt game/cg/b.cgedit.json
+ *      $(call CG_FUNC)
+ *
+ * - --music は各楽譜(.mid)からヘッダ(.h)をつくる依存リストを作成
+ *   例: -music game/music/
+ *   game/music/test.h: game/music/test.mid
+ *   game/music/foo.h: game/music/foo.mid
+ *
+ * - --text は各テキスト(.txt)からヘッダ(.h)を作る依存リストを作成
+ *   例: -text game/text/
+ *   game/text/branch_ahead.h: game/text/branch_ahead.txt
+ *   game/text/game_over.h: game/text/game_over.txt
+ *
+ * - --stages は各ステージデータ(.c)をビルドして zx0 圧縮して結合したバイナリ(.pak)を作る依存リストを作成
+ *   例: -stages game/stages/ STAGE_ZX0S
+ *   game/stage/stage1.zx0: game/stage/stage1.c game/stage/stage.h
+ *   game/stage/stage2.zx0: game/stage/stage2.c game/stage/stage.h
+ *   STAGE_ZX0S := game/stage/stage1.zx0 game/stage/stage2.zx0
  *
  * 使い方は, Usage: 行を参照してください
  *
@@ -16,169 +44,244 @@ declare(strict_types = 1);
 
 // --------------------------------
 // 引数チェック
-if (count($argv) != 10)
-{
-    fwrite(STDERR, 'Usage: php ' . $argv[0] . " src_dir cg_dir music_dir text_dir obj_dir cgedit.txt cgedit.json obj_macro_name out_depends.mk\n");
-    exit(1);
-}
-$srcDir     = $argv[1];
-$cgDir      = $argv[2];
-$musicDir   = $argv[3];
-$textDir    = $argv[4];
-$objDir     = $argv[5];
-$cgEditText = $argv[6];
-$cgEditJson = $argv[7];
-$objMacroName = $argv[8];
-$outFile    = $argv[9];
-$outStr     = '# **** This file is made by '.$argv[0].'. DO NOT MODIFY ! ****'."\n";
+$out_file     = '';
+$prog_dir     = '';
+$obj_dir      = '';
+$objs_macro   = '';
+$clean_files_macro = '';
+$cg_dir       = '';
+$cg_func      = '';
+$music_dir    = '';
+$text_dir     = '';
+$stage_dir    = '';
+$stags_macro  = '';
 
-if (substr($cgDir,    -1) != '/') { $cgDir    .= '/'; }
-if (substr($musicDir, -1) != '/') { $musicDir .= '/'; }
-if (substr($textDir,  -1) != '/') { $textDir  .= '/'; }
-//echo("$cgDir $musicDir $textDir\n");
-
-if (file_exists($cgEditText) === false) {
-    fwrite(STDERR, "File not found[$cgEditText]\n");
-    exit(1);
-}
-if (file_exists($cgEditJson) === false) {
-    fwrite(STDERR, "File not found[$cgEditJson]\n");
-    exit(1);
-}
-
-
-// --------------------------------
-// 情報の収集
-// src_dir の中を再帰的にサーチして c ソースを探します
-$it = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator(
-        $srcDir,
-        FilesystemIterator::SKIP_DOTS |
-        FilesystemIterator::KEY_AS_PATHNAME |
-        FilesystemIterator::CURRENT_AS_FILEINFO
-    ), RecursiveIteratorIterator::LEAVES_ONLY);
-$cSources = array();
-foreach ($it as $pathname => $info) {
-    if (pathinfo($pathname, PATHINFO_EXTENSION) == 'c') {
-        $pathname = str_replace('\\', '/', $pathname);
-        $cSources[] = $pathname;
+if (count($argv) <= 2) { usage_($argv); }
+$out_file = $argv[1];
+for ($i = 2; $i < count($argv); $i++) {
+    switch ($argv[$i]) {
+        case '--prog':
+            if (count($argv) <= $i + 4) { usage_($argv); }
+            $prog_dir          = $argv[$i + 1];
+            $obj_dir           = $argv[$i + 2];
+            $objs_macro        = $argv[$i + 3];
+            $clean_files_macro = $argv[$i + 4];
+            if (substr($prog_dir, -1) != '/') { $prog_dir .= '/'; }
+            if (substr($obj_dir, -1) != '/') { $obj_dir .= '/'; }
+            $i += 4;
+            break;
+        case '--cg':
+            if (count($argv) <= $i + 2) { usage_($argv); }
+            $cg_dir  = $argv[$i + 1];
+            $cg_func = $argv[$i + 2];
+            if (substr($cg_dir, -1) != '/') { $cg_dir .= '/'; }
+            $i += 2;
+            break;
+        case '--music':
+            if (count($argv) <= $i + 1) { usage_($argv); }
+            $music_dir = $argv[$i + 1];
+            if (substr($music_dir, -1) != '/') { $music_dir .= '/'; }
+            $i += 1;
+            break;
+        case '--text':
+            if (count($argv) <= $i + 1) { usage_($argv); }
+            $text_dir = $argv[$i + 1];
+            if (substr($text_dir, -1) != '/') { $text_dir .= '/'; }
+            $i += 1;
+            break;
+        case '--stages':
+            if (count($argv) <= $i + 2) { usage_($argv); }
+            $stage_dir    = $argv[$i + 1];
+            $stages_macro = $argv[$i + 2];
+            if (substr($stage_dir, -1) != '/') { $stage_dir .= '/'; }
+            $i += 2;
+            break;
+        default: usage_($argv);
     }
 }
-//var_export($cSources);
 
+$out_str = '# **** This file is made by '.$argv[0].'. DO NOT MODIFY ! ****'."\n";
 
-// ファイルを開いて, #include 文をサーチ
-// 見つかればリストにあげます.
-// そのファイルも再帰的に #include 文をサーチします
-// 重複ファイルもチェックします
-// フォルダに /music/ が含まれる場合は
-$oPathnames = '';
-$cgPathnameList    = [];
-$musicPathnameList = [];
-$textPathnameList  = [];
-foreach ($cSources as $cSource) {
-    $pathnameList  = [];
+// ---------------------------------------------------------------- prog
+if ($prog_dir !== '') {
+    $out_str .= "\n# prog\n";
 
-    $oPathname  = $objDir . '/' . pathinfo($cSource, PATHINFO_FILENAME).'.o';
-    $oPathnames = $oPathnames.' '.$oPathname;
-    //echo("===>cソース:$cSource\n");
-    check('.', $cSource, $pathnameList, $cgDir, $musicDir, $textDir, $cgPathnameList, $musicPathnameList, $textPathnameList);
-
-    $outStr .= $oPathname.': ';
-    foreach ($pathnameList as $pathname) {
-        $outStr .= ' ' . $pathname;
-    }
-    $outStr .= "\n";
-    //$outStr .= "\t@echo Compiling...[$<]\n";
-    //$outStr .= "\t@$(CC) $(CFLAGS) -o $@ -c $<\n";
-    //$outStr .= "\t@$(CC) $(CFLAGS) -o $@ -c ".$cSource."\n";
-}
-
-// --------------------------------
-// cgEdit
-$outStr .= "\n# cgedit\n";
-{
-    // 抽出テーブルに記載された名前が $cgPathnameList にあるかをチェック
-    $extTab = json_decode(file_get_contents($cgEditJson), true);
-    if ($extTab === null) {
-        fwrite(STDERR, "JSON decode error[$cgEditJson]\n");
-        exit(1);
-    }
-    $names = array_keys($extTab);
-    foreach ($cgPathnameList as $cgPathname) {
-        $matches = [];
-        $name = pathinfo($cgPathname,  PATHINFO_FILENAME);
-        if (!in_array($name, $names)) {
-            fwrite(STDERR, "WARN: [$name] is not in [$cgEditJson]\n");
+    // ソース情報の収集
+    // $prog_dir の中を再帰的にサーチして c ソースを探します
+    $it = createRecursiveDirectoryIterator_($prog_dir);
+    $c_sources = [];
+    $z80ana_c_filenames = [];
+    foreach ($it as $pathname => $info) {
+        if (pathinfo($pathname, PATHINFO_EXTENSION) == 'c') {
+            $pathname = adjustPathname_($pathname);
+            $c_sources[] = $pathname;
+            if (str_ends_with($pathname, '.z80ana.c')) {
+                $z80ana_c_filenames[] = pathinfo($pathname, PATHINFO_FILENAME);
+            }
         }
     }
+    //var_export($z80ana_c_filenames);
+    //var_export($c_sources);
 
-    $targets = '';
-    foreach ($cgPathnameList as $pathname) {
-        $targets .= $pathname . ' ';
+    // ファイルを開いて, #include 文をサーチ
+    // 見つかればリストに追加します.
+    // そのファイルも再帰的に #include 文をサーチします
+    // ファイルは絶対パスで管理し, 重複ファイルもチェックします
+    // *.c と同名の *.z80ana.c があれば, 後者用の依存リストを追加します
+    $o_pathnames = [];
+    $o_clean_pathnames = [];
+    foreach ($c_sources as $c_source) {
+
+
+        if (str_ends_with($c_source, '.z80ana.c')) {
+            $c_source2 = substr($c_source, 0, -9) . '.c';   // .z80ana を抜いたファイル
+            $o_clean_pathnames[] = $c_source2;
+            $pathname_list  = [];
+            //echo("===>cソース:$c_source\n");
+            check_('.', 0, $c_source, $pathname_list);
+            $out_str .= $c_source2 . ': ' . implode(' ', $pathname_list) . "\n";
+
+            $filename2 = pathinfo($c_source2, PATHINFO_FILENAME);
+            $o_pathname  = $obj_dir . $filename2 . '.o';
+            $o_pathnames[]       = $o_pathname;
+            $o_clean_pathnames[] = $o_pathname;
+            $out_str .= "$o_pathname: $c_source2\n";
+            continue;
+        }
+
+        $filename = pathinfo($c_source, PATHINFO_FILENAME);
+        if (in_array($filename . '.z80ana', $z80ana_c_filenames, true)) {
+            continue;
+        }
+        $pathname_list  = [];
+        $o_pathname  = $obj_dir . $filename . '.o';
+        $o_pathnames[]       = $o_pathname;
+        $o_clean_pathnames[] = $o_pathname;
+
+        //echo("===>cソース:$c_source\n");
+        check_('.', 0, $c_source, $pathname_list);
+
+        $out_str .= $o_pathname . ': ' . implode(' ', $pathname_list) . "\n";
     }
-    $outStr .= $targets . ': ' . "$cgEditText $cgEditJson\n";
-    $outStr .= "\t@echo Generating CG data...\n";
-    $outStr .= "\t@$(PHP) ../tools/cg_edit2c.php $^\n";
+    $out_str .= "$objs_macro := " . implode(' ', $o_pathnames) . "\n";
+    $out_str .= "$clean_files_macro := " . implode(' ', $o_clean_pathnames) . "\n";
 }
 
+// ---------------------------------------------------------------- cgedit
+if ($cg_dir !== '') {
+    $out_str .= "\n# cg\n";
+    //$cg_headers = [];
 
-// --------------------------------
-// music
-$outStr .= "\n# music\n";
-foreach ($musicPathnameList as $pathname) {
-    $dirname  = dirname($pathname);
-    $basename = basename($pathname, '.h');
-    $outStr .= $pathname . ': ' . $dirname . '/' . $basename . ".mid\n";
-#    $outStr .= "\t@echo Generating music data...[$@]\n";
-#    $outStr .= "\t@$(PHP) ../tools/midi2sd3mml.php $^ $@\n";
+    // $cg_dir 以下を, 再帰的に .gedit.txt, .cgedit.json を探します
+    $it = createRecursiveDirectoryIterator_($cg_dir);
+    foreach ($it as $pathname => $info) {
+        if (str_ends_with($pathname, '.cgedit.txt')) {
+            $pathname = adjustPathname_($pathname);
+
+            // 同名の cgedit.json があるかチェック
+            $pathname_json = str_replace('.cgedit.txt', '.cgedit.json', $pathname);
+            if (!file_exists($pathname_json)) {
+                fwrite(STDERR, "cgedit JSON file is not exist[$pathname_json]\n");
+                exit(1);
+            }
+
+            // あれば解析して記載された名前をヘッダとして出力
+            $ext_tab = json_decode(file_get_contents($pathname_json), true);
+            if ($ext_tab === null) {
+                fwrite(STDERR, "JSON decode error[$pathname_json]\n");
+                exit(1);
+            }
+            $names = array_keys($ext_tab);
+            foreach ($names as &$name) {
+                $name = "$cg_dir$name.h";
+            }
+
+            $out_str .= implode(' ', $names) . ': ' . $pathname . ' ' . $pathname_json. "\n";
+            $out_str .= "\t$(call $cg_func)\n";
+            //$cg_headers = array_merge($cg_headers, $names);
+        }
+    }
+    //$out_str .= "$cgs_macro:= " . implode(' ', $cg_headers) . "\n";
 }
 
-// --------------------------------
-// text
-$outStr .= "\n# text\n";
-foreach ($textPathnameList as $pathname) {
-    $dirname  = dirname($pathname);
-    $basename = basename($pathname, '.h');
-    $outStr .= $pathname . ': ' . $dirname . '/' . $basename . ".txt\n";
-#    $outStr .= "\t@echo Generating text data...[$@]\n";
-#    $outStr .= "\t@$(PHP) ../tools/text2c.php $^ $@\n";
+// ---------------------------------------------------------------- music
+if ($music_dir !== '') {
+    $out_str .= "\n# music\n";
+
+    // $music_dir 以下を, 再帰的に .mid を探します
+    $it = createRecursiveDirectoryIterator_($music_dir);
+    foreach ($it as $pathname => $info) {
+        if (str_ends_with($pathname, '.mid')) {
+            $pathname = adjustPathname_($pathname);
+            $pathname_h = str_replace('.mid', '.h', $pathname);
+            $out_str .= $pathname_h . ': ' . $pathname . "\n";
+        }
+    }
 }
 
-// --------------------------------
-// objs
-$outStr .= "\n";
-$outStr .= "$objMacroName := $oPathnames\n";
+// ---------------------------------------------------------------- text
+if ($text_dir !== '') {
+    $out_str .= "\n# text\n";
 
-// --------------------------------
+    // $text_dir 以下を, 再帰的に .txt を探します
+    $it = createRecursiveDirectoryIterator_($text_dir);
+    foreach ($it as $pathname => $info) {
+        if (str_ends_with($pathname, '.txt')) {
+            $pathname = adjustPathname_($pathname);
+            $pathname_h = str_replace('.txt', '.h', $pathname);
+            $out_str .= $pathname_h . ': ' . $pathname . "\n";
+        }
+    }
+}
 
-file_put_contents($outFile, $outStr);
+// ---------------------------------------------------------------- stage
+if ($stage_dir !== '') {
+    $out_str .= "\n# stages\n";
 
-// --------------------------------
+    // $stage_dir 以下を, 再帰的に .c を探します
+    $it = createRecursiveDirectoryIterator_($stage_dir);
+    $zx0_files = [];
+    foreach ($it as $pathname => $info) {
+        if (str_ends_with($pathname, '.c')) {
+            $pathname = adjustPathname_($pathname);
+
+            $pathname_list = [];
+            check_('.', 0, $pathname, $pathname_list);
+
+            $zx0_file = str_replace('.c', '.zx0', $pathname);
+            $zx0_files[] = $zx0_file;
+            $out_str .= $zx0_file . ':';
+            foreach ($pathname_list as $pathname) {
+                $out_str .= ' ' . $pathname;
+            }
+            $out_str .= "\n";
+        }
+    }
+    $out_str .= "$stages_macro := " . implode(' ', $zx0_files) . "\n";
+}
+
+// ---------------------------------------------------------------- 出力して終了
+file_put_contents($out_file, $out_str);
+
+
+// ---------------------------------------------------------------- subroutines
 /**
  * ファイルを開いて
  * #include "..." 文があれば標準出力
- * @param $pathname C または ヘッダ パス名('foo/bar/baz.c' など)
- * @param $pathnameList      [in][out]ヘッダ パス名のリスト.     重複防止用にも用います
- * @param $cgPathnameList    [in][out]cg 用ヘッダ パス名のリスト. 重複防止用にも用います
- * @param $musicPathnameList [in][out]music 用ヘッダ パス名のリスト. 重複防止用にも用います
- * @param $textPathnameList  [in][out]text 用ヘッダ パス名のリスト. 重複防止用にも用います*
+ * @param $pathname            C または ヘッダ パス名('foo/bar/baz.c' など)
+ * @param $pathname_list       [in][out]ヘッダ パス名のリスト.     重複防止用にも用います
+ * @param $cg_pathname_list    [in][out]cg 用ヘッダ パス名のリスト. 重複防止用にも用います
+ * @param $music_pathname_list [in][out]music 用ヘッダ パス名のリスト. 重複防止用にも用います
+ * @param $text_pathname_list  [in][out]text 用ヘッダ パス名のリスト. 重複防止用にも用います
  */
-function check(
-    string $orgPathname,
+function check_(
+    string $org_pathname,
+    int    $line_nr,
     string $pathname,
-    array &$pathnameList,
-    string $cgDir,
-    string $musicDir,
-    string $textDir,
-    array &$cgPathnameList,
-    array &$musicPathnameList,
-    array &$textPathnameList): void
+    array &$pathname_list): void
 {
-    $bRecursive = true;
-
-    $orgDir = pathinfo($orgPathname, PATHINFO_DIRNAME);
-    $pathname = $orgDir . '/' . $pathname;
+    $org_dir = pathinfo($org_pathname, PATHINFO_DIRNAME);
+    $pathname = $org_dir . '/' . $pathname;
     $pathname = str_replace('\\', '/', $pathname); // '\'を'/' に変換
     //echo '開こうとするファイル['.$pathname."]\n";
 
@@ -193,35 +296,15 @@ function check(
     $pathname = preg_replace('/^\.\/(.+)$/', '$1', $pathname); // 先頭の "./" を削除
     //echo '開こうとするファイル(最適化後)['.$pathname."]\n";
 
-    if (strpos($pathname, $cgDir) === 0) {
-        // cg/ パスが入ってるなら,それを登録(再帰はしない)
-        if (array_search($pathname, $cgPathnameList, true) === false) {
-            $cgPathnameList[] = $pathname;
-        }
-        $bRecursive = false;
-    } else if (strpos($pathname, $musicDir) === 0) {
-        // music/ パスが入ってるなら,それを登録(再帰はしない)
-        if (array_search($pathname, $musicPathnameList, true) === false) {
-            $musicPathnameList[] = $pathname;
-        }
-        $bRecursive = false;
-    } else if (strpos($pathname, $textDir) === 0) {
-        // text/ パスが入ってるなら,それを登録(再帰はしない)
-        if (array_search($pathname, $textPathnameList, true) === false) {
-            $textPathnameList[] = $pathname;
-        }
-        $bRecursive = false;
-    }
-
     // 今までにないファイルならばリスト登録
-    if (array_search($pathname, $pathnameList, true) === false) {
-        $pathnameList[] = $pathname;
+    if (array_search($pathname, $pathname_list, true) === false) {
+        $pathname_list[] = $pathname;
     }
 
     // ファイル存在チェック. 無くてもとりあえず出力(再帰しない)
     if (file_exists($pathname) === false)
     {
-        fwrite(STDERR, "WARN: File not found [$pathname] in [$orgPathname]\n");
+        fwrite(STDERR, "$org_pathname:$line_nr: Warning: $pathname: No such file\n");
         return;
     }
 
@@ -229,20 +312,59 @@ function check(
     $file = fopen($pathname, "r");
 
     if (!$file) {
-        fwrite(STDERR, "WARN: File open error [$pathname] in [$orgPathname]\n");
+        fwrite(STDERR, "$org_pathname:$line_nr: Warning: $pathname: File open error\n");
         return;
     }
 
-    if ($bRecursive === false) {    // 再帰しない
-        return;
-    }
-
+    $line_nr = 1;
     while ($line = fgets($file)) {
         // #include "～" を探す
         $matches = [];
-        if (preg_match('/^#include\s*"([^"]+\.h)"/', $line, $matches) == 1) {
-            check($pathname, $matches[1], $pathnameList, $cgDir, $musicDir, $textDir, $cgPathnameList, $musicPathnameList, $textPathnameList);
+        if (preg_match('/^#include\s*"([^"]+\.(h|txt))"/', $line, $matches) == 1) {
+            check_($pathname, $line_nr, $matches[1], $pathname_list);
         }
+        $line_nr++;
     }
 
+}
+
+
+/** 再帰ディレクトリ捜査イテレーターの生成 */
+function createRecursiveDirectoryIterator_($dir): RecursiveIteratorIterator
+{
+    try {
+        $it = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator(
+                $dir,
+                FilesystemIterator::SKIP_DOTS |
+                FilesystemIterator::KEY_AS_PATHNAME |
+                FilesystemIterator::CURRENT_AS_FILEINFO
+            ), RecursiveIteratorIterator::LEAVES_ONLY);
+        return $it;
+    } catch (Exception $e) {
+        fwrite(STDERR, "Directory not found[$dir]\n");
+        exit(1);
+    }
+}
+
+
+/** pathname を整える(ディレクトリ記号を統一するだけ) */
+function adjustPathname_($pathname): string
+{
+    $pathname = str_replace("\\", '/', $pathname);
+    $pathname = str_replace('//', '/', $pathname);
+    return $pathname;
+}
+
+
+function usage_($argv): void
+{
+    fwrite(STDERR, 'Usage: php ' . $argv[0] . " outfile [params...]\n" .
+        "params are:\n" .
+        "  --prog   prog_dir obj_dir objs_macro del_files_macro\n" .
+        "  --cg     cg_dir cg_func\n" .
+        "  --music  music_dir\n" .
+        "  --text   text_dir\n" .
+        "  --stages stages_dir stages_macro\n");
+    exit(1);
 }

@@ -79,19 +79,23 @@ TBL_OFS_HI  	= (TBL_SHIFT + TBL_BYTES + TBL_BYTES)
 TBL_SIZE_ALL	= (TBL_BYTES + TBL_BYTES + TBL_BYTES)
 
 #if (PFLAG_CODE & PFLAG_BITS_ORDER_BE)
-#define M_GETBIT1()\
+macro M_GETBIT1
     add	a
-#define M_FILBIT1()\
-    ld	a, (hl)     ;\
-    inc	hl          ;\
+endm
+macro M_FILBIT1
+    ld	a, (hl)
+    inc	hl
     rla
+endm
 #else
-#define M_GETBIT1()\
+macro M_GETBIT1
     srl	a
-#define M_FILBIT1()\
-    ld	a, (hl)     ;\
-    inc	hl          ;\
+endm
+macro M_FILBIT1
+    ld	a, (hl)
+    inc	hl
     rra
+endm
 #endif
 
 // macro M_GETBIT
@@ -100,28 +104,26 @@ TBL_SIZE_ALL	= (TBL_BYTES + TBL_BYTES + TBL_BYTES)
 // [affect]
 //  af, hl :bit buffer & pointer
 #if (INLINE_GETBIT == 1)
-#define M_GETBIT(label_bufremain)\
-    M_GETBIT1()             ;\
-    jr	nz, label_bufremain ;\
-    M_FILBIT1()             ;\
-                            ;\
+macro label_bufremain
+    M_GETBIT1
+    jr	nz, label_bufremain
+    M_FILBIT1
 label_bufremain:
+endm
 #else
-#define M_GETBIT(label_bufremain)\
-    M_GETBIT1()             ;\
+macro M_GETBIT label_bufremain
+    M_GETBIT1
     call	z, p_fillbitbuf
+endm
 #endif
-
-#define	M_GETBITS8I(label_lp1, label_bufremain)\
-    ex	af, af' ;'          ;\
-                            ;\
-label_lp1:                  ;\
-    M_GETBIT(label_bufremain);\
-    rl	c                   ;\
-    djnz	label_lp1       ;\
-                            ;\
-    ex	af, af'	;'
-
+macro M_GETBITS8I label_lp1, label_bufremain
+    ex	af, af
+label_lp1:
+    M_GETBIT label_bufremain
+    rl	c
+    djnz	label_lp1
+    ex	af, af
+endm
 
 // macro M_GETBITS8
 // [in]
@@ -133,11 +135,13 @@ label_lp1:                  ;\
 // [affect]
 //  af', hl :bit buffer & pointer
 #if (INLINE_GETBITS8 == 1)
-#define 	M_GETBITS8(label_lp, label_bufremain)\
-    M_GETBITS8I(label_lp, bufremain)
+macro M_GETBITS8 label_lp, label_bufremain
+    M_GETBITS8I label_lp, bufremain
+endm
 #else
-#define 	M_GETBITS8(label_lp, label_bufremain)\
+macro M_GETBITS8 label_lp, label_bufremain
     call	p_getbits8
+endm
 #endif
 
 // entry point
@@ -158,7 +162,7 @@ label_lp1:                  ;\
     cp	a	    ; set ZF, reset CF
     ex	af, af' ; '
 
-    ld	bc, #(TBL_BYTES * 256 + 16)
+    ld	bc, TBL_BYTES * 256 + 16
 
 
 #if (PFLAG_CODE & PFLAG_BITS_ALIGN_START)
@@ -183,7 +187,7 @@ get4:
     rl	c
     jr	nc, get4
 
-    ex	af, af' ;'
+    ex	af, af
     ld	a, c
 
     exx
@@ -200,7 +204,7 @@ skp1:
 
     rrca
     jr	nc, skp2
-    xor	#0x88
+    xor	0x88
 skp2:
 #endif
     inc	a
@@ -217,10 +221,10 @@ setbit:
 
     inc	iy
     dec	c
-    ex	af, af' ;'
+    ex	af, af
     exx
 
-    ld	c, #16
+    ld	c, 16
     or	a	    ; reset CF
     djnz	init
 
@@ -230,9 +234,9 @@ setbit:
 
 #if (PFLAG_CODE & PFLAG_IMPL_1LITERAL)
 
-  #if (INLINE_FILBIT == 1)
+    #if (INLINE_FILBIT == 1)
     jr	literal_one
-  #endif
+    #endif
 
 #elif (INLINE_FILBIT == 1)
     jr	next
@@ -242,7 +246,7 @@ setbit:
 
 #if (INLINE_FILBIT == 1)
 filbit:
-    M_FILBIT1()
+    M_FILBIT1
     jr	nc, start_copy
 #endif
 
@@ -260,7 +264,7 @@ start_copy:
 
 #else
 
-    M_GETBIT(bufremain2)
+    M_GETBIT bufremain2
     jr	c, literal_one
 
 #endif
@@ -274,13 +278,13 @@ start_copy:
     ld	bc, 0x00ff
 alpha:
     inc	c
-    M_GETBIT(bufremain3)
+    M_GETBIT bufremain3
     jr	nc, alpha
 
-    ex	af, af'	;'
+    ex	af, af
 
     ld	a, c
-    sub	#16
+    sub	16
 
 #if (PFLAG_CODE & PFLAG_REUSE_OFFSET)
 
@@ -309,13 +313,13 @@ alpha:
 
     jr	nz, new_offset
 
-    ex	af, af'	;'
+    ex	af, af
 
-    M_GETBIT(bufremain4)
+    M_GETBIT bufremain4
 
     jr	c, reuse_offset_ix
 
-    ex	af, af'	;'
+    ex	af, af
 
 new_offset:
 
@@ -337,24 +341,24 @@ new_offset:
     jr	z, ofs3
 
 defaultofs:
-    ld	c, #0x01
+    ld	c, 0x01
     defb	OPCODE_JP_Z
 
 ofs3:
 #else
 
 defaultofs:
-    ld	c, #0x01
+    ld	c, 0x01
     defb	OPCODE_JP_Z
 
 ofs2:
 #endif
 
-    ld	c, #0x02
+    ld	c, 0x02
 ofsb4:
-    ld	b, #0x04
+    ld	b, 0x04
 getofs:
-    M_GETBITS8(lp1, label_bufremain1)
+    M_GETBITS8  lp1, label_bufremain1
 
     call	p_readtable
 
@@ -381,7 +385,7 @@ reuse_offset_bc:
 
     pop	hl
 
-    ex	af, af'	;'
+    ex	af, af
 
 #if (PFLAG_CODE & PFLAG_REUSE_OFFSET)
 
@@ -394,17 +398,17 @@ reuse_offset_bc:
 #if (PFLAG_CODE & PFLAG_4_OFFSET_TABLES)
 
 ofs1:
-    ld	bc, #0x0210
+    ld	bc, 0x0210
     jr	getofs
 
 ofs2:
-    ld	c, #03h
+    ld	c, 0x03
     jr	ofsb4
 
 #else
 
 ofs1:
-    ld	bc, #0x020c
+    ld	bc, 0x020c
     jr	getofs
 
 #endif
@@ -420,14 +424,14 @@ literal:
 #else
 
     ld	c, b
-    ld	b, #0x10
+    ld	b, 0x10
 
     call	p_getbits16_b
 #endif
 
     ldir
 
-    ex	af, af'	;'
+    ex	af, af
 
 #if (PFLAG_CODE & PFLAG_REUSE_OFFSET)
 
@@ -446,7 +450,7 @@ reuse_exit:
 
 reuse_offset_ix:
 
-    ex	af, af'	;'
+    ex	af, af
 
     push	bc
 
@@ -483,7 +487,7 @@ p_readtable:
 
     jr	z, skp3
 
-    M_GETBITS8(lp2, label_bufremain2)
+    M_GETBITS8 lp2, label_bufremain2
 
 skp3:
     jr	nc, skp4
@@ -543,7 +547,7 @@ p_getbits16_b:
     ex	af, af'	;'
 lp3:
 
-    M_GETBIT(bufremain5)
+    M_GETBIT bufremain5
     rl	c
     rl	d
 
@@ -564,7 +568,7 @@ lp3:
 
 p_fillbitbuf:
 
-    M_FILBIT1()
+    M_FILBIT1
 
     ret
 

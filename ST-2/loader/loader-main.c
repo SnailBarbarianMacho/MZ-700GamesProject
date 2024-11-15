@@ -8,25 +8,25 @@
 #include "deexo3.h"
 
 // ゲーム本体(GAME_ORG～) を GAME_TMP 以降に転送します.
-static void moveGame()
+static void moveGame(void)
 {
 __asm
     // サイズ
-    ld  HL, (#ADDR_GAME_ORG + 3)// ADDR_GAME_ORG は Makefile で定義
-    ld  DE, #-5
+    ld  HL, (3 + ADDR_GAME_ORG)                         // ADDR_GAME_ORG は Makefile で定義
+    ld  DE, -5
     add HL, DE
     ld  BC, HL
     // 転送元
-    ld  HL, #(ADDR_GAME_ORG + 5)
+    ld  HL, 5 + ADDR_GAME_ORG
     // 転送先
-    ld  DE, #ADDR_GAME_TMP      // ADDR_GAME_TMP は Makefile で定義
+    ld  DE, 0 + ADDR_GAME_TMP                           // ADDR_GAME_TMP は Makefile で定義
     ldir
 __endasm;
 }
 
-void main() __naked
+void main(void) __naked
 {
-    moveGame();                 // 転送
+    moveGame();
 
 #if 0
     u8* p = (u8*)ADDR_GAME_ORG;

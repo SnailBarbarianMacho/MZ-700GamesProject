@@ -49,8 +49,6 @@ extern u16 vram_trans_v_counter_;
 #define VRAM_HEIGHT             25      /// VRAM の高さ(文字)
 #define VRAM_TEXT_ADDR(x, y)    (VRAM_TEXT + VRAM_WIDTH * (y) + (x))   // 実 VRAM TEXT のアドレス. 要 hard.h
 #define VRAM_ATB_ADDR(x, y)     (VRAM_ATB  + VRAM_WIDTH * (y) + (x))   // 実 VRAM ATB  のアドレス. 要 hard.h
-#define VATB(fg_col, bg_col, atb)                    ((u8)(((fg_col) << 4) | (bg_col) | ((atb) << 7))) // atb を生成するマクロ
-#define VATB_CODE(fg_col, bg_col, atb, display_code) ((u16)(((fg_col) << 12) | ((bg_col) << 8) | ((atb) << 15) | (display_code))) // text+atb を生成するマクロ
 
 // ---------------------------------------------------------------- マクロ(仮想 VRAM)
 #define VVRAM_WIDTH             0x100       // 仮想 VRAM の幅
@@ -63,17 +61,17 @@ extern u16 vram_trans_v_counter_;
 
 // ---------------------------------------------------------------- システム
 /** VRAM システムの初期化 */
-void vramInit() __z88dk_fastcall __naked;
+void vramInit(void) __z88dk_fastcall __naked;
 
 /**
  * 仮想 VRAM から VRAM に転送します
  * そのあと, 仮想 VRAM をクリアします
  * この API は, 約 1/30 ～ 1/60 sec かかります
  */
-void vramTrans() __z88dk_fastcall __naked;
+void vramTrans(void) __z88dk_fastcall __naked;
 
 /** VRAM の転送を停止します. 次のフレームでは許可されます */
-inline void vramSetTransDisabled() { b_vram_trans_enabled_ = false; }
+inline void vramSetTransDisabled(void) { b_vram_trans_enabled_ = false; }
 
 // ---------------------------------------------------------------- デバッグ
 #if DEBUG
@@ -81,16 +79,16 @@ inline void vramSetTransDisabled() { b_vram_trans_enabled_ = false; }
  * - 30 FPS での場合, 33msec を越えると処理落ちです
  * - 20 FPS での場合, 50msec を越えると処理落ちです
  */
-u16 vramDebugGetProcessTime();
+u16 vramDebugGetProcessTime(void);
 
 /** 8253 ch2 の値を返します. デバッグ用. */
-inline u8  vramGet8253Ct2()      { return vram_8253_ct2_;        }
-inline u16 vramTransGetCounter() { return vram_trans_v_counter_; }
+inline u8  vramGet8253Ct2(void)      { return vram_8253_ct2_;        }
+inline u16 vramTransGetCounter(void) { return vram_trans_v_counter_; }
 #endif
 
 // ---------------------------------------------------------------- クリア
 /** 仮想 VRAM をクリアします */
-void vvramClear() __z88dk_fastcall __naked;
+void vvramClear(void) __z88dk_fastcall __naked;
 
 // ---------------------------------------------------------------- 塗りつぶし(fill)
 /**

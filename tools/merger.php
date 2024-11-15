@@ -73,20 +73,21 @@ $out = '';
 //fwrite(STDERR, sprintf("==== marging [$outFilename]\n"));
 foreach ($datas as $i => $data) {
     $out .= $data;
-    $endAddr = $addr + strlen($data);
+    $end_addr = $addr + strlen($data);
     fwrite(STDERR, sprintf("　addr abs[0x%04x-0x%04x] rel[0x%04x-0x%04x] filename[%s]\n",
-        $addr + $orgs[0], $endAddr + $orgs[0], $addr, $endAddr, $filenames[$i]));
+        $addr + $orgs[0], $end_addr + $orgs[0], $addr, $end_addr, $filenames[$i]));
     if ($i != count($datas) - 1) {
-        $nextAddr = $orgs[$i + 1] - $orgs[0];
-        if ($nextAddr < $endAddr) {
-            fwrite(STDERR, "Invalid addr. file[" . $filename[$i + 1] . "] must be located at org >= [$nextAddr]\n");
+        $next_addr = $orgs[$i + 1] - $orgs[0];
+        if ($next_addr < $end_addr) {
+            fwrite(STDERR, sprintf("Invalid addr. file[%s] must be located at org >= [0x%04x]\n",
+                $filenames[$i + 1], $end_addr));
             exit(1);
         }
-        for ($j = $endAddr; $j < $nextAddr; $j++) { // pad
+        for ($j = $end_addr; $j < $next_addr; $j++) { // pad
             $out .= pack('C', 0x00);
         }
     }
-    $addr = $nextAddr;
+    $addr = $next_addr;
 }
 
 // 出力

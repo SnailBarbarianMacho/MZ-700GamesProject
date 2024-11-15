@@ -18,22 +18,26 @@
 // ---------------------------------------------------------------- マクロ
 #define STEP_CT 120
 
+
 // ---------------------------------------------------------------- 初期化
-void sceneTitleDemoInit()
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_T, DC_D, DC_E, DC_M, DC_O, 0, };
+#endif
+void sceneTitleDemoInit(void)
 {
     objInit();
 #if DEBUG
-    static const u8 str[] = { DC_T, DC_D, DC_E, DC_M, DC_O, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     sysSetSceneCounter(STEP_CT);
 }
 
+
 // ---------------------------------------------------------------- メイン
-static void sceneWait1sec() __z88dk_fastcall __naked {//TEST
+static void sceneWait1sec(void) __z88dk_fastcall __naked {//TEST
 __asm
 // 3579545 サイクルで 1 秒
-ld BC, #57734       // 10
+ld BC, 57734        // 10
 LOOP:
     dec BC          // 6
     ex  (SP), HL    // 19
@@ -76,6 +80,3 @@ for (u16 i = 0; i < 40000; i++);
         sysSetScene(sceneTitleInit, sceneTitleMain);
     }
 }
-
-
-

@@ -8,11 +8,11 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- 初期化, メイン
-void sceneTitleInit();
+void sceneTitleInit(void);
 void sceneTitleMain(u16 scene_ct);
 
 // ---------------------------------------------------------------- NWK Presents...
-const u8* sceneTitleGetStrNwkPresents();
+const u8* sceneTitleGetStrNwkPresents(void);
 
 // ---------------------------------------------------------------- タイトル ロゴ表示
 void sceneTitleDrawTitleS(     const u8* draw_addr);

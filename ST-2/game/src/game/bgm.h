@@ -21,7 +21,7 @@
 
 // BGM シーケンサ記述構造体
 typedef struct s_BgmSequencerDesc {
-    void (*init_func)();  // 初期化関数 nullptr 可
+    void (*init_func)(void);  // 初期化関数 nullptr 可
     u16 (*main_func)(u16);// sdMake() で音を出す関数. 引数は唯一の変数として使用し, 戻値で保存. 初期値 0. nullptr 可
 } BgmSequencerDesc;
 

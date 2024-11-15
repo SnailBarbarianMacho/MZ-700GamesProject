@@ -8,7 +8,7 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- 初期化, メイン
-void sceneStageClearInit();
+void sceneStageClearInit(void);
 void sceneStageClearMain(u16 scene_ct);
 
 #endif  // SCENE_STAGE_CLEAR_H_INCLUDED

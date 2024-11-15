@@ -41,13 +41,17 @@ static const u8 STG_TAB_[] = {
     ST_BGM1,
 #if DEBUG // TEST いろいろ敵のテスト
     //E3_1(3), 0,
+    //E3_1(1), 0, E3_2(1), 0, E3_3(1), 0, E3_4(1), 0, E3_5(1), 0, E3_6(1), 0,
+    //E4_1(1), 0, E4_2(1), 0, E4_3(1), 0,
+    //E5_1(1), 0, E5_2(1), 0, E5_3(1), 0,
+    E8_1(1), 0, E8_2(1), 0, E8_3(1), 0,
     //ST_BGM2,
     //E3_6(4), 0,
     //E5_1(2), E5_2(2), E5_3(2), E4_1(1), E4_2(1), E4_3(1), E3_1(1), E3_2(1), E3_3(1), E3_4(1), E3_5(1), E3_6(1), 0,
     //ST_BGM3,
     //E4_2(1), 0,
     //E8_1(1), 0,
-    //ST_END,//TEST 即エンディング
+    ST_END,//TEST 即エンディング
 #endif
     E3_1(3), 0,
     E3_1(4), 0,
@@ -293,6 +297,17 @@ static const u8 STG_TAB_[] = {
     ST_END,// だいたい スコア 540000, レベル 144
 };
 
+static const u8 STG_MUBO_TAB_[] = {
+    // いきなり最終面
+    ST_BGM2,
+    E8_1(3), 0,
+    ST_BGM3,
+    E8_2(2), 0,
+    ST_BGM4,
+    E8_3(1), 0,
+    ST_END,// だいたい スコア 540000, レベル 144
+};
+
 static const u8 STG_CARAVAN_TAB_[] = {
     ST_BGM1,
     E3_1(15), 0, E3_1(15), 0,
@@ -324,17 +339,43 @@ u8        stg_nr_;           // ステージ番号
 u8        stg_nr_enemies_;   // 敵の残り
 
 // ---------------------------------------------------------------- ステージ, サブステージ
-void stgInit(u8 nr_skipped_stages)__z88dk_fastcall
+void stgInit(u8 nr_skipped_stages) __z88dk_fastcall
 {
-    p_stg_tab_  = (gameGetMode() == GAME_MODE_CARAVAN) ? STG_CARAVAN_TAB_ : STG_TAB_;
+    p_stg_tab_  = STG_TAB_;
     stg_nr_     = 1;
+    if (gameGetMode() == GAME_MODE_MUBO   ) { p_stg_tab_ = STG_MUBO_TAB_;  stg_nr_ = 19; }
+    if (gameGetMode() == GAME_MODE_CARAVAN) { p_stg_tab_ = STG_CARAVAN_TAB_; }
     // ステージを飛ばす
     for (u8 i = 0; i < nr_skipped_stages; ) {
         if (*p_stg_tab_++ == ST_CLEAR) { i++; }
     }
 }
 
-u8 stgSubInit()
+
+struct EnemyTab {
+    void (*init_func)(Obj* const, Obj* const);
+    bool (*main_func)(Obj* const);
+    void (*draw_func)(Obj* const, u8*);
+} static const ENEMY_TAB_[] = {
+    { objEnemyInit3_1, objEnemyMain3_1, objEnemyDraw3_1, },
+    { objEnemyInit3_2, objEnemyMain3_2, objEnemyDraw3_2, },
+    { objEnemyInit3_3, objEnemyMain3_3, objEnemyDraw3_3, },
+    { objEnemyInit3_4, objEnemyMain3_4, objEnemyDraw3_4, },
+    { objEnemyInit3_5, objEnemyMain3_5, objEnemyDraw3_5, },
+    { objEnemyInit3_6, objEnemyMain3_6, objEnemyDraw3_6, },
+    { objEnemyInit4_1, objEnemyMain4_1, objEnemyDraw4_1, },
+    { objEnemyInit4_2, objEnemyMain4_2, objEnemyDraw4_2, },
+    { objEnemyInit4_3, objEnemyMain4_3, objEnemyDraw4_3, },
+    { objEnemyInit5_1, objEnemyMain5_1, objEnemyDraw5_1, },
+    { objEnemyInit5_2, objEnemyMain5_2, objEnemyDraw5_2, },
+    { objEnemyInit5_3, objEnemyMain5_3, objEnemyDraw5_3, },
+    { objEnemyInit8_1, objEnemyMain8_1, objEnemyDraw8_1, },
+    { objEnemyInit8_2, objEnemyMain8_2, objEnemyDraw8_2, },
+    { objEnemyInit8_3, objEnemyMain8_3, objEnemyDraw8_3, },
+};
+
+
+u8 stgSubInit(void)
 {
     stg_nr_enemies_ = 0;
     while (true) {
@@ -365,32 +406,11 @@ u8 stgSubInit()
                 break;
             }
             break;
-        default:
+        default:    // 敵を発生
             {
-                struct s_Tab {
-                    void (*init_func)(Obj* const, Obj* const);
-                    bool (*main_func)(Obj* const);
-                    void (*draw_func)(Obj* const, u8*);
-                } static const tab[] = {
-                    { objEnemyInit3_1, objEnemyMain3_1, objEnemyDraw3_1, },
-                    { objEnemyInit3_2, objEnemyMain3_2, objEnemyDraw3_2, },
-                    { objEnemyInit3_3, objEnemyMain3_3, objEnemyDraw3_3, },
-                    { objEnemyInit3_4, objEnemyMain3_4, objEnemyDraw3_4, },
-                    { objEnemyInit3_5, objEnemyMain3_5, objEnemyDraw3_5, },
-                    { objEnemyInit3_6, objEnemyMain3_6, objEnemyDraw3_6, },
-                    { objEnemyInit4_1, objEnemyMain4_1, objEnemyDraw4_1, },
-                    { objEnemyInit4_2, objEnemyMain4_2, objEnemyDraw4_2, },
-                    { objEnemyInit4_3, objEnemyMain4_3, objEnemyDraw4_3, },
-                    { objEnemyInit5_1, objEnemyMain5_1, objEnemyDraw5_1, },
-                    { objEnemyInit5_2, objEnemyMain5_2, objEnemyDraw5_2, },
-                    { objEnemyInit5_3, objEnemyMain5_3, objEnemyDraw5_3, },
-                    { objEnemyInit8_1, objEnemyMain8_1, objEnemyDraw8_1, },
-                    { objEnemyInit8_2, objEnemyMain8_2, objEnemyDraw8_2, },
-                    { objEnemyInit8_3, objEnemyMain8_3, objEnemyDraw8_3, },
-                };
-                const struct s_Tab* const pTab = &tab[p & 0x0f];
+                const struct EnemyTab* const p_e = &ENEMY_TAB_[p & 0x0f];
                 for (; n > 0; n--) {
-                    if (!objCreateEnemy(pTab->init_func, pTab->main_func, pTab->draw_func, nullptr)) { break; }
+                    if (!objCreateEnemy(p_e->init_func, p_e->main_func, p_e->draw_func, nullptr)) { break; }
                     stg_nr_enemies_++;
                 }
             }

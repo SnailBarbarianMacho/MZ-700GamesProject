@@ -52,11 +52,12 @@ static void objInitSub(Obj* p_obj, Obj** pp_obj_free, Obj** pp_obj_in_use, u8 nr
     p_obj->p_next = nullptr;
 }
 
-void objInit() __z88dk_fastcall
+
+void objInit(void) __z88dk_fastcall
 {
-    STATIC_ASSERT(sizeof(Obj) == 32, InvalidObjSize);   // Obj 構造体が, 0x100 境界を跨いではいけません
+    STATIC_ASSERT(sizeof(Obj) == 32, "InvalidObjSize"); // Obj 構造体が, 0x100 境界を跨いではいけません
     STATIC_ASSERT(NR_OBJS_PLAYER + NR_OBJS_PLAYER_BULLET + NR_OBJS_ENEMY + NR_OBJS_ENEMY_BULLET + NR_OBJS_ITEM + NR_OBJS_ETC == 128,
-        InvalidNrObjs); // Obj 総数は 128 個でなければなりません
+        "InvalidNrObjs"); // Obj 総数は 128 個でなければなりません
 
 #if DEBUG// ゴミでうめてみる
     u8* addr = (u8*)ADDR_OBJ;
@@ -73,14 +74,18 @@ void objInit() __z88dk_fastcall
     objInitSub((Obj*)OBJ_ADDR_ETC,           &p_obj_free_etc_,          &p_obj_in_use_etc_,          NR_OBJS_ETC);
 }
 
-void objInitEnemyBullet()
+
+void objInitEnemyBullet(void)
 {
     objInitSub((Obj*)OBJ_ADDR_ENEMY_BULLET,  &p_obj_free_enemy_bullet_,  &p_obj_in_use_enemy_bullet_,  NR_OBJS_ENEMY_BULLET);
 }
-void objInitItem()
+
+
+void objInitItem(void)
 {
     objInitSub((Obj*)OBJ_ADDR_ITEM,          &p_obj_free_item_,         &p_obj_in_use_item_,         NR_OBJS_ITEM);
 }
+
 
 // ---------------------------------------------------------------- システム(メイン)
 static inline void objMainSub(Obj** pp_obj_in_use, Obj** pp_obj_free)
@@ -120,10 +125,10 @@ extern u8* func_ptr; // Defined at crt0.asm
 #pragma save
 static void moveDrawSub(Obj* const p_obj) __z88dk_fastcall __naked
 {
-    STATIC_ASSERT(3 == OBJ_OFFSET_GEO8_XH,                        Asm1); // ※1 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH   - OBJ_OFFSET_GEO8_XH, Asm2); // ※2 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_DRAW_FUNC - OBJ_OFFSET_GEO8_YH, Asm3); // ※3 を修正
-    STATIC_ASSERT(3 == OBJ_OFFSET_GEO_SY    - OBJ_OFFSET_GEO_X,   Asm4); // ※4 を修正
+    STATIC_ASSERT(3 == OBJ_OFFSET_GEO8_XH,                        "Asm1"); // ※1 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH   - OBJ_OFFSET_GEO8_XH, "Asm2"); // ※2 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_DRAW_FUNC - OBJ_OFFSET_GEO8_YH, "Asm3"); // ※3 を修正
+    STATIC_ASSERT(3 == OBJ_OFFSET_GEO_SY    - OBJ_OFFSET_GEO_X,   "Asm4"); // ※4 を修正
 __asm
     ld      DE, HL                  // p_obj 保存
 
@@ -134,18 +139,18 @@ __asm
     inc     L                       // ※1
     // C = VRAM_TEXT_ADDR(X, 0)
     ld      A, (HL)                 // p_obj->u_geo.geo8.xh
-    add     A, #(VVRAM_TEXT_ADDR(0, 0) & 0xff)
+    add     A, 0 + VVRAM_TEXT_ADDR(0, 0) & 0xff
     ld      C, A
 
     // --- draw addr y の計算
     // HL += GEO8_YH - GEO8_XH
     ld      A, L                                            // ※2
-    add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※2
+    add     A, 0 + OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH  // ※2
     ld      L, A                                            // ※2
     // B = VRAM_TEXT_ADDR(0, Y) >> 8
 #if ((VVRAM_TEXT_ADDR(0, 0) >> 8) & 0xff) != 0
     ld      A, (HL)             // p_obj->u_geo.geo8.yh
-    add     A, #((VVRAM_TEXT_ADDR(0, 0) >> 8) & 0xff)
+    add     A, 0 + (VVRAM_TEXT_ADDR(0, 0) >> 8) & 0xff
     ld      B, A
 #else // 仮想 VRAM が 0x0000 からある場合
     ld      B, (HL)
@@ -154,7 +159,7 @@ __asm
     // ---- p_obj->draw(p_obj, draw_addr);
     // HL += DRAW_FUNC - GEL8_YH
     ld      A, L                                            // ※3
-    add     A, #(OBJ_OFFSET_DRAW_FUNC - OBJ_OFFSET_GEO8_YH) // ※3
+    add     A, 0 + OBJ_OFFSET_DRAW_FUNC - OBJ_OFFSET_GEO8_YH// ※3
     ld      L, A                                            // ※3
 
     // HL = (HL)
@@ -187,7 +192,7 @@ __asm
     add     HL, BC
     push    HL
 MOVE_DRAW_SUB_SP_RESTORE:
-    ld      SP, #0x0000             // SP 復帰
+    ld      SP, 0x0000              // SP 復帰
     ret
 __endasm;
 }
@@ -208,8 +213,8 @@ static inline void objMoveDraw(Obj* p_obj_in_use)
 #else // ASM 版
 static void objMoveDraw(Obj* p_obj_in_use) __z88dk_fastcall __naked
 {
-    STATIC_ASSERT(3 <  OBJ_OFFSET_DRAW_FUNC                            , Asm1); // ※1 を修正
-    STATIC_ASSERT(3 < (OBJ_OFFSET_P_NEXT - (OBJ_OFFSET_DRAW_FUNC + 1)) , Asm2); // ※2 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_DRAW_FUNC                           , "Asm1"); // ※1 を修正
+    STATIC_ASSERT(3 < (OBJ_OFFSET_P_NEXT - (OBJ_OFFSET_DRAW_FUNC + 1)), "Asm2"); // ※2 を修正
 __asm
     // ---- while (p_obj)
     ld      A, H
@@ -221,7 +226,7 @@ OBJ_MOVE_DRAW_LOOP:
     // ---- draw_func = p_obj->draw_func;
     // HL += DRAW_FUNC
     ld      A, L
-    add     A, #OBJ_OFFSET_DRAW_FUNC                // ※1
+    add     A, 0 + OBJ_OFFSET_DRAW_FUNC             // ※1
     ld      L, A
 
     // DE = (HL)
@@ -245,7 +250,7 @@ OBJ_MOVE_DRAW_LOOP:
 OBJ_MOVE_DRAW_LOOP_END:
     // HL += P_NEXT - DRAW_FUNC
     ld      A, L
-    add     A, #(OBJ_OFFSET_P_NEXT - (OBJ_OFFSET_DRAW_FUNC + 1)) // ※2
+    add     A, 0 + OBJ_OFFSET_P_NEXT - (OBJ_OFFSET_DRAW_FUNC + 1)// ※2
     ld      L, A
 
     // HL = (HL)
@@ -302,17 +307,17 @@ static void objCollision(Obj* const p_obj_in_use1, Obj* const p_obj_in_use2)
 #else // ASM 版
 static void objCollision(Obj* const p_obj_in_use1, Obj* const p_obj_in_use2) __naked
 {
-    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_W,                       Asm1); // ※1 を修正
-    STATIC_ASSERT(1 == OBJ_OFFSET_GEO8_W  - OBJ_OFFSET_GEO8_XH, Asm2); // ※2 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH, Asm3); // ※3 を修正
-    STATIC_ASSERT(1 == OBJ_OFFSET_GEO8_H  - OBJ_OFFSET_GEO8_YH, Asm4); // ※4 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_B_HIT   - OBJ_OFFSET_GEO8_H,  Asm5); // ※5 を修正
-    STATIC_ASSERT(1 == OBJ_OFFSET_FITNESS - OBJ_OFFSET_B_HIT,   Asm6); // ※6 を修正
-    STATIC_ASSERT(2 == OBJ_OFFSET_OFFENCE - OBJ_OFFSET_FITNESS, Asm7); // ※7 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT,                       Asm8); // ※8 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT  - OBJ_OFFSET_GEO8_W,  Asm9); // ※9 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_OFFENCE - OBJ_OFFSET_GEO8_W,  Asm10);// ※10 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_H - OBJ_OFFSET_GEO8_W,   Asm11);// ※11 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_W,                       "Asm1"); // ※1 を修正
+    STATIC_ASSERT(1 == OBJ_OFFSET_GEO8_W  - OBJ_OFFSET_GEO8_XH, "Asm2"); // ※2 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH, "Asm3"); // ※3 を修正
+    STATIC_ASSERT(1 == OBJ_OFFSET_GEO8_H  - OBJ_OFFSET_GEO8_YH, "Asm4"); // ※4 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_B_HIT   - OBJ_OFFSET_GEO8_H,  "Asm5"); // ※5 を修正
+    STATIC_ASSERT(1 == OBJ_OFFSET_FITNESS - OBJ_OFFSET_B_HIT,   "Asm6"); // ※6 を修正
+    STATIC_ASSERT(2 == OBJ_OFFSET_OFFENCE - OBJ_OFFSET_FITNESS, "Asm7"); // ※7 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT,                       "Asm8"); // ※8 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT  - OBJ_OFFSET_GEO8_W,  "Asm9"); // ※9 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_OFFENCE - OBJ_OFFSET_GEO8_W,  "Asm10");// ※10 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_H - OBJ_OFFSET_GEO8_W,   "Asm11");// ※11 を修正
 __asm
     pop     HL                  // リターン アドレス(捨てる)
     pop     HL                  // pObj1
@@ -333,7 +338,7 @@ __asm
 OBJ_COLLISION_LOOP1:
     // w1 = pObj1->u_geo.geo.w;
     ld      A, L                    // ※1
-    add     A, #(OBJ_OFFSET_GEO8_W) // ※1
+    add     A, 0 + OBJ_OFFSET_GEO8_W// ※1
     ld      L, A                    // ※1
     ld      A, (HL)
 
@@ -350,7 +355,7 @@ OBJ_COLLISION_LOOP1:
 
     // B = y0 = pObj1->u_geo.geo8.yh;
     ld      A, L                                            // ※3
-    add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※3
+    add     A, 0 + OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH  // ※3
     ld      L, A                                            // ※3
     ld      B, (HL)
     // C = y1 = y0 + pObj1->u_geo.geo.h;
@@ -361,7 +366,7 @@ OBJ_COLLISION_LOOP1:
 
     // HL の位置を u_geo.geo.w に移動する
     ld      A, L                                        // ※11
-    sub     A, #(OBJ_OFFSET_GEO8_H - OBJ_OFFSET_GEO8_W) // ※11
+    sub     A, 0 + OBJ_OFFSET_GEO8_H - OBJ_OFFSET_GEO8_W// ※11
     ld      L, A                                        // ※11
 
     exx
@@ -373,7 +378,7 @@ OBJ_COLLISION_LOOP2:
 
         // A = w2 = pObj2->u_geo.geo.w;
         ld  A, L                    // ※1
-        add A, #(OBJ_OFFSET_GEO8_W) // ※1
+        add A, 0 + OBJ_OFFSET_GEO8_W// ※1
         ld  L, A                    // ※1
         ld  A, (HL)
         // if (!w2) { continue; }
@@ -404,7 +409,7 @@ OBJ_COLLISION_LOOP2:
 
         // A = c = pObj2->u_geo.geo8.yh;
         ld  A, L                                            // ※3
-        add A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※3
+        add A, 0 + OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH  // ※3
         ld  L, A                                            // ※3
         ld  A, (HL)
 
@@ -432,13 +437,13 @@ OBJ_COLLISION_LOOP2:
         // HL  = pObj1->offence から減算していく
         // pObj2->b_hit = true;
         ld  A, L                                            // ※5
-        add A, #(OBJ_OFFSET_B_HIT - OBJ_OFFSET_GEO8_H)      // ※5
+        add A, 0 + OBJ_OFFSET_B_HIT - OBJ_OFFSET_GEO8_H     // ※5
         ld  L, A                                            // ※5
         ld  (HL), H                 // 0 以外の値
         // pObj2->fitness -= pObj1->offence;
     exx
     ld      A, L                                            // ※10
-    add     A, #(OBJ_OFFSET_OFFENCE - OBJ_OFFSET_GEO8_W)    // ※10
+    add     A, 0 + OBJ_OFFSET_OFFENCE - OBJ_OFFSET_GEO8_W   // ※10
     ld      L, A                                            // ※10
     ld      A, (HL)                 // A = pObj1->offence
     exx
@@ -505,7 +510,7 @@ OBJ_COLLISION_HIT1:
 OBJ_COLLISION_LOOP2_END:
         // p_obj = p_obj->p_next;
         ld  A, E                    // HL 復活              // ※8
-        add A, #(OBJ_OFFSET_P_NEXT)                         // ※8
+        add A, 0 + OBJ_OFFSET_P_NEXT                        // ※8
         ld  L, A                                            // ※8
 
         ld  A, (HL)
@@ -521,7 +526,7 @@ OBJ_COLLISION_LOOP2_END:
 OBJ_COLLISION_LOOP1_END:
     // p_obj = p_obj->p_next;
     ld      A, L                                            // ※9
-    add     A, #(OBJ_OFFSET_P_NEXT - OBJ_OFFSET_GEO8_W)     // ※9
+    add     A, 0 + OBJ_OFFSET_P_NEXT - OBJ_OFFSET_GEO8_W    // ※9
     ld      L, A                                            // ※9
 
     ld      A, (HL)
@@ -549,7 +554,7 @@ __endasm;
 #define PLAYER_W 3
 #define PLAYER_H 3
 #if 0 // C 版
-static void objCollisionItem() __z88dk_fastcall
+static void objCollisionItem(void) __z88dk_fastcall
 {
     // プレーヤーは最大1個だけなので, ループは1重でいい
     Obj* pObjPlayer = _pObjInUsePlaye;
@@ -571,12 +576,12 @@ static void objCollisionItem() __z88dk_fastcall
         p_obj->b_hit = true;
     }
 #else // ASM 版
-static void objCollisionItem() __z88dk_fastcall __naked
+static void objCollisionItem(void) __z88dk_fastcall __naked
 {
-    STATIC_ASSERT(3 == OBJ_OFFSET_GEO8_XH,                      Asm1); // ※1 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_W,  Asm2); // ※2 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT  - OBJ_OFFSET_GEO_SX,  Asm3); // ※3 を修正
-    STATIC_ASSERT(3 <  OBJ_OFFSET_STEP    - OBJ_OFFSET_GEO8_YH, Asm4); // ※4 を修正
+    STATIC_ASSERT(3 == OBJ_OFFSET_GEO8_XH,                      "Asm1"); // ※1 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_W,  "Asm2"); // ※2 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_P_NEXT  - OBJ_OFFSET_GEO_SX,  "Asm3"); // ※3 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_STEP    - OBJ_OFFSET_GEO8_YH, "Asm4"); // ※4 を修正
 __asm
     // if (!p_obj_in_use_player_) { return; }
     ld      HL, (_p_obj_in_use_player_);
@@ -592,12 +597,12 @@ __asm
 
     // py = pObjPlayer->u_geo.geo8.yh;
     ld      A, L                                            // ※2
-    add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※2
+    add     A, 0 + OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH  // ※2
     ld      L, A                                            // ※2
     ld      C, (HL)                 // C = py = pObjPlayer->u_geo.geo8.yh
 
     // if (pObjPlayer->step != OBJ_PLAYER_STEP_NORMAL) { return; } 死亡してたら衝突判定なし
-    add     A, #(OBJ_OFFSET_STEP - OBJ_OFFSET_GEO8_YH)      // ※4
+    add     A, 0 + OBJ_OFFSET_STEP - OBJ_OFFSET_GEO8_YH     // ※4
     ld      L, A
     ld      A, (HL)
     and     A
@@ -629,7 +634,7 @@ OBJ_COLLISION_ITEM_LOOP:
 
     // if (y < py) continue;
     ld      A, L                                            // ※2
-    add     A, #(OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH)   // ※2
+    add     A, 0 + OBJ_OFFSET_GEO8_YH - OBJ_OFFSET_GEO8_XH  // ※2
     ld      L, A                                            // ※2
     ld      A, (HL)                 // y = p_obj->u_geo.geo8.yh
     cp      A, C                    // y - py
@@ -642,14 +647,14 @@ OBJ_COLLISION_ITEM_LOOP:
 
     // p_obj->b_hit = true;
     ld      A, L
-    add     A, #(OBJ_OFFSET_B_HIT - OBJ_OFFSET_GEO8_YH)
+    add     A, 0 + OBJ_OFFSET_B_HIT - OBJ_OFFSET_GEO8_YH
     ld      L, A
     ld      (HL), H // 0 以外の値
 
 OBJ_COLLISION_ITEM_LOOP_END:
     // p_obj = p_obj->p_next;
     ld      A, E                    // HL 復活              // ※3
-    add     A, #(OBJ_OFFSET_P_NEXT - OBJ_OFFSET_GEO_SX)     // ※3
+    add     A, 0 + OBJ_OFFSET_P_NEXT - OBJ_OFFSET_GEO_SX    // ※3
     ld      L, A                                            // ※3
 
     ld      A, (HL)
@@ -668,7 +673,7 @@ __endasm;
 }
 
 // ---------------------------------------------------------------- システム(メイン)
-void objMain() __z88dk_fastcall
+void objMain(void) __z88dk_fastcall
 {
     // メイン
     objMainSub(&p_obj_in_use_player_,        &p_obj_free_player_);

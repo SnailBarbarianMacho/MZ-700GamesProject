@@ -15,7 +15,10 @@
 
 static void seStart(u8 ct)          // スタート
 {
+#pragma disable_warning 110 // 除算最適化警告
+#pragma save
     sdMake(((ct & 3) + (ct / 4) + 1) << 9);
+#pragma restore
 }
 static void seSubStageStart(u8 ct)  // サブステージ開始
 {
@@ -28,7 +31,10 @@ static void seSubStageStart(u8 ct)  // サブステージ開始
 
 static void seLevelUp(u8 ct)        // レベルアップ
 {
+#pragma disable_warning 110 // 除算最適化警告
+#pragma save
     sdMake(((ct & 7) + (ct / 8) + 1) << 8);
+#pragma restore
 }
 static void se1Up(u8 ct)            // 1UP
 {
@@ -41,12 +47,12 @@ static void se1Up(u8 ct)            // 1UP
 #define SE_ENEMY_DEAD8_CT     128
 #define SE_ENEMY_DAMAGE_CT    3
 
+static const u8 ENEMY_DEAD_TAB_[SE_ENEMY_DEAD3_CT] = {
+    0x15, 0x1d, 0x1a, 0x1b, 0x1a, 0x13, 0x12, 0x12, 0x14, 0x13, 0x11, 0x12, 0x11, 0x0f, 0x0e, 0x0d, 0x07, 0x0b, 0x08, 0x05,
+};
 static void seEnemyDead3(u8 ct)// 雑魚死亡
 {
-    static const u8 tab[SE_ENEMY_DEAD3_CT] = {
-        0x15, 0x1d, 0x1a, 0x1b, 0x1a, 0x13, 0x12, 0x12, 0x14, 0x13, 0x11, 0x12, 0x11, 0x0f, 0x0e, 0x0d, 0x07, 0x0b, 0x08, 0x05,
-    };
-    sdMake(tab[ct] << 10);
+    sdMake(ENEMY_DEAD_TAB_[ct] << 10);
 }
 
 static void seEnemyDead45(u8 ct)// 中ボス死亡
@@ -91,7 +97,10 @@ static void seContinue(u8 ct)// コンティニュー
 
 static void seEnd(u8 ct)
 {
+#pragma disable_warning 110 // 除算最適化警告
+#pragma save
     sdMake(((ct & 31) + (ct / 32) + 1) << 9);
+#pragma restore
 }
 
 #pragma disable_warning 85

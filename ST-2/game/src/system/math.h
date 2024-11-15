@@ -11,7 +11,7 @@
 
 // ---------------------------------------------------------------- システム
 /** 数値テーブルの初期化などを行います */
-void mathInit() __z88dk_fastcall;
+void mathInit(void) __z88dk_fastcall;
 
 // ---------------------------------------------------------------- 最大最小
 inline u8 maxU8(u8 a, u8 b) { return a > b ? a : b; }   /// u8 版 max()
@@ -72,22 +72,22 @@ s8 cos(const u8 x) __z88dk_fastcall __naked;
  * - 乱数としては非常に精度が低いです
  * - 破壊レジスタ: A, L
  */
-u8 rand7r() __z88dk_fastcall __naked;
+u8 rand7r(void) __z88dk_fastcall __naked;
 /**
  * 8 bit の乱数を返します
  * - M 系列疑似乱数で,周期は 131071 です.
  * - 初期値も設定できませんが, 1 フレームに 1 回呼ぶなど工夫すれば, れなりの乱数として使えます
  * - 破壊レジスタ: A, BC, DE, HL
  */
-u8 rand8() __z88dk_fastcall __naked;
+u8 rand8(void) __z88dk_fastcall __naked;
 
 /** [-1, 1] の乱数を返します */
-s8 rand8_sign() __z88dk_fastcall __naked;
+s8 rand8_sign(void) __z88dk_fastcall __naked;
 /** [0, 7) の乱数を返します */
-u8 rand8_7() __z88dk_fastcall __naked;
+u8 rand8_7(void) __z88dk_fastcall __naked;
 /** [0, 40) の乱数を返します */
-u8 rand8_40() __z88dk_fastcall __naked;
+u8 rand8_40(void) __z88dk_fastcall __naked;
 /** [0, 25) の乱数を返します */
-u8 rand8_25() __z88dk_fastcall __naked;
+u8 rand8_25(void) __z88dk_fastcall __naked;
 
 #endif //  MATH_H_INCLUDED

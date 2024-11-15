@@ -67,8 +67,8 @@ void objEnemyDraw8_3(Obj* const p_obj, u8* draw_addr);
 
 // ---------------------------------------------------------------- 倒した敵の数
 /** 倒した敵の数を初期化します */
-inline void objEnemyInitStatistics() { _objEnemyNrKilled = 0; }
+inline void objEnemyInitStatistics(void) { _objEnemyNrKilled = 0; }
 /** 倒した敵の数を返します */
-inline u16 objEnemyGetNrKilled() { return _objEnemyNrKilled; }
+inline u16 objEnemyGetNrKilled(void) { return _objEnemyNrKilled; }
 
 #endif // OBJ_ENEMY_H_INCLUDED

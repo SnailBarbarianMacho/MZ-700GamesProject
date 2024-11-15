@@ -99,11 +99,11 @@ __asm
     jp      nz, LOGO_TRANS_DISP
 
     // -------- 転送準備
-    ld      BC, #((LOGO_HEIGHT << 8) | 0x43)// outer loop + text
-    ld      DE, #(VRAM_WIDTH - 3)       // 改行
+    ld      BC, 0 + (LOGO_HEIGHT << 8) | 0x43// outer loop + text
+    ld      DE, 0 + VRAM_WIDTH - 3      // 改行
 
     // -------- VBLANK を待ちます
-    ld      HL, #MMIO_8255_PORTC        // VBLANK 待ち用 8255 ポート C
+    ld      HL, 0 + MMIO_8255_PORTC     // VBLANK 待ち用 8255 ポート C
     ld      A, H                        // 最上位 bit を立てる
 LOGO_TRANS_NDRAW_VBLANK_1:              // V表示中 ならばループ
     and     A, (HL)
@@ -112,7 +112,7 @@ LOGO_TRANS_NDRAW_VBLANK_0:              // VBLANK ならばループ
     or      A, (HL)                     // 7
     jp      p, LOGO_TRANS_NDRAW_VBLANK_0 // 10/10
     // 消す場合は, 描画タイミングはゆるく, 行単位で待つ必要はありません
-    ld      HL, #VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y)
+    ld      HL, 0 + VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y)
 
     // -------- 描画します
 LOGO_TRANS_NDRAW_LOOP:
@@ -131,22 +131,22 @@ LOGO_TRANS_NDRAW_LOOP:
     // -------------------------------- 表示(b_disp == 1)
 LOGO_TRANS_DISP:
     // -------- 転送準備
-    ld      HL, #_IMAGE_DATA_
-    ld      (#ADDR_TMP_SRC), HL
-    ld      HL, #(VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y) + 4)
-    ld      (#ADDR_TMP_DST), HL
+    ld      HL, 0 + _IMAGE_DATA_
+    ld      (ADDR_TMP_SRC), HL
+    ld      HL, 0 + VRAM_TEXT_ADDR(LOGO_POS_X, LOGO_POS_Y) + 4
+    ld      (ADDR_TMP_DST), HL
     ld      B, LOGO_HEIGHT              // outer loop
     exx
-      ld    B, 8                        // inner loop
-      ld    SP, (#ADDR_TMP_SRC)
-      pop   DE
-      pop   HL
-      ld    (#ADDR_TMP_SRC), SP
-      ld    SP, (#ADDR_TMP_DST)
+        ld    B, 8                      // inner loop
+        ld    SP, (ADDR_TMP_SRC)
+        pop   DE
+        pop   HL
+        ld    (ADDR_TMP_SRC), SP
+        ld    SP, (ADDR_TMP_DST)
     exx
 
     // -------- VBLANK を待ちます
-    ld      HL, #MMIO_8255_PORTC        // VBLANK 待ち用 8255 ポート C
+    ld      HL, 0 + MMIO_8255_PORTC      // VBLANK 待ち用 8255 ポート C
     ld      A, H                        // 最上位 bit を立てる
 LOGO_TRANS_DRAW_VBLANK_1:               // V表示中 ならばループ
     and     A, (HL)
@@ -158,11 +158,11 @@ LOGO_TRANS_DRAW_VBLANK_0:               // VBLANK ならばループ
     // 実機と EmuZ-700 では異なる
 
     // -------- ライン待ち
-    ld      H, #(LOGO_POS_Y * 8)        // ライン待ちループ
+    ld      H, 0 + LOGO_POS_Y * 8       // ライン待ちループ
     jr      LOGO_TRANS_DRAW_LINE0 + 3   // 最初の 1 ラインは VRAM にはアクセスしない(EmuZ-700 対策)
 
 LOGO_TRANS_DRAW_LINE0:
-      ld    A, (#VRAM_TEXT)             //  13 次の HBLANK まで待つ
+      ld    A, (VRAM_TEXT)              //  13 次の HBLANK まで待つ
       ld    E, 8                        //  7            計7
 LOGO_TRANS_DRAW_LINE1:
         dec E                           //  4 * 8 = 32   計39
@@ -178,17 +178,17 @@ LOGO_TRANS_DRAW_LOOP1:
       push  HL                          // 11 計11 次の HBLANK を待つ
       // 間に 52 clock 迄の処理なら崩れない
       push  DE                          // 11 計22
-      ld    SP, (#ADDR_TMP_SRC)         // 20 計42
+      ld    SP, (ADDR_TMP_SRC)          // 20 計42
       pop   DE                          // 10 計52
       pop   HL                          // 10 計62
-      ld    (#ADDR_TMP_SRC), SP         // 20 計82 HBLANK を抜ける
-      ld    SP, (#ADDR_TMP_DST)         // 20      転送先アドレスを戻す
+      ld    (ADDR_TMP_SRC), SP          // 20 計82 HBLANK を抜ける
+      ld    SP, (ADDR_TMP_DST)          // 20      転送先アドレスを戻す
       djnz  B, LOGO_TRANS_DRAW_LOOP1    // 13/8
       ld    B, 8                        //  7
     exx                                 //  4
     ld      HL, VRAM_WIDTH              // 10      転送先アドレスを1行下へ移動
     add     HL, SP                      // 11
-    ld      (#ADDR_TMP_DST), HL         // 16
+    ld      (ADDR_TMP_DST), HL          // 16
     ld      SP, HL                      //  6
     djnz    B, LOGO_TRANS_DRAW_LOOP0    // 13/8
 
@@ -196,7 +196,7 @@ LOGO_TRANS_DRAW_LOOP1:
 LOGO_TRANS_END:
     BANK_RAM(C)                 // バンク切替
 LOGO_TRANS_SP_RESTORE:
-    ld      SP, #0x0000         // SP を復帰
+    ld      SP, 0x0000          // SP を復帰
     ret
 __endasm;
 }
@@ -210,19 +210,19 @@ static void drawLogoAtb(u8* data) __z88dk_fastcall
 __asm
     BANK_VRAM_MMIO(C)                   // バンク切替
     // HL = data
-    ld      DE, #(VRAM_ATB_ADDR(LOGO_POS_X, LOGO_POS_Y))
-    ld      BC, #0x05ff                 // B 値がいじられないように C には大きな値を
+    ld      DE, 0 + VRAM_ATB_ADDR(LOGO_POS_X, LOGO_POS_Y)
+    ld      BC, 0x05ff                  // B 値がいじられないように C には大きな値を
 DRAW_LOGO_ATB_LOOP:
         ldi
         ldi
         ldi
         ldi
         ld   (DRAW_LOGO_ATB_HL_RESTORE + 1), HL // HL 保管(自己書換) ※スタックは使えない...
-        ld   HL, #(VRAM_WIDTH - 4)
+        ld   HL, 0 + VRAM_WIDTH - 4
         add  HL, DE
         ld   DE, HL
 DRAW_LOGO_ATB_HL_RESTORE:
-        ld   HL, #0000                  // HL 復帰
+        ld   HL, 0000                   // HL 復帰
     djnz    B, DRAW_LOGO_ATB_LOOP
     BANK_RAM(C)                         // バンク切替
 __endasm;
@@ -230,21 +230,21 @@ __endasm;
 
 
 // ---------------------------------------------------------------- 初期化
-void sceneLogoInit()
+static const u8 ATB_TAB_[] = {
+    0x87, 0x87, 0x87, 0x87,
+    0x87, 0x87, 0x87, 0x87,
+    0x85, 0x85, 0x86, 0x86,
+    0x85, 0x85, 0x86, 0x86,
+    0x87, 0x87, 0x87, 0x87,
+};
+void sceneLogoInit(void)
 {
 #if DEBUG
     scoreSetStepString(nullptr);
 #endif
     // VRAM の下準備
     vramFill(VATB_CODE(0, 7, 1, 0x43));
-    static const u8 ATB_DATA[] = {
-        0x87, 0x87, 0x87, 0x87,
-        0x87, 0x87, 0x87, 0x87,
-        0x85, 0x85, 0x86, 0x86,
-        0x85, 0x85, 0x86, 0x86,
-        0x87, 0x87, 0x87, 0x87,
-    };
-    drawLogoAtb(ATB_DATA);
+    drawLogoAtb(ATB_TAB_);
 
     // 色々と表示を停止します
     vramSetTransDisabled();
@@ -264,10 +264,10 @@ void sceneLogoInit()
 
 // ---------------------------------------------------------------- メイン
 /** チョイと待ちます */
-static void wait()
+static void wait_(void)
 {
     __asm
-    ld      B, #0
+    ld      B, 0
 WAIT_LOOP:
     ex      (SP), HL    // とにかく, ちょっと時間のかかる命令をウエイトに入れておく
     ex      (SP), HL
@@ -292,7 +292,7 @@ void sceneLogoMain(u16 scene_ct)
     if (scene_ct == 0) {
         sysSetScene(sceneTitleDemoInit, sceneTitleDemoMain);
     }
-    wait();
+    wait_();
 
     if (b_on) {
         u16 freq = sysSceneGetWork16(SYS_SCENE_WORK_FREQ);

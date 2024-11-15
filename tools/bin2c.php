@@ -38,7 +38,11 @@ $out = '';
 $dump = '';
 foreach ($bytes as $i => $b) {
     $out .= sprintf('0x%02x,', $b);
-    $dump .= ctype_graph($b) ? chr($b) : '.';
+    if (ctype_graph($b) && $b != 0x5c) {    // バックスラッシュは含まない
+        $dump .= chr($b);
+    } else {
+        $dump .= '.';
+    }
 
     if ((($i - 1) & 15) == 15) {
         $out .= sprintf(" // 0x%04x %s\n", $addr, $dump);

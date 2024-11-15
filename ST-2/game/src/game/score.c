@@ -45,7 +45,7 @@ const u8* score_step_str_;
 #endif
 
 // ---------------------------------------------------------------- 初期化
-void scoreInit() __z88dk_fastcall
+void scoreInit(void) __z88dk_fastcall
 {
     scoreGameStart();
     score_hi_score_   = 500;
@@ -72,27 +72,42 @@ void scoreInit() __z88dk_fastcall
 
 // ---------------------------------------------------------------- メイン
 /** 555 カーソルタイマーの点滅をゲット */
-static u8 cursorBlank() __naked
+static u8 cursorBlank(void) __naked
 {
 __asm
     BANK_VRAM_MMIO(C)           // バンク切替
-    LD      A, (#MMIO_8255_PORTC)
+    LD      A, (MMIO_8255_PORTC)
     BANK_RAM(C)                 // バンク切替
-    AND     A, #MMIO_8255_PORTC_556OUT_MASK
+    AND     A, 0 + MMIO_8255_PORTC_556OUT_MASK
     LD      L, A
     RET
 __endasm;
 }
 
 
-void scoreMain() __z88dk_fastcall
+static const u8 STR_1UP_[]  = { DC_1, DC_U, DC_P, 0 };
+static const u8 STR_HI_[]   = { DC_COL7, DC_H, DC_I, 0 };
+static const u8 SUBSEC_TAB_[] = {   // 0.1秒のテーブル
+    DC_0, DC_0, DC_0, DC_1,  DC_1, DC_1, DC_2, DC_2,
+    DC_2, DC_2, DC_3, DC_3,  DC_3, DC_4, DC_4, DC_4,
+    DC_5, DC_5, DC_5, DC_6,  DC_6, DC_6, DC_6, DC_7,
+    DC_7, DC_7, DC_8, DC_8,  DC_8, DC_9, DC_9, DC_9,
+};
+static const u8 SUB_LEVEL_TEXT_TAB_[] = { // サブ レベル 4 * 4 文字 * 7段階
+    0x37, 0x7b, 0x3f, 0x43,
+};
+#if DEBUG
+static const u8 STR_MS_[] = { DC_CAPS, DC_M, DC_S, DC_CAPS, 0 };// msec
+#endif
+#include "../../text/game_over.h"
+#include "../../text/input_am7j.h"
+#include "../../text/input_mz1x03.h"
+void scoreMain(void) __z88dk_fastcall
 {
     if (!b_score_enabled_) {
         b_score_enabled_ = true;
         return;
     }
-    static const u8 str_1up[]  = { DC_1, DC_U, DC_P, 0 };
-    static const u8 str_hi[]   = { DC_COL7, DC_H, DC_I, 0 };
 
     // -------- スコア表示
     printSetAtb(VATB(7, 0, 0));
@@ -102,12 +117,12 @@ void scoreMain() __z88dk_fastcall
     printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 0));
     if (sysIsGameMode()) {
         if (cursorBlank()) {
-            printString(str_1up);        // プレイ中は点滅します
+            printString(STR_1UP_);        // プレイ中は点滅します
         } else {
             printAddAddr(3);
         }
     } else {
-        printString(str_1up);
+        printString(STR_1UP_);
     }
     printAddAddr(1);
     printU16Right(score_);
@@ -115,7 +130,7 @@ void scoreMain() __z88dk_fastcall
 
     // -------- ハイ スコア表示
     printSetAddr((u8*)VVRAM_TEXT_ADDR(13, 0));
-    printString(str_hi);
+    printString(STR_HI_);
     printAddAddr(1);
     printU16Right(score_hi_score_);
     printPutc(DC_0);
@@ -127,12 +142,7 @@ void scoreMain() __z88dk_fastcall
         printU16Left(timer);
         printPutc(DC_PERIOD);
         timer = gameGetCaravanTimer() % GAME_FPS;
-        static const u8 TAB[] = {
-            DC_0, DC_0, DC_0, DC_1,  DC_1, DC_1, DC_2, DC_2,
-            DC_2, DC_2, DC_3, DC_3,  DC_3, DC_4, DC_4, DC_4,
-            DC_5, DC_5, DC_5, DC_6,  DC_6, DC_6, DC_6, DC_7,
-            DC_7, DC_7, DC_8, DC_8,  DC_8, DC_9, DC_9, DC_9, };
-        printPutc(TAB[timer]);
+        printPutc(SUBSEC_TAB_[timer]);
     } else {
         u8  left = score_left_;
         if (5 < left) { left = 5; }
@@ -146,9 +156,6 @@ void scoreMain() __z88dk_fastcall
 
     if (!sysIsGameMode()) {
         // -------- ゲーム オーバー表示
-#include "../../text/game_over.h"
-#include "../../text/input_am7j.h"
-#include "../../text/input_mz1x03.h"
         printSetAddr((u8*)VVRAM_TEXT_ADDR(15, 15));
         printString(text_game_over);
 
@@ -169,19 +176,16 @@ void scoreMain() __z88dk_fastcall
         printU8Left(score_level_);
 
         // サブ レベル 4 * 4 文字 * 7段階
-        static const u8 SUB_LEVEL_TEXT_TAB[] = {
-            0x37, 0x7b, 0x3f, 0x43,
-        };
         u8* t_addr = (u8*)VVRAM_TEXT_ADDR(27, 0);
         u8* a_addr = (u8*)VVRAM_ATB_ADDR(27, 0);
         u8 sl  = score_sub_level_;
-        u8 j   = (sl / 4) & 3;
+        u8 j   = (sl >> 2) & 3;
         u8 atb = ((u8*)ADDR_SUB_LEVEL)[sl & 0xf0];
         for (u8 i = 0; i < j; ++i) {
             *t_addr++ = 0x43;
             *a_addr++  = atb;
         }
-        *t_addr++ = SUB_LEVEL_TEXT_TAB[sl & 0x03];
+        *t_addr++ = SUB_LEVEL_TEXT_TAB_[sl & 0x03];
         *a_addr++  = ((u8*)ADDR_SUB_LEVEL)[sl];
         atb = ((u8*)ADDR_SUB_LEVEL)[(sl & 0xf0) + 2];
         for (u8 i = j + 1; i < 4; i++) {
@@ -204,9 +208,8 @@ void scoreMain() __z88dk_fastcall
 //    printU16Right(vramGetVCounter());
 #endif
 
-    static const u8 str_ms[] = { DC_CAPS, DC_M, DC_S, DC_CAPS, 0 };
     printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 23));
-    printU16Left(vramDebugGetProcessTime()); printString(str_ms);
+    printU16Left(vramDebugGetProcessTime()); printString(STR_MS_);
 
     if (score_step_str_) {
         printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 24));
@@ -218,7 +221,7 @@ void scoreMain() __z88dk_fastcall
 // ---------------------------------------------------------------- 制御
 
 // ---------------------------------------------------------------- スタート, コンティニュー
-void scoreGameStart()__z88dk_fastcall
+void scoreGameStart(void)__z88dk_fastcall
 {
     if (!sysIsGameMode()) {
         return;
@@ -236,7 +239,7 @@ void scoreGameStart()__z88dk_fastcall
     objEnemyInitStatistics();
 }
 
-void scoreContinue()__z88dk_fastcall
+void scoreContinue(void)__z88dk_fastcall
 {
 #if DEBUG
 #else
@@ -247,7 +250,7 @@ void scoreContinue()__z88dk_fastcall
     //score_           = 300;//DEBUG
     //score_for_life_ += score_; // DEBUG
     //score_sub_level_ = 0; // レベルは下がらないが, サブレベルは 0 から再開
-    score_left_         = (GAME_MODE_SURVIVAL <= gameGetMode()) ? 0 : LEFT; // サバイバル, キャラバン モードは残機なし
+    score_left_        = (GAME_MODE_SURVIVAL <= gameGetMode()) ? 0 : LEFT; // サバイバル, 無謀, キャラバン モードは残機なし
 }
 
 // ---------------------------------------------------------------- スコア, ハイ スコア
@@ -268,7 +271,8 @@ bool scoreAdd(const u16 score)__z88dk_fastcall
     return false;
 }
 
-bool scoreReflectHiScore()__z88dk_fastcall
+
+bool scoreReflectHiScore(void)__z88dk_fastcall
 {
     if (score_hi_score_ < score_) {
         score_hi_score_ = score_;
@@ -279,7 +283,7 @@ bool scoreReflectHiScore()__z88dk_fastcall
 
 
 // ---------------------------------------------------------------- 残機
-bool scoreDecrementLeft()__z88dk_fastcall
+bool scoreDecrementLeft(void)__z88dk_fastcall
 {
     if (sysIsGameMode()) {
         score_nr_misses_++;

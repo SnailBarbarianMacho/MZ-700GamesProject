@@ -29,7 +29,12 @@ static const u8 ATB_TAB_[] = {
     0x60, 0x60,  0x60, 0x60,  0x60, 0x60,  0x60, 0x60,  0x06, 0x06,  0x06, 0x06,  0x06, 0x06,  0x60, 0x60,  // +12, 13
     0x70, 0x70,  0x70, 0x70,  0x70, 0x70,  0x70, 0x70,  0x07, 0x07,  0x07, 0x07,  0x07, 0x07,  0x70, 0x70,  // +14, 15
 };
-
+static const u8 PLAYER_BULLET_TAB_[] = {
+    0x00, 0x00, 0x00, 0x10,
+    0x10, 0x10, 0x20, 0x20,
+    0x20, 0x30, 0x30, 0x30,
+    0x40, 0x40, 0x50, 0x50,
+};
 void objPlayerBulletInit(Obj* const p_obj, Obj* const p_parent)
 {
     OBJ_INIT(p_obj, 0, 0, PLAYER_BULLET_W, PLAYER_BULLET_H, 0, -PLAYER_BULLET_H << 8);
@@ -41,13 +46,7 @@ void objPlayerBulletInit(Obj* const p_obj, Obj* const p_parent)
     if (127 <= offence) { offence = 127; }
     p_obj->offence = offence;
 
-    static const u8 TAB[] = {
-        0x00, 0x00, 0x00, 0x10,
-        0x10, 0x10, 0x20, 0x20,
-        0x20, 0x30, 0x30, 0x30,
-        0x40, 0x40, 0x50, 0x50,
-    };
-    u8 atb  = TAB[offence & 0x0f];
+    u8 atb  = PLAYER_BULLET_TAB_[offence & 0x0f];
     offence = (offence & 0xf0) >> 3;
 
     const u8* p_text = &TEXT_TAB_[offence];
@@ -91,10 +90,10 @@ static void drawBullet(u8* draw_addr) __z88dk_fastcall __naked
 #pragma save
 void objPlayerBulletDraw(Obj* const p_obj, u8* draw_addr)
 {
-    STATIC_ASSERT(3 <  OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1,                                  Asm1); // ※1 を修正
-    STATIC_ASSERT(1 == OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT2 - OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1, Asm2); // ※2 を修正
-    STATIC_ASSERT(1 == OBJ_OFFSET_WORK_PLAYER_BULLET_ATB1  - OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT2, Asm3); // ※3 を修正
-    STATIC_ASSERT(1 == OBJ_OFFSET_WORK_PLAYER_BULLET_ATB2  - OBJ_OFFSET_WORK_PLAYER_BULLET_ATB1,  Asm4); // ※4 を修正
+    STATIC_ASSERT(3 <  OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1,                                       "Asm1"); // ※1 を修正
+    STATIC_ASSERT(1 == OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT2 - OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1, "Asm2"); // ※2 を修正
+    STATIC_ASSERT(1 == OBJ_OFFSET_WORK_PLAYER_BULLET_ATB1  - OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT2, "Asm3"); // ※3 を修正
+    STATIC_ASSERT(1 == OBJ_OFFSET_WORK_PLAYER_BULLET_ATB2  - OBJ_OFFSET_WORK_PLAYER_BULLET_ATB1,  "Asm4"); // ※4 を修正
 __asm
     pop     HL                      // リターン アドレス(捨てる)
     pop     HL                      // p_obj
@@ -104,7 +103,7 @@ __asm
     // D = p_obj->u_obj_work.playerBullet.atb1
     // E = p_obj->u_obj_work.playerBullet.atb2
     ld      A, L                                // ※1
-    add     A, #(OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1)// ※1
+    add     A, 0 + OBJ_OFFSET_WORK_PLAYER_BULLET_TEXT1// ※1
     ld      L, A                                // ※1
 
     ld      B, (HL)
@@ -129,7 +128,7 @@ __asm
 
     // L += addr
     ld      A, L
-    add     A, #(VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) - 2)
+    add     A, 0 + VVRAM_ATB_ADDR(0, 0) - VVRAM_TEXT_ADDR(0, 0) - 2
     ld      L, A
 
     // ATB

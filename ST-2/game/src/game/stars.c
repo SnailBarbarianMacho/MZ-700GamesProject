@@ -33,7 +33,7 @@ static Star* const stars_far_  = (Star*)ADDR_STARS;
 static Star* const stars_near_ = (Star*)(ADDR_STARS + (NR_FAR_STARS + 1) * sizeof(Star));
 
 // ---------------------------------------------------------------- 初期化
-void starsInit()
+void starsInit(void)
 {
     b_stars_enabled_ = true;
     stars_counter_  = 0;
@@ -60,8 +60,9 @@ void starsInit()
     return;
 }
 
+
 // ---------------------------------------------------------------- メイン
-void starsMain()
+void starsMain(void)
 {
 //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 10)); printU8(stars_near_[0].col); printU8(stars_near_[0].x); printU8(stars_near_[0].y); printU8(stars_near_[1].col);
 //printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 11)); printU16((u16)stars_far_); printU16((u16)stars_near_);
@@ -95,29 +96,29 @@ void starsMain()
 #else
 __asm
     // ---------------- 星の描画許可
-    ld      a, (#_b_stars_enabled_)
+    ld      a, (_b_stars_enabled_)
     and     a
     ld      a, 1
-    ld      (#_b_stars_enabled_), a
+    ld      (_b_stars_enabled_), a
     ret     z
 __endasm;
 
 __asm
     exx
-        ld  DE, #VVRAM_TEXT_ADDR(0, 0)      // 表示に使う
-        ld  BC, #(VRAM_WIDTH + VVRAM_GAPX)  // 表示に使う
+        ld  DE, 0 + VVRAM_TEXT_ADDR(0, 0)       // 表示に使う
+        ld  BC, 0 + VRAM_WIDTH + VVRAM_GAPX     // 表示に使う
     exx
 __endasm;
 
     // --------------- 遠景の星々(移動)
 __asm
-    ld      HL, #_stars_counter_     // stars_counter_++
+    ld      HL, _stars_counter_                 // stars_counter_++
     ld      A, (HL)
     inc     A
     ld      (HL), A
     and     A, 1
     jp      z, STARS_MAIN_FAR_DRAW
-    ld      HL, (#_stars_far_)
+    ld      HL, (_stars_far_)
 
     // ---- ループ
 STARS_MAIN_FAR_MOVE_LOOP:
@@ -156,7 +157,7 @@ __endasm;
     // --------------- 遠景の星々(表示)
 __asm
 STARS_MAIN_FAR_DRAW:
-    ld      HL, (#_stars_far_)
+    ld      HL, (_stars_far_)
 
     // ---- ループ
     ld      A, (HL)         // col
@@ -185,7 +186,7 @@ __endasm;
 
     // --------------- 近景の星々(移動+表示)
 __asm
-    ld      HL, (#_stars_near_)
+    ld      HL, (_stars_near_)
 
     // ---- ループ
     ld      A, (HL)         // col

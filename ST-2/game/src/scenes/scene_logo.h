@@ -8,7 +8,7 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- 初期化, メイン
-void sceneLogoInit();
+void sceneLogoInit(void);
 void sceneLogoMain(u16 scene_ct);
 
-#endif  // SCENE_TITLE_H_INCLUDED
+#endif  // SCENE_LOGO_H_INCLUDED

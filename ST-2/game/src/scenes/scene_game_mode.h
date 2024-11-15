@@ -8,7 +8,7 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- 初期化, メイン
-void sceneGameModeInit();
+void sceneGameModeInit(void);
 void sceneGameModeMain(u16 scene_ct);
 
 // ---------------------------------------------------------------- print

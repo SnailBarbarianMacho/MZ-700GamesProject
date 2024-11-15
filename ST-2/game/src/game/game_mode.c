@@ -55,7 +55,7 @@ void gameSetMode(const u8 game_mode) __z88dk_fastcall
 }
 
 // ---------------------------------------------------------------- Setter/Getter
-u16 gameDecCaravanTimer()
+u16 gameDecCaravanTimer(void)
 {
     if (game_caravan_timer_) {
         game_caravan_timer_ --;

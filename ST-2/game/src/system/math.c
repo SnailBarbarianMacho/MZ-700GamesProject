@@ -40,7 +40,7 @@ static const s8 SIN_TAB_[] = {
 };
 
 // ---------------------------------------------------------------- システム
-void mathInit() __z88dk_fastcall
+void mathInit(void) __z88dk_fastcall
 {
     // 除算テーブルの初期化
 
@@ -66,9 +66,9 @@ void mathInit() __z88dk_fastcall
 
     //memcpy((u8*)ADDR_ATAN2_TAB, ATAN2_TAB_, 256);
 __asm
-    ld  HL, #_ATAN2_TAB_
-    ld  DE, #(ADDR_ATAN2_TAB)
-    ld  BC, #0x0100
+    ld  HL, 0 + _ATAN2_TAB_
+    ld  DE, 0 + ADDR_ATAN2_TAB
+    ld  BC, 0x0100
     ldir
 __endasm;
 }
@@ -191,7 +191,7 @@ ATAN2_YP_END:
     add     A, H            // y += x
 
     ld      L, A
-    ld      H, #(ADDR_ATAN2_TAB >> 8)
+    ld      H, 0 + ADDR_ATAN2_TAB >> 8
     ld      A, (HL)         // A = ADDR_ATAN2_TAB[x + y * 16];
 
     dec     B               // sign_x
@@ -216,7 +216,7 @@ __endasm;
 s8 sin(const u8 x) __z88dk_fastcall __naked
 {
 __asm
-    ld      H, #(ADDR_SIN_TAB >> 8)
+    ld      H, 0 + ADDR_SIN_TAB >> 8
     ld      L, (HL)
     ret
 __endasm;
@@ -228,7 +228,7 @@ __endasm;
 s8 cos(const u8 x) __z88dk_fastcall __naked
 {
 __asm
-    ld      H, #(ADDR_COS_TAB >> 8)
+    ld      H, 0 + ADDR_COS_TAB >> 8
     ld      L, (HL)
     ret
 __endasm;
@@ -237,7 +237,7 @@ __endasm;
 
 
 // ---------------------------------------------------------------- 乱数
-u8 rand7r() __z88dk_fastcall __naked
+u8 rand7r(void) __z88dk_fastcall __naked
 {
     __asm
     ld      A, R
@@ -245,6 +245,7 @@ u8 rand7r() __z88dk_fastcall __naked
     ret
     __endasm;
 }
+
 
 static const u8 M_SEQUENCE_WORK[] = {    // 内容は変化するが, data セクションで OK
     0x8f, 0xe6, 0xc8, 0x29, 0x2a, 0xf2, 0x4e, 0x61,
@@ -254,7 +255,8 @@ static const u8 M_SEQUENCE_WORK[] = {    // 内容は変化するが, data セ�
 static u8* m_sequence1_ = (u8*)(&M_SEQUENCE_WORK[13]);
 static u8* m_sequence2_ = (u8*)(&M_SEQUENCE_WORK[0]);
 
-u8 rand8() __z88dk_fastcall __naked
+
+u8 rand8(void) __z88dk_fastcall __naked
 {
     // M 系列乱数 + GFSR法
     //   ------ シフト レジスタ(m bit) ----->
@@ -275,28 +277,28 @@ u8 rand8() __z88dk_fastcall __naked
     //    20      16    1048575
     //    21      18    2097151
     __asm
-    ld      E, #(_M_SEQUENCE_WORK + 17) & 0xff // テーブルは 127 bytes しかないので, アドレスの比較は, 下 8bit だけで OK
+    ld      E, 0 + (_M_SEQUENCE_WORK + 17) & 0xff // テーブルは 127 bytes しかないので, アドレスの比較は, 下 8bit だけで OK
     // -------- *m_sequence2_++
-    ld      HL, (#_m_sequence2_)
+    ld      HL, (_m_sequence2_)
     ld      BC, HL
     inc     HL
     ld      A, L
     cp      E
     jp      nz, RAND8_2
-    ld      HL, #_M_SEQUENCE_WORK
+    ld      HL, 0 + _M_SEQUENCE_WORK
 RAND8_2:
-    ld      (#_m_sequence2_), HL
+    ld      (_m_sequence2_), HL
     ld      D, (HL)                 // D に保存
 
     // -------- *m_sequence1_++
-    ld      HL, (#_m_sequence1_)
+    ld      HL, (_m_sequence1_)
     inc     HL
     ld      A, L
     cp      E
     jp      nz, RAND8_1
-    ld      HL, #_M_SEQUENCE_WORK
+    ld      HL, 0 + _M_SEQUENCE_WORK
 RAND8_1:
-    ld      (#_m_sequence1_), HL
+    ld      (_m_sequence1_), HL
     ld      A, (HL)
 
     // -------- xor and out
@@ -307,39 +309,45 @@ RAND8_1:
     __endasm;
 }
 
-s8 rand8_sign() __z88dk_fastcall __naked
+
+s8 rand8_sign(void) __z88dk_fastcall __naked
 {
     __asm
     call    _rand8  // L = rand8
-    ld      H, #(ADDR_DIV256_SIGN_TAB >> 8)
-    ld      L, (HL);
-    ret
-    __endasm;
-}
-u8 rand8_7() __z88dk_fastcall __naked
-{
-    __asm
-    call    _rand8  // L = rand8
-    ld      H, #(ADDR_DIV256_7_TAB >> 8)
-    ld      L, (HL);
-    ret
-    __endasm;
-}
-u8 rand8_40() __z88dk_fastcall __naked
-{
-    __asm
-    call    _rand8  // L = rand8
-    ld      H, #(ADDR_DIV256_40_TAB >> 8)
+    ld      H, 0 + ADDR_DIV256_SIGN_TAB >> 8
     ld      L, (HL);
     ret
     __endasm;
 }
 
-u8 rand8_25() __z88dk_fastcall __naked
+
+u8 rand8_7(void) __z88dk_fastcall __naked
 {
     __asm
     call    _rand8  // L = rand8
-    ld      H, #(ADDR_DIV256_25_TAB >> 8)
+    ld      H, 0 + ADDR_DIV256_7_TAB >> 8
+    ld      L, (HL);
+    ret
+    __endasm;
+}
+
+
+u8 rand8_40(void) __z88dk_fastcall __naked
+{
+    __asm
+    call    _rand8  // L = rand8
+    ld      H, 0 + ADDR_DIV256_40_TAB >> 8
+    ld      L, (HL);
+    ret
+    __endasm;
+}
+
+
+u8 rand8_25(void) __z88dk_fastcall __naked
+{
+    __asm
+    call    _rand8  // L = rand8
+    ld      H, 0 + ADDR_DIV256_25_TAB >> 8
     ld      L, (HL);
     ret
     __endasm;

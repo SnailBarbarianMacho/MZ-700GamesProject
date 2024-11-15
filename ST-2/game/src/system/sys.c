@@ -20,7 +20,7 @@ bool    b_sys_game_;             // ゲームモード
 u8      sys_scene_work_[8];      // シーンが自由に使えるワーク
 
 // ---------------------------------------------------------------- システム
-void sysInit()
+void sysInit(void)
 {
 #if DEBUG
     // ゴミで埋める
@@ -32,7 +32,7 @@ void sysInit()
     b_sys_game_ = false;
 }
 
-void sysMain()
+void sysMain(void)
 {
     // ゲーム モードでないならば,
     if (b_sys_game_ == false) {
@@ -59,7 +59,7 @@ void sysMain()
 // ---------------------------------------------------------------- ゲーム モード
 
 // ---------------------------------------------------------------- シーン
-void sysSetScene(void (*init_func)(), void (*main_func)(u16))
+void sysSetScene(void (*init_func)(void), void (*main_func)(u16))
 {
     sys_scene_main_func_ = main_func;
     sdSetEnabled(false);

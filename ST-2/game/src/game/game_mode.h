@@ -24,9 +24,10 @@ extern u16  game_caravan_timer_;
 #define GAME_MODE_NORMAL   1    //< ノーマル
 #define GAME_MODE_HARD     2    //< ハード
 #define GAME_MODE_SURVIVAL 3    //< サバイバル
-#define GAME_MODE_CARAVAN  4    //< キャラバン
-#define GAME_MODE_MZ1X03_INSENSITIVITY 5 //< MZ1X03 感度の鈍さ
-#define NR_GAME_MODES      6
+#define GAME_MODE_MUBO     4    //< 無謀
+#define GAME_MODE_CARAVAN  5    //< キャラバン
+#define GAME_MODE_MZ1X03_INSENSITIVITY 6 //< MZ1X03 感度の鈍さ
+#define NR_GAME_MODES      7
 
 #define GAME_FPS           32   // 正確ではないですが, 32 フレームで1秒としときます
 
@@ -39,16 +40,16 @@ extern u16  game_caravan_timer_;
 void gameSetMode(const u8 game_mode) __z88dk_fastcall;
 
 /** ゲームモードを返します */
-inline u8 gameGetMode() { return game_mode_; }
+inline u8 gameGetMode(void) { return game_mode_; }
 /** 難易度がハードなら 0 以外を返します. アイテム増加数になります */
-inline u8 gameHard() { return game_hard_; }
+inline u8 gameHard(void) { return game_hard_; }
 /** キャラバンモードかを返します */
-inline bool gameIsCaravan() { return b_game_caravan_; }
+inline bool gameIsCaravan(void) { return b_game_caravan_; }
 /** 自機がスコアで増えるかどうかを返します */
-inline bool gameIsIncLeft() { return b_game_inc_left_; }
+inline bool gameIsIncLeft(void) { return b_game_inc_left_; }
 /** キャラバン タイマーを返します */
-inline u16 gameGetCaravanTimer() { return game_caravan_timer_; }
+inline u16 gameGetCaravanTimer(void) { return game_caravan_timer_; }
 /** キャラバン タイマーをデクリメントします */
-u16 gameDecCaravanTimer();
+u16 gameDecCaravanTimer(void);
 
 #endif // GAME_MODE_H_INCLUDED

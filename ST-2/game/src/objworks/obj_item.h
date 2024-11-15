@@ -15,18 +15,18 @@ extern u16 obj_item_nr_obtained_;  // プレイヤーが入手したアイテム
 
 // ---------------------------------------------------------------- システム
 /** システム用. テーブルの初期化 */
-void objItemInitTab();
+void objItemInitTab(void);
 
 // ---------------------------------------------------------------- アイテム数
 /** 生成アイテム数を初期化します */
-inline void objItemInitStatistics() {
+inline void objItemInitStatistics(void) {
     obj_item_nr_generated_ = 0;
     obj_item_nr_obtained_  = 0;
 }
 /** 生成アイテム数を返します */
-inline u16 objItemGetNrGenereted() { return obj_item_nr_generated_; }
+inline u16 objItemGetNrGenereted(void) { return obj_item_nr_generated_; }
 /** 取得アイテム数を返します */
-inline u16 objItemGetNrObtained() { return obj_item_nr_obtained_; }
+inline u16 objItemGetNrObtained(void) { return obj_item_nr_obtained_; }
 
 // ---------------------------------------------------------------- 初期化, メイン, 描画
 void objItemInit(Obj* const p_obj, Obj* const p_parent);

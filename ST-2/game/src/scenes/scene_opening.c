@@ -15,11 +15,13 @@
 #include "scene_opening.h"
 
 // ---------------------------------------------------------------- 初期化
-void sceneOpeningInit()
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_O, DC_P, DC_E, DC_N, 0, };
+#endif
+void sceneOpeningInit(void)
 {
 #if DEBUG
-    static const u8 str[] = { DC_O, DC_P, DC_E, DC_N, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     // プレーヤー出現
     Obj* p_player = objCreatePlayer(objPlayerInit, objPlayerMain, objPlayerDraw, nullptr);
@@ -30,10 +32,11 @@ void sceneOpeningInit()
     sysSetSceneCounter(13);
 }
 
+
 // ---------------------------------------------------------------- メイン
+#include "../../text/opening.h"
 void sceneOpeningMain(u16 scene_ct)
 {
-#include "../../text/opening.h"
     switch (scene_ct) {
         default: break;
         case 1:

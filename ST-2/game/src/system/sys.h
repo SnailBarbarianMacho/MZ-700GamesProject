@@ -18,19 +18,19 @@ extern u8   sys_scene_work_[8];
 
 // ---------------------------------------------------------------- システム
 /** システムの初期化を行います */
-void sysInit();
+void sysInit(void);
 
 /** 毎フレームの最初に呼んでください */
-void sysMain();
+void sysMain(void);
 
 /** 毎フレーム + 1 されるシステム カウンタを返します */
-inline u8 sysGetCounter() { return sys_ct_; }
+inline u8 sysGetCounter(void) { return sys_ct_; }
 
 // ---------------------------------------------------------------- ゲーム モード(アトラクトorゲーム)
 /** ゲーム モードをセットします(false/true = アトラクト/ゲーム). 初期値:false */
 inline void sysSetMode(const bool b_game) { b_sys_game_ = b_game; }
 /** 現在アトラクト モード(false)かゲーム モード(true)かを返します */
-inline bool sysIsGameMode() { return b_sys_game_; }
+inline bool sysIsGameMode(void) { return b_sys_game_; }
 
 // ---------------------------------------------------------------- シーン
 /** シーンを設定します
@@ -41,7 +41,7 @@ inline bool sysIsGameMode() { return b_sys_game_; }
  * @param main_func 毎フレーム呼ばれる関数.
  * - 引数はシーンカウンタで, 0 になったら次のシーンへ移るようにしてください
  */
-void sysSetScene(void (*init_func)(), void (*main_func)(u16));
+void sysSetScene(void (*init_func)(void), void (*main_func)(u16));
 
 /**
  * シーン カウンタを設定します.

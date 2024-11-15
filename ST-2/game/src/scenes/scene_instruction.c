@@ -20,11 +20,13 @@
 #define INST_CT 400
 
 // ---------------------------------------------------------------- 初期化
-void sceneInstructionInit()
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_I, DC_N, DC_S, DC_T, 0, };
+#endif
+void sceneInstructionInit(void)
 {
 #if DEBUG
-    static const u8 str[] = { DC_I, DC_N, DC_S, DC_T, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     objInit();
     scoreResetLevel();// ちゃんとリセットしておかないと, デモ プレイでどんどんレベルアップしていく!
@@ -44,15 +46,15 @@ void sceneInstructionInit()
 }
 
 // ---------------------------------------------------------------- メイン
-void sceneInstructionMain(u16 scene_ct)
-{
-     // -------- 説明の表示
 #include "../../text/key_assign.h"
 #include "../../text/key_move.h"
 #include "../../text/key_shot.h"
 #include "../../text/key_joy.h"
 #include "../../text/key_start.h"
 #include "../../text/key_cancel.h"
+void sceneInstructionMain(u16 scene_ct)
+{
+     // -------- 説明の表示
     s16 ct = INST_CT - scene_ct;
     static struct s_Tab {
         u8* const draw_addr;

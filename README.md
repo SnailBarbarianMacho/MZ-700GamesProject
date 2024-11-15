@@ -22,54 +22,55 @@
 
 # Features
 
-* 複数のサブ プロジェクトが中に入ってます<br>
-  There are multiple subprojects inside.
+* 複数のサブ プロジェクトが中に入ってます
 * **Test** <br>
-  コンパイラの動作テスト. makefile はありません. バッチファイルで作ります. 今はもう動かないかもしれません<br>
-  Compiler operation test. There is no makefile, build it with a batch file. May not work anymore.
+  コンパイラの動作テスト. makefile はありません. バッチファイルで作ります<br>
+  Compiler operation test. There is no makefile, build it with a batch file
 * **Memory Dirtinizer** <br>
   実機の電源投入時のように, メモリを「汚く」して, リセットします. makefile はありません. バッチファイルで作ります.<br>
-  あまり役に立たないかもしれませんが, アセンブラを使った簡単なツールの作成の参考になります<br>
   Like when the power of the actual machine is turned on, it "dirts" the memory and resets it. There is no makefile. Make it with a batch file.<br>
-  It may not be very useful, but it can be a reference for creating a simple tool using assembler.
 * **JoystickMZ1X03Test** <br>
   シャープ純正ジョイスティック MZ-1X03 の動作テスト (デジタル, 検出機能付き) <br>
   Operation test of genuine Sharp joystick MZ-1X03 (digital, with detection function)
 * **SoundTest** <br>
-  三重和音サウンドテスト (波形 OR 合成版) <br>
-  3 chord sound test.<br>
+  サウンド テスト (3音源, OR合成) <br>
   https://www.youtube.com/watch?v=Qs5GZ-hzjp4
 * **SoundTest2** <br>
-  三重和音サウンドテスト2 (波形 誤差拡散合成版) <br>
-  3 chord sound test.<br>
+  サウンド テスト2 (3音源, OR合成, 波形誤差拡散)
+* **SoundTest3** <br>
+  サウンド テスト3 (6音源, OR合成)
+* **SoundTest3** <br>
+  サウンド テスト4 (4音源, PWM)
 * **ST-2** <br>
-  習作 縦シュー<br>
-  Study shooting game.<br>
+  習作 縦シューティングゲーム.<br>
   https://www.youtube.com/watch?v=PG0ijYIvdNw
 * 以後, 妻が許せばゲームを増やす予定<br>
   I'm planning to increase the number of games, if my wife allows it.
 
 # Requirement
 
-* 遊ぶだけなら, 必要なのはエミュレータ(or 実機)のみです
-  If you just want to play, you only need the emulator or the actual machine.
+* バイナリを用意しています. 遊ぶだけなら, 必要なのはエミュレータ(or 実機)のみです
+  Binaries are available. If you just want to play, you only need the emulator or the actual machine.
 * **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br>
   代表的な MZ-700 エミュレータ.<br>
   モニター ROM イメージと日本版フォントイメージが必要です.<br>
-  互換イメージがここから入手できます:<br>
+  互換イメージが入手できます<br>
   A typical MZ-700 emulator. <br>
   Needs MZ-700 monitor ROM image and Japanese font image.<br>
   Compatible images are available here: http://mzakd.cool.coocan.jp/starthp/mz700win.html
 * Windows 10 + Power Shell 7
 * **z88dk** https://github.com/z88dk/z88dk/wiki <br>
-  nightly build 20211001
-* **php 8.0** https://windows.php.net/ <br>
-  mbstring を有効化してください.<br>
-  I'm using mbstring, so enable it.
+  nightly build 20241022
+* **php 8.x** https://windows.php.net/ <br>
+  gd と mbstring を有効化してください.<br>
+  I'm using gd and mbstring, so enable it.
 * **gmake 3.81 for Windows** http://gnuwin32.sourceforge.net/packages/make.htm
 * **exomizer 3.1.1** https://bitbucket.org/magli143/exomizer/wiki/Home<br>
-  Exomizer は用意してないのでソースを入手してビルドしてください.<br>
-  Needs ANSI-C compiler. Build exomizer.exe and put in tools/.
+  圧縮ツール. ANSI-C コンパイラでビルドして tools/ に置いてください.<br>
+  Compressor. Needs ANSI-C compiler. Build exomizer.exe and put in tools/.
+* **salvador** https://github.com/emmanuel-marty/salvador<br>
+  高速 ZX0 圧縮ツール. Visual Studio 等でビルドして tools/ に置いてください.<br>
+  Fast ZX0 compressor. Build with Visual Studio or similar and put in tools/.
 
 # Build
 
@@ -106,9 +107,13 @@
 # License
 
 * This project is under [MIT license]<br>
-  except deexo3.c (original by uniabis) is under [zlib license]
+  except <br>
+  - deexo3.c (original by uniabis) is under [zlib license]
+  - dezx0.c (original by Einar Saukas & Urusergi) is under [BSD 3-Clause License]
 * このプロジェクトの成果物のスクリーンショットや動画は, 私の承諾なしに, 自由に作成して配布できます<br>
-  Screenshots and videos of the deliverables of this project can be freely created and distributed without my consent.
+  でも出会ったらビールを奢ってください<br>
+  Screenshots and videos of the deliverables of this project can be freely created and distributed without my consent.<br>
+  But if you meet me, please buy me a beer.
 
 # Thanks to
 
@@ -116,5 +121,7 @@
   KochaYokan, who provided the MZ-700 hardware materials, devise various techniques, and created EGC7.
 * Exomizer を作ってくれた Magnus Lind 氏らと, その depacker を作ってくれた uniabis 氏<br>
   Magnus Lind and others who made the Exomizer and uniabis who made the depacker
+* ZX0 を作ってくれた Einar Saukas 氏と, 圧縮ツール salvador を作ってくれた Emmanuel Marty 氏<br>
+  Einar Saukas, creator of ZX0, and Emmanuel Marty, creator of the compression tool salvador
 * 再現性の高いエミュレータ EmuZ-700 を作ってくれた TAKEDA, toshiya 氏<br>
   Mr. TAKEDA, toshiya who made the highly reproducible emulator EmuZ-700

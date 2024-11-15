@@ -207,11 +207,11 @@ extern u8   se_pri_;
 
 // ---------------------------------------------------------------- システム
 /** サウンド システムの初期化 */
-void sdInit();
+void sdInit(void);
 /** サウンド システムのメイン(BGM) */
-void sdBgmMain();
+void sdBgmMain(void);
 /** サウンド システムのメイン(SE) */
-void sdSeMain();
+void sdSeMain(void);
 
 /** サウンドの ON/OFF を制御します. 初期値は, false です.
  * - false だと全ての音声が鳴りません
@@ -232,7 +232,7 @@ void sdPlayBgm(const u8 bgm) __z88dk_fastcall;
 void sdPlaySe(const u8 se) __z88dk_fastcall;
 
 /** 現在の SE(効果音) プライオリティを返します */
-inline u8 sdGetSePriority() { return se_pri_; }
+inline u8 sdGetSePriority(void) { return se_pri_; }
 
 // ---------------------------------------------------------------- 音を鳴らす
 /**

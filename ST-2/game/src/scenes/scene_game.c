@@ -32,13 +32,16 @@ static bool b_pause_;
 //static u8 sStageDrawTimer;
 #define SYS_SCENE_WORK_DRAW_STAGE_TIMER   0 // STAGE 表示タイマ
 
+
 // ---------------------------------------------------------------- 初期化
-void sceneGameInit()
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_G, DC_A, DC_M, DC_E, 0, };
+#endif
+void sceneGameInit(void)
 {
 #if DEBUG
     b_pause_ = false;
-    static const u8 str[] = { DC_G, DC_A, DC_M, DC_E, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     if (!sysIsGameMode()) {// アトラクト モード時
 #if DEBUG
@@ -64,6 +67,8 @@ void sceneGameInit()
 
 
 // ---------------------------------------------------------------- メイン
+static const u8 STR_STAGE_[] = { DC_S, DC_T, DC_A, DC_G, DC_E, 0, };
+static const u8 MML0_[] = { SD3_C3, 4, SD3_G3, 4, SD3_E3, 8, 0, };
 void sceneGameMain(u16 scene_ct)
 {
     // ---------------- アトラクト モードでの挙動. ステージ進行, タイマ減算処理
@@ -86,9 +91,8 @@ void sceneGameMain(u16 scene_ct)
     // ---------------- ゲーム モードでの挙動. ステージ数表示
     if (sysSceneGetWork(SYS_SCENE_WORK_DRAW_STAGE_TIMER)) {
         sysSceneDecWork(SYS_SCENE_WORK_DRAW_STAGE_TIMER);
-        static const u8 str_stage[] = { DC_S, DC_T, DC_A, DC_G, DC_E, 0, };
         printSetAddr((u8*)VVRAM_TEXT_ADDR(16, 8));
-        printString(str_stage);
+        printString(STR_STAGE_);
         printU8Right(stgGetStageNr());
         printReady();
     }
@@ -121,17 +125,16 @@ void sceneGameMain(u16 scene_ct)
             }
         }
 
-        static const u8 mml0[] = { SD3_C3, 4, SD3_G3, 4, SD3_E3, 8, 0, };
 #if DEBUG
         // デバッグ時ポーズ, シーン動作, ゲーム中断
         if (b_pause_ || (inputGetTrigger() & INPUT_MASK_START)) {
-            sd3Play(mml0, mml0, mml0, false);
+            sd3Play(MML0_, MML0_, MML0_, false);
             while (true) {
                 inputMain();
                 u8 inp = inputGetTrigger();
                 if (inp & INPUT_MASK_START) {// ポーズ解除
                     b_pause_ = false;
-                    sd3Play(mml0, mml0, mml0, false);
+                    sd3Play(MML0_, MML0_, MML0_, false);
                     break;
                 }
                 if (inp & INPUT_MASK_B) {   // シーン動作
@@ -149,12 +152,12 @@ void sceneGameMain(u16 scene_ct)
         // リリース時ポーズ, ゲーム中断
         if (inputGetTrigger() & INPUT_MASK_START) {
             vramDrawRect((u8*)VRAM_TEXT_ADDR((u16)(VRAM_WIDTH - CG_PAUSE_WIDTH) / 2, 10), cg_Pause, W8H8(CG_PAUSE_WIDTH, CG_PAUSE_HEIGHT));
-            sd3Play(mml0, mml0, mml0, false);
+            sd3Play(MML0_, MML0_, MML0_, false);
             while (true) {
                 inputMain();
                 u8 inp = inputGetTrigger();
                 if (inp & INPUT_MASK_START) {   // ポーズ解除
-                    sd3Play(mml0, mml0, mml0, false);
+                    sd3Play(MML0_, MML0_, MML0_, false);
                     break;
                 }
                 if (inp & INPUT_MASK_CANCEL) { // ゲーム中断

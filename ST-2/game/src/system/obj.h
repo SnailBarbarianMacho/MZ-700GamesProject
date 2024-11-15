@@ -145,16 +145,16 @@ extern Obj* p_obj_in_use_etc_;
 /**
  * Obj 管理システムの初期化
  */
-void objInit() __z88dk_fastcall;
+void objInit(void) __z88dk_fastcall;
 /** 敵弾を全て初期化します */
-void objInitEnemyBullet();
+void objInitEnemyBullet(void);
 /** アイテムを全て初期化します */
-void objInitItem();
+void objInitItem(void);
 /**
  * Obj 管理システム メイン
  * - 1 フレームに 1 回呼びます
  */
-void objMain() __z88dk_fastcall;
+void objMain(void) __z88dk_fastcall;
 
 // ---------------------------------------------------------------- 生成
 /**
@@ -233,9 +233,9 @@ Obj* objCreateEtc(
 
 // ---------------------------------------------------------------- ユーティリティ
 /** 使用中のプレーヤー オブジェクトを返します. nullptr もありえます */
-inline Obj* objGetInUsePlayer() { return p_obj_in_use_player_; }
+inline Obj* objGetInUsePlayer(void) { return p_obj_in_use_player_; }
 /** 使用中の敵オブジェクトを返します. nullptr もありえます */
-inline Obj* objGetUserdEnemy() { return p_obj_in_use_enemy_; }
+inline Obj* objGetUserdEnemy(void) { return p_obj_in_use_enemy_; }
 
 
 #endif // OBJ_H_INCLUDED

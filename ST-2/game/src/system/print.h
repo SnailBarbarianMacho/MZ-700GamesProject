@@ -92,6 +92,6 @@ void printHex16(const u16 value) __z88dk_fastcall __naked;
 
 // ---------------------------------------------------------------- 表示ユーティリティ
 /** "READY!" を表示します. アトラクトモード時は何もしません */
-void printReady();
+void printReady(void);
 
 #endif // PRINT_H_INCLUDED

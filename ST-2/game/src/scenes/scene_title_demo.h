@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------- private 変数. 直接触らない
 
 // ---------------------------------------------------------------- 初期化, メイン
-void sceneTitleDemoInit();
+void sceneTitleDemoInit(void);
 void sceneTitleDemoMain(u16 scene_ct);
 
 #endif  // SCENE_TITLE_DEMO_H_INCLUDED

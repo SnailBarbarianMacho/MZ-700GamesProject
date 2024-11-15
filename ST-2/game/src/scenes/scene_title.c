@@ -27,24 +27,45 @@ extern u16 build_nr; // Defined at crt0.asm
 #define SYS_SCENE_WORK_START_CT 0
 
 // ---------------------------------------------------------------- 初期化
-void sceneTitleInit()
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_T, DC_I, DC_T, DC_L, DC_E, 0, };
+#endif
+void sceneTitleInit(void)
 {
     objInit();
 #if DEBUG
-    static const u8 str[] = { DC_T, DC_I, DC_T, DC_L, DC_E, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     sysSetSceneCounter(300);
 }
 
+
 // ---------------------------------------------------------------- メイン
-void sceneTitleMain(u16 scene_ct)
-{
+#if VER_ALPHA != 0
+static const u8 STR_VERSION_[] = {
+    DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
+    DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD,
+    DC_CAPS, DC_A, DC_CAPS, DC_L, DC_P, DC_H, DC_A, DC_0 + VER_ALPHA, DC_PERIOD, 0
+};
+#elif VER_BETA != 0
+static const u8 STR_VERSION_[] = {
+    DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
+    DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD,
+    DC_CAPS, DC_B, DC_CAPS, DC_E, DC_T, DC_A, DC_0 + VER_BETA, DC_PERIOD, 0
+};
+#else
+static const u8 STR_VERSION_[] = {
+    DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
+    DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD, 0
+};
+#endif
 #include "../../text/title_snail.h"
 #include "../../text/title_start.h"
 #include "../../text/title_bonus.h"
 #include "../../text/title_comma.h"
 #include "../../text/title_pts.h"
+void sceneTitleMain(u16 scene_ct)
+{
     // -------- NWK Presents
     printSetAddr((u8*)VVRAM_TEXT_ADDR(3, 2)); printString(sceneTitleGetStrNwkPresents());
 
@@ -52,27 +73,13 @@ void sceneTitleMain(u16 scene_ct)
     printSetAddr((u8*)VVRAM_TEXT_ADDR(10, 23)); printString(text_title_snail);
     {
 #if VER_ALPHA != 0
-        static const u8 str_version[] = {
-            DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
-            DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD,
-            DC_CAPS, DC_A, DC_CAPS, DC_L, DC_P, DC_H, DC_A, DC_0 + VER_ALPHA, DC_PERIOD, 0
-        };
         printSetAddr((u8*)VVRAM_TEXT_ADDR(20, 24));
 #elif VER_BETA != 0
-        static const u8 str_version[] = {
-            DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
-            DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD,
-            DC_CAPS, DC_B, DC_CAPS, DC_E, DC_T, DC_A, DC_0 + VER_BETA, DC_PERIOD, 0
-        };
         printSetAddr((u8*)VVRAM_TEXT_ADDR(21, 24));
 #else
-        static const u8 str_version[] = {
-            DC_V, DC_CAPS, DC_E, DC_R, DC_PERIOD,
-            DC_0 + VER_MAJOR, DC_PERIOD, DC_0 + VER_MINOR0, DC_0 + VER_MINOR1, DC_PERIOD, 0
-        };
         printSetAddr((u8*)VVRAM_TEXT_ADDR(27, 24));
 #endif
-        printString(str_version); printU16Left(build_nr);
+        printString(STR_VERSION_); printU16Left(build_nr);
     }
 
     // -------- スタートの点滅
@@ -111,12 +118,14 @@ void sceneTitleMain(u16 scene_ct)
 
 }
 
+
 // ---------------------------------------------------------------- NWK Presents...
-const u8* sceneTitleGetStrNwkPresents()
-{
 #include "../../text/nwk_presents.h"
+const u8* sceneTitleGetStrNwkPresents(void)
+{
     return text_nwk_presents;
 }
+
 
 // ---------------------------------------------------------------- タイトル ロゴ表示
 #include "../../cg/title_s.h"

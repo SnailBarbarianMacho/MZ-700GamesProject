@@ -59,21 +59,22 @@ bool objExplosionPlayerMain(Obj* const p_obj)
 }
 
 // ---------------------------------------------------------------- 描画
+static const u8* const EXPLOSION_TAB_[] = {
+    cg_explosion7, cg_explosion6, cg_explosion5, cg_explosion4,
+    cg_explosion3, cg_explosion2, cg_explosion1, cg_explosion0,
+};
 void objExplosionDraw(Obj* const p_obj, u8* draw_addr)
 {
-    static const u8* const EXPLOSION_TAB[] = {
-        cg_explosion7, cg_explosion6, cg_explosion5, cg_explosion4,
-        cg_explosion3, cg_explosion2, cg_explosion1, cg_explosion0,
-    };
-    vVramDraw3x3Transparent(draw_addr, EXPLOSION_TAB[p_obj->ct]);
+    vVramDraw3x3Transparent(draw_addr, EXPLOSION_TAB_[p_obj->ct]);
 }
+
+static const u8* const PLAYER_EXPLOSION_TAB_[] = {
+    cg_explosion7, cg_explosion6, cg_explosion7, cg_explosion6,
+    cg_explosion5, cg_explosion4, cg_explosion5, cg_explosion4,
+    cg_explosion3, cg_explosion2, cg_explosion3, cg_explosion2,
+    cg_explosion1, cg_explosion0, cg_explosion1, cg_explosion0,
+};
 void objExplosionPlayerDraw(Obj* const p_obj, u8* draw_addr)
 {
-    static const u8* const EXPLOSION_TAB[] = {
-        cg_explosion7, cg_explosion6, cg_explosion7, cg_explosion6,
-        cg_explosion5, cg_explosion4, cg_explosion5, cg_explosion4,
-        cg_explosion3, cg_explosion2, cg_explosion3, cg_explosion2,
-        cg_explosion1, cg_explosion0, cg_explosion1, cg_explosion0,
-    };
-    vVramDraw3x3Transparent(draw_addr, EXPLOSION_TAB[p_obj->ct]);
+    vVramDraw3x3Transparent(draw_addr, PLAYER_EXPLOSION_TAB_[p_obj->ct]);
 }

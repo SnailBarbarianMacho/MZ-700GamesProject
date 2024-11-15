@@ -4,6 +4,7 @@
  */
 
 #include "../../../../src-common/common.h"
+#include "../../../../src-common/hard.h"
 #include "../system/addr.h"
 #include "../system/sys.h"
 #include "../system/vram.h"
@@ -21,19 +22,20 @@
 u8 scene_score_tab_loop_ct_ = 0;  // 数回に1回ロゴループ, デモ時のステージ
 
 // ---------------------------------------------------------------- 初期化
-void sceneScoreTableInit()
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_T, DC_A, DC_B, DC_L, DC_E, 0, };
+#endif
+void sceneScoreTableInit(void)
 {
 #if DEBUG
-    static const u8 str[] = { DC_T, DC_A, DC_B, DC_L, DC_E, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     objInit();
     sysSetSceneCounter(INST_CT);
 }
 
+
 // ---------------------------------------------------------------- メイン
-void sceneScoreTableMain(u16 scene_ct)
-{
 #include "../../text/tab_score.h"
 #include "../../text/tab100.h"
 #include "../../text/tab150.h"
@@ -42,6 +44,8 @@ void sceneScoreTableMain(u16 scene_ct)
 #include "../../text/tab300.h"
 #include "../../text/tab400.h"
 #include "../../text/tab_level_up.h"
+void sceneScoreTableMain(u16 scene_ct)
+{
     // -------- 敵の表示
     s16 ct = INST_CT - scene_ct;
     if (ct == 80) {

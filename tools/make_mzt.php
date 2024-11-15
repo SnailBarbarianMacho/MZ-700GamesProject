@@ -21,7 +21,7 @@ declare(strict_types = 1);
 // 引数チェック
 if (count($argv) !== 6)
 {
-    fwrite(STDERR, 'Usage: php '.$argv[0]." bin-file progename, load-addr exec-addr outfile.mzt\n");
+    fwrite(STDERR, 'Usage: php '.$argv[0]." bin-file progename load-addr exec-addr outfile.mzt\n");
     fwrite(STDERR, "  progname can use uppercase space, up to 16 characters\n");
     fwrite(STDERR, "  The addresses can be decimal or hexadecimal(0x)\n");
     exit(1);
@@ -63,7 +63,7 @@ if (!$binData) {
 }
 $binSize =  strlen($binData);
 
-printf("==== [%s] Binary size:0x%04x Load addr:0x%04x Exec addr:0x%04x ====\n", $outMzt, $binSize, $loadAddr, $execAddr);
+printf("$outMzt:  Load#Size:0x%04x#0x%04x  Exec:0x%04x\n", $loadAddr, $binSize, $execAddr);
 
 
 $data = pack("C", 0x01);        // ファイル モード

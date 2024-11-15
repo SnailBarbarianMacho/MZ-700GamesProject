@@ -66,6 +66,23 @@ u16 _objEnemyNrKilled;
 #define SCORE_8_2 200
 #define SCORE_8_3 2000
 
+#if DEBUG && 0// TEST 全ゲームモードのテスト... 全敵がメチャ弱い
+#define FITNESS_3_1 1
+#define FITNESS_3_2 1
+#define FITNESS_3_3 1
+#define FITNESS_3_4 1
+#define FITNESS_3_5 1
+#define FITNESS_3_6 1
+#define FITNESS_4_1 1
+#define FITNESS_4_2 1
+#define FITNESS_4_3 1
+#define FITNESS_5_1 1
+#define FITNESS_5_2 2
+#define FITNESS_5_3 3
+#define FITNESS_8_1 10
+#define FITNESS_8_2 50
+#define FITNESS_8_3 30
+#else
 #define FITNESS_3_1 1
 #define FITNESS_3_2 8
 #define FITNESS_3_3 20
@@ -81,6 +98,7 @@ u16 _objEnemyNrKilled;
 #define FITNESS_8_1 1000
 #define FITNESS_8_2 5000
 #define FITNESS_8_3 33000
+#endif
 
 // アイテム数は, 「nrItems + rand8() % nrItems」個
 #define H4_ITEM_SUB_LEVEL4_NR8(h, sub_level, nr_items) (((h) << 12) | ((sub_level) << 8) | (nr_items))
@@ -90,7 +108,7 @@ u16 _objEnemyNrKilled;
 /**
  * @param hItem H4_ITEM_SUB_LEVEL4_NR8 マクロを使ってください
  */
-static void initEnemySub(Obj* const p_obj, const u16 fitness, const u16 score, const u16 hItem)
+static void initEnemySub_(Obj* const p_obj, const u16 fitness, const u16 score, const u16 hItem)
 {
     u8 h = hItem >> 12;
     OBJ_INIT(p_obj, (rand8() % (VRAM_WIDTH + 1 - h)) << 8, (rand8() % (VRAM_HEIGHT + 1 - h)) << 8, 0, h, 0, 0);
@@ -109,69 +127,69 @@ static void initEnemySub(Obj* const p_obj, const u16 fitness, const u16 score, c
 
 #pragma disable_warning 85  // p_parent 未使用
 #pragma save
-// テーブル化するより, 個別に initEnemySub() を呼んだ方がコード量が小さくなる...
+// テーブル化するより, 個別に initEnemySub_() を呼んだ方がコード量が小さくなる...
 void objEnemyInit3_1(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_3_1, SCORE_3_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_1_HEIGHT, 1, 1));
+    initEnemySub_(p_obj, FITNESS_3_1, SCORE_3_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_1_HEIGHT, 1, 1));
 }
 void objEnemyInit3_2(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_3_2, SCORE_3_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_2_HEIGHT, 1, 2));
+    initEnemySub_(p_obj, FITNESS_3_2, SCORE_3_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_2_HEIGHT, 1, 2));
 }
 void objEnemyInit3_3(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_3_3, SCORE_3_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_3_HEIGHT, 2, 2));
+    initEnemySub_(p_obj, FITNESS_3_3, SCORE_3_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_3_HEIGHT, 2, 2));
 }
 void objEnemyInit3_4(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_3_4, SCORE_3_4, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_4_HEIGHT, 2, 3));
+    initEnemySub_(p_obj, FITNESS_3_4, SCORE_3_4, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_4_HEIGHT, 2, 3));
 }
 void objEnemyInit3_5(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_3_5, SCORE_3_5, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_5_HEIGHT, 3, 1));
+    initEnemySub_(p_obj, FITNESS_3_5, SCORE_3_5, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_5_HEIGHT, 3, 1));
 }
 void objEnemyInit3_6(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_3_6, SCORE_3_6, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_6_HEIGHT, 3, 2));
+    initEnemySub_(p_obj, FITNESS_3_6, SCORE_3_6, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY3_6_HEIGHT, 3, 2));
 }
 void objEnemyInit4_1(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_4_1, SCORE_4_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY4_1_HEIGHT, 1, 6));// 安っぽいアイテムを沢山ばら撒く
+    initEnemySub_(p_obj, FITNESS_4_1, SCORE_4_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY4_1_HEIGHT, 1, 6));// 安っぽいアイテムを沢山ばら撒く
 }
 void objEnemyInit4_2(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_4_2, SCORE_4_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY4_2_HEIGHT, 4, 5));// 強敵なのでアイテム沢山あげる
+    initEnemySub_(p_obj, FITNESS_4_2, SCORE_4_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY4_2_HEIGHT, 4, 5));// 強敵なのでアイテム沢山あげる
     p_obj->u_obj_work.enemy.bullet_mode = BULLET_MODE_FIRE_ON_MOVE;
 }
 void objEnemyInit4_3(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_4_3, SCORE_4_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY4_3_HEIGHT, 5, 2));
+    initEnemySub_(p_obj, FITNESS_4_3, SCORE_4_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY4_3_HEIGHT, 5, 2));
 }
 void objEnemyInit5_1(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_5_1, SCORE_5_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY5_1_HEIGHT, 5, 5));// ここいらへんからアイテムは乱発!
+    initEnemySub_(p_obj, FITNESS_5_1, SCORE_5_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY5_1_HEIGHT, 5, 5));// ここいらへんからアイテムは乱発!
     p_obj->u_obj_work.enemy.bullet_mode = BULLET_MODE_FIRE_ON_DEAD;
 }
 void objEnemyInit5_2(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_5_2, SCORE_5_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY5_2_HEIGHT, 6, 5));
+    initEnemySub_(p_obj, FITNESS_5_2, SCORE_5_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY5_2_HEIGHT, 6, 5));
 }
 void objEnemyInit5_3(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_5_3, SCORE_5_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY5_3_HEIGHT, 7, 7));
+    initEnemySub_(p_obj, FITNESS_5_3, SCORE_5_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY5_3_HEIGHT, 7, 7));
     p_obj->u_obj_work.enemy.bullet_mode = BULLET_MODE_FIRE_ON_MOVE;
 }
 void objEnemyInit8_1(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_8_1, SCORE_8_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY8_1_HEIGHT, 7, 30));
+    initEnemySub_(p_obj, FITNESS_8_1, SCORE_8_1, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY8_1_HEIGHT, 7, 30));
 }
 void objEnemyInit8_2(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_8_2, SCORE_8_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY8_1_HEIGHT, 7, 30));
+    initEnemySub_(p_obj, FITNESS_8_2, SCORE_8_2, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY8_1_HEIGHT, 7, 30));
 }
 void objEnemyInit8_3(Obj* const p_obj, Obj* const p_parent)
 {
-    initEnemySub(p_obj, FITNESS_8_3, SCORE_8_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY8_1_HEIGHT, 7, 30));
+    initEnemySub_(p_obj, FITNESS_8_3, SCORE_8_3, H4_ITEM_SUB_LEVEL4_NR8(CG_ENEMY8_1_HEIGHT, 7, 30));
     p_obj->u_obj_work.enemy.bullet_mode = BULLET_MODE_FIRE_ON_MOVE;
 }
 #pragma restore
@@ -296,12 +314,12 @@ static bool invincibleCheck(Obj* const p_obj) __z88dk_fastcall
 }
 
 // 敵の数に応じて弾を吐く
+static const u8 ENEMY_BULLET_TAB_[] = {
+    0x01, 0x01, 0x03, 0x03,  0x07, 0x07, 0x07, 0x0f,  0x0f, 0x0f, 0x1f, 0x1f,  0xff, 0xff, 0xff, 0xff
+};
 static void createEnemyBullet(Obj* const p_obj) __z88dk_fastcall
 {
-    static const u8 TAB[] = {
-        0x01, 0x01, 0x03, 0x03,  0x07, 0x07, 0x07, 0x0f,  0x0f, 0x0f, 0x1f, 0x1f,  0xff, 0xff, 0xff, 0xff
-    };
-    if (p_obj->u_obj_work.enemy.ct & TAB[stgGetNrEnemies()]) {
+    if (p_obj->u_obj_work.enemy.ct & ENEMY_BULLET_TAB_[stgGetNrEnemies()]) {
         return;
     }
     objCreateEnemyBullet(objEnemyBulletInit, objEnemyBulletMain, objEnemyBulletDraw, p_obj);
@@ -384,6 +402,17 @@ static void moveA(Obj* const p_obj) __z88dk_fastcall
     }
 }
 // 中速ランダム±方向
+static const s16 ENEMY_DIR_TAB_[] = {
+    0x0000,   0x0000, // 0
+    0x0060,   0x0000, // 1
+    0x0040,   0x0040, // 2
+    0x0000,   0x0060, // 3
+    -0x0040,  0x0040, // 4
+    -0x0060,  0x0000, // 5
+    -0x0040, -0x0040, // 6
+    0x0000,  -0x0060, // 7
+    0x0040,  -0x0040, // 8
+};
 static void moveB(Obj* const p_obj) __z88dk_fastcall
 {
     p_obj->u_obj_work.enemy.ct--;
@@ -408,18 +437,7 @@ static void moveB(Obj* const p_obj) __z88dk_fastcall
     p_obj->u_obj_work.enemy.dir = dir;
     // dir から方向を決める
     {
-        static const s16 TAB[] = {
-            0x0000,   0x0000, // 0
-            0x0060,   0x0000, // 1
-            0x0040,   0x0040, // 2
-            0x0000,   0x0060, // 3
-            -0x0040,  0x0040, // 4
-            -0x0060,  0x0000, // 5
-            -0x0040, -0x0040, // 6
-            0x0000,  -0x0060, // 7
-            0x0040,  -0x0040, // 8
-        };
-        const s16* p = &TAB[dir * 2];
+        const s16* p = &ENEMY_DIR_TAB_[dir * 2];
         if (gameHard() && stgGetNrEnemies() == 1) { // ハードモードは高速
             p_obj->u_geo.geo.sx = *p * 2; p++;
             p_obj->u_geo.geo.sy = *p * 2;
@@ -764,8 +782,8 @@ static const u8 CORE_TEXT_TAB_[] = {
     0xff, 0xf3, 0xf5, 0xf6,
     0xf7, 0xf9, 0xfa, 0xfb,
     0xf7, 0xfb, 0xfd, 0xfe,
-    0xfc, 0xfd, 0xfe, 0xff, };
-
+    0xfc, 0xfd, 0xfe, 0xff,
+};
 void objEnemyDraw3_1(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
@@ -773,19 +791,19 @@ void objEnemyDraw3_1(Obj* const p_obj, u8* draw_addr)
         vVramDraw3x3(draw_addr, cg_enemy3_1);
     }
 }
+static const u8 ENEMY_3_2_ANIM_TAB_[] = {0x62, 0x02};
 void objEnemyDraw3_2(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {0x62, 0x02};
-        ((u8*)cg_enemy3_2)[13] = TAB[(p_obj->u_obj_work.enemy.anim_ct >> 3) & 1];
+        ((u8*)cg_enemy3_2)[13] = ENEMY_3_2_ANIM_TAB_[(p_obj->u_obj_work.enemy.anim_ct >> 3) & 1];
         vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_2);
     }
 }
+static const u8 ENEMY_3_3_ANIM_TAB_[] = {0x04, 0x14, 0x24, 0x34, 0x44, 0x54, 0x64, 0x74};
 void objEnemyDraw3_3(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {0x04, 0x14, 0x24, 0x34, 0x44, 0x54, 0x64, 0x74};
-        ((u8*)cg_enemy3_3)[13] = TAB[p_obj->u_obj_work.enemy.anim_ct & 7];
+        ((u8*)cg_enemy3_3)[13] = ENEMY_3_3_ANIM_TAB_[p_obj->u_obj_work.enemy.anim_ct & 7];
         vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_3);
     }
 }
@@ -796,34 +814,36 @@ void objEnemyDraw3_4(Obj* const p_obj, u8* draw_addr)
         vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_4);
     }
 }
+
+static const u8 ENEMY_3_5_ANIM_TAB_[] = { 0x00, 0x00, 0x00, 0x20, };
 void objEnemyDraw3_5(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {0x00, 0x00, 0x00, 0x20, };
-        ((u8*)cg_enemy3_5)[13] = TAB[(p_obj->u_obj_work.enemy.anim_ct >> 2) & 3];
+        ((u8*)cg_enemy3_5)[13] = ENEMY_3_5_ANIM_TAB_[(p_obj->u_obj_work.enemy.anim_ct >> 2) & 3];
         vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_5);
     }
 }
+static const u8 ENEMY_3_6_ANIM_TAB_[] = {
+    0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x40, 0x00,
+    0x40, 0x40, 0x40, 0x40,
+    0x40, 0x40, 0x00, 0x40,
+};
 void objEnemyDraw3_6(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {
-            0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x40, 0x00,
-            0x40, 0x40, 0x40, 0x40,
-            0x40, 0x40, 0x00, 0x40, };
-        ((u8*)cg_enemy3_6)[13] = TAB[p_obj->u_obj_work.enemy.anim_ct & 0x0f];
+        ((u8*)cg_enemy3_6)[13] = ENEMY_3_6_ANIM_TAB_[p_obj->u_obj_work.enemy.anim_ct & 0x0f];
         vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3_6 : cg_enemy3_6);
     }
 }
+static const u8 ENEMY_4_1_ANIM_TAB_[] = {
+    0xfe, 0xfd, 0xfb, 0xf7,
+    0xf6, 0xf9, 0xf9, 0xf6,
+};
 void objEnemyDraw4_1(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {
-            0xfe, 0xfd, 0xfb, 0xf7,
-            0xf6, 0xf9, 0xf9, 0xf6,
-        };
-        const u8* p = &TAB[p_obj->u_obj_work.enemy.anim_ct & 0x04];
+        const u8* p = &ENEMY_4_1_ANIM_TAB_[p_obj->u_obj_work.enemy.anim_ct & 0x04];
         ((u8*)cg_enemy4_1)[ 5] = *p++;
         ((u8*)cg_enemy4_1)[ 6] = *p++;
         ((u8*)cg_enemy4_1)[ 9] = *p++;
@@ -831,11 +851,11 @@ void objEnemyDraw4_1(Obj* const p_obj, u8* draw_addr)
         vVramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_1);
     }
 }
+static const u8 ENEMY_4_2_ANIM_TAB_[] = { 0x73, 0x63, 0x52, 0x42, 0x32, 0x42, 0x52, 0x63 };
 void objEnemyDraw4_2(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = { 0x73, 0x63, 0x52, 0x42, 0x32, 0x42, 0x52, 0x63 };
-        const u8 c = TAB[p_obj->u_obj_work.enemy.anim_ct & 7];
+        const u8 c = ENEMY_4_2_ANIM_TAB_[p_obj->u_obj_work.enemy.anim_ct & 7];
         ((u8*)cg_enemy4_2)[16 +  5] = c;
         ((u8*)cg_enemy4_2)[16 +  6] = c;
         ((u8*)cg_enemy4_2)[16 +  9] = c;
@@ -843,16 +863,16 @@ void objEnemyDraw4_2(Obj* const p_obj, u8* draw_addr)
         vVramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_2);
     }
 }
+static const u8 ENEMY_4_3_ANIM_TAB_[] = {
+    0xf2, 0xf9, 0xf9, 0xf4,
+    0xf4, 0xf9, 0xf9, 0xf2,
+    0xf6, 0xf8, 0xf1, 0xf6,
+    0xf6, 0xf1, 0xf8, 0xf6,
+};
 void objEnemyDraw4_3(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {
-            0xf2, 0xf9, 0xf9, 0xf4,
-            0xf4, 0xf9, 0xf9, 0xf2,
-            0xf6, 0xf8, 0xf1, 0xf6,
-            0xf6, 0xf1, 0xf8, 0xf6,
-        };
-        const u8* p = &TAB[(p_obj->u_obj_work.enemy.anim_ct << 1) & 0x0c];
+        const u8* p = &ENEMY_4_3_ANIM_TAB_[(p_obj->u_obj_work.enemy.anim_ct << 1) & 0x0c];
         ((u8*)cg_enemy4_3)[ 5] = *p++;
         ((u8*)cg_enemy4_3)[ 6] = *p++;
         ((u8*)cg_enemy4_3)[ 9] = *p++;
@@ -861,16 +881,17 @@ void objEnemyDraw4_3(Obj* const p_obj, u8* draw_addr)
     }
 }
 
+
+static const u8 ENEMY_5_1_ANIM_TAB_[] = {
+    0xf3, 0xf5, 0xf0, 0xfa, 0xfc,
+    0xff, 0xff, 0xf0, 0xff, 0xff,
+    0xfc, 0xfa, 0xff, 0xf5, 0xf3,
+    0xf0, 0xf0, 0xff, 0xf0, 0xf0,
+};
 void objEnemyDraw5_1(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {
-            0xf3, 0xf5, 0xf0, 0xfa, 0xfc,
-            0xff, 0xff, 0xf0, 0xff, 0xff,
-            0xfc, 0xfa, 0xff, 0xf5, 0xf3,
-            0xf0, 0xf0, 0xff, 0xf0, 0xf0,
-        };
-        const u8* p = &TAB[((p_obj->u_obj_work.enemy.anim_ct >> 1) & 0x03) * 5];
+        const u8* p = &ENEMY_5_1_ANIM_TAB_[((p_obj->u_obj_work.enemy.anim_ct >> 1) & 0x03) * 5];
         ((u8*)cg_enemy5_1)[ 7] = *p++;
         ((u8*)cg_enemy5_1)[11] = *p++;
         ((u8*)cg_enemy5_1)[12] = *p++;
@@ -879,14 +900,15 @@ void objEnemyDraw5_1(Obj* const p_obj, u8* draw_addr)
         vVramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_1);
     }
 }
+
+static const u8 ENEMY_5_2_ANIM_TAB_[] = {
+    0x06, 0x16, 0x26, 0x36, 0x46, 0x56, 0x66, 0x76,
+    0x76, 0x66, 0x56, 0x46, 0x36, 0x26, 0x16, 0x06,
+};
 void objEnemyDraw5_2(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {
-            0x06, 0x16, 0x26, 0x36, 0x46, 0x56, 0x66, 0x76,
-            0x76, 0x66, 0x56, 0x46, 0x36, 0x26, 0x16, 0x06,
-        };
-        const u8 c = TAB[p_obj->u_obj_work.enemy.anim_ct & 0x0f];
+        const u8 c = ENEMY_5_2_ANIM_TAB_[p_obj->u_obj_work.enemy.anim_ct & 0x0f];
         ((u8*)cg_enemy5_2)[25 +  7] = c;
         ((u8*)cg_enemy5_2)[25 + 11] = c;
         ((u8*)cg_enemy5_2)[25 + 13] = c;
@@ -895,14 +917,15 @@ void objEnemyDraw5_2(Obj* const p_obj, u8* draw_addr)
         vVramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_2);
     }
 }
+
+static const u8 ENEMY_5_3_ANIM_TAB_[] = {
+    0xf0, 0xd0, 0xd0, 0x90,
+    0x70, 0x50, 0x50, 0x10,
+};
 void objEnemyDraw5_3(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
-        static const u8 TAB[] = {
-            0xf0, 0xd0, 0xd0, 0x90,
-            0x70, 0x50, 0x50, 0x10,
-        };
-        const u8* p = &TAB[(p_obj->u_obj_work.enemy.anim_ct >> 1) & 0x04];
+        const u8* p = &ENEMY_5_3_ANIM_TAB_[(p_obj->u_obj_work.enemy.anim_ct >> 1) & 0x04];
         ((u8*)cg_enemy5_3)[25 +  0] = *p++;
         ((u8*)cg_enemy5_3)[25 +  4] = *p++;
         ((u8*)cg_enemy5_3)[25 + 20] = *p++;
@@ -911,26 +934,33 @@ void objEnemyDraw5_3(Obj* const p_obj, u8* draw_addr)
     }
 }
 
-static void objEnemyDraw8_1Anim(const u8 anim_ct) __z88dk_fastcall
+
+static const u8 ENEMY8_1_ANIM_TAB_[] = {
+    0x05, 0x15, 0x25, 0x35, 0x45, 0x55, 0x65, 0x75,
+    0x75, 0x65, 0x55, 0x45, 0x35, 0x25, 0x15, 0x05,
+};
+static void objEnemyDraw8_1Anim_(Obj* const p_obj) __z88dk_fastcall
 {
+    u8 ct = p_obj->u_obj_work.enemy.anim_ct;
     {
-        const u8 atb = (anim_ct & 0x0c) ? 0x60 : 0x20;
+        const u8 atb = (ct & 0x0c) ? 0x60 : 0x20;
         ((u8*)cg_enemy8_1)[64 +  0] = atb;
         ((u8*)cg_enemy8_1)[64 +  7] = atb;
         ((u8*)cg_enemy8_1)[64 + 56] = atb;
         ((u8*)cg_enemy8_1)[64 + 63] = atb;
     }
     {
-        static const u8 TAB[] = {
-            0x05, 0x15, 0x25, 0x35, 0x45, 0x55, 0x65, 0x75,
-            0x75, 0x65, 0x55, 0x45, 0x35, 0x25, 0x15, 0x05,
-        };
-        const u8 atb = TAB[anim_ct & 0x0f];
+        const u8 atb = ENEMY8_1_ANIM_TAB_[ct & 0x0f];
         ((u8*)cg_enemy8_1)[64 +  17] = atb;
         ((u8*)cg_enemy8_1)[64 +  22] = atb;
         ((u8*)cg_enemy8_1)[64 +  41] = atb;
         ((u8*)cg_enemy8_1)[64 +  46] = atb;
     }
+
+    // 体力を表示
+    u8 f = (p_obj->fitness + 1023) / 1024;
+    ((u8*)cg_enemy8_1)[11] = DC_0 + f / 10;
+    ((u8*)cg_enemy8_1)[12] = DC_0 + f % 10;
 }
 
 void objEnemyDraw8_1(Obj* const p_obj, u8* draw_addr)
@@ -940,18 +970,17 @@ void objEnemyDraw8_1(Obj* const p_obj, u8* draw_addr)
         if (p_obj->b_hit) {
             e = cg_enemy_damage8;
         }
-        objEnemyDraw8_1Anim(p_obj->u_obj_work.enemy.anim_ct);
+        objEnemyDraw8_1Anim_(p_obj);
         vVramDrawRect(draw_addr, e, W8H8(8, 8));
     }
 }
 void objEnemyDraw8_2(Obj* const p_obj, u8* draw_addr)
 {
-    ((u8*)cg_enemy8_1)[12] = DC_2;
     objEnemyDraw8_1(p_obj, draw_addr);
 }
+static const u8 ENEMY_DRAW_8_3_TAB_[] = { 0x03, 0x0f, 0x3f, 0x00, 0x00};
 void objEnemyDraw8_3(Obj* const p_obj, u8* draw_addr)
 {
-    ((u8*)cg_enemy8_1)[12] = DC_3;
     if (!(p_obj->ct & 1)) { // 点滅
         const u8* e = cg_enemy8_1;
         if (p_obj->b_hit) {
@@ -960,13 +989,12 @@ void objEnemyDraw8_3(Obj* const p_obj, u8* draw_addr)
             u16 f = p_obj->fitness;
             if (f) { // 死んでたら点滅しない
                 f /= ((u16)FITNESS_8_3 / 4);
-                static const u8 TAB[] = { 0x03, 0x0f, 0x3f, 0x00, 0x00};
-                if ((p_obj->u_obj_work.enemy.anim_ct & TAB[f]) == 1) { // テーブル値が 0x00 ならば点滅しない
+                if ((p_obj->u_obj_work.enemy.anim_ct & ENEMY_DRAW_8_3_TAB_[f]) == 1) { // テーブル値が 0x00 ならば点滅しない
                     e = cg_enemy_red8;
                 }
             }
         }
-        objEnemyDraw8_1Anim(p_obj->u_obj_work.enemy.anim_ct);
+        objEnemyDraw8_1Anim_(p_obj);
         vVramDrawRect(draw_addr, e, W8H8(8, 8));
     }
 }

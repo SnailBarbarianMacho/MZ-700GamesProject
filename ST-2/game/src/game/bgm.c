@@ -14,22 +14,25 @@
 
 // ---------------------------------------------------------------- BGM
 // BGM を鳴らす条件かを返します
-static bool checkBgm()
+static bool checkBgm(void)
 {
     if (sdGetSePriority() < SD_SE_PRIORITY_2) { return false; } // 優先高い音が鳴ってる場合は鳴らさない
     Obj* p_obj = objGetInUsePlayer();
     return p_obj && p_obj->step == OBJ_PLAYER_STEP_NORMAL;        // 死亡時は鳴らさない
 }
 
+
 // -------------------------------- BGM1
 static u8 bgm1_tab_[5];
 
-void bgm1Init()
+void bgm1Init(void)
 {
     for (s8 i = COUNT_OF(bgm1_tab_) - 1; 0 <= i; i--) {
         bgm1_tab_[i] = (rand8() & 0x1f) + 0x03;
     }
 }
+
+
 static u16 bgm1Main(u16 ct)
 {
     if (checkBgm()) {
@@ -47,6 +50,7 @@ static u16 bgm1Main(u16 ct)
     return ct;
 }
 
+
 // -------------------------------- BGM2
 static u16 bgm2Main(u16 ct)
 {
@@ -57,6 +61,7 @@ static u16 bgm2Main(u16 ct)
     ct -= 0x0040;
     return ct;
 }
+
 
 // -------------------------------- BGM3
 static u16 bgm3Main(u16 ct)
@@ -69,24 +74,26 @@ static u16 bgm3Main(u16 ct)
     return ct;
 }
 
+
 // -------------------------------- BGM4
+static const u8 BGM4_TAB_[] = {
+    SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_CS3, SD1_E3,
+    SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_CS3, SD1_E3,
+    SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_DS3, SD1_FS3,
+    SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_CS3, SD1_E3,
+};
 static u16 bgm4Main(u16 ct)
 {
 #define LEN 32
-    static const u8 TAB[] = {
-        SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_CS3, SD1_E3,
-        SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_C3, SD1_DS3,  SD1_CS3, SD1_E3,
-        SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_DS3, SD1_FS3,
-        SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_D3, SD1_F3,   SD1_CS3, SD1_E3,
-    };
     u16 pos = (ct / LEN) << 1;
-    sd1Play(TAB[pos + ((ct >> 1) & 1)]);
+    sd1Play(BGM4_TAB_[pos + ((ct >> 1) & 1)]);
 
     ct++;
-    if ((u16)COUNT_OF(TAB) * LEN / 2 <= ct) { ct = 0; }
+    if ((u16)COUNT_OF(BGM4_TAB_) * LEN / 2 <= ct) { ct = 0; }
     return ct;
 #undef LEN
 }
+
 
 // ---------------------------------------------------------------- テーブル
 const BgmSequencerDesc bgm_sequencer_tab_[NR_BGMS] = {

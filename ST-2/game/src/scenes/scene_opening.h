@@ -8,7 +8,7 @@
 #include "../../../../src-common/common.h"
 
 // ---------------------------------------------------------------- 初期化, メイン
-void sceneOpeningInit();
+void sceneOpeningInit(void);
 void sceneOpeningMain(u16 scene_ct);
 
 #endif  // SCENE_OPENING_H_INCLUDED

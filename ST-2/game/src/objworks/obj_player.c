@@ -3,6 +3,7 @@
  * @author Snail Barbarian Macho (NWK)
  */
 #include "../../../../src-common/common.h"
+#include "../../../../src-common/hard.h"
 #include "../system/addr.h"
 #include "../system/sys.h"
 #include "../system/input.h"
@@ -165,8 +166,9 @@ bool objPlayerMain(Obj* const p_obj)
             if (p_obj->ct == 0) {
                 objPlayerSetNormalStep(p_obj);
                 if (scoreDecrementLeft()) {
-                    if (gameGetMode() == GAME_MODE_SURVIVAL) {
-                        p_obj->step = OBJ_PLAYER_STEP_END_SURVIVAL;
+                    u8 game_mode = gameGetMode();
+                    if (game_mode == GAME_MODE_SURVIVAL || game_mode == GAME_MODE_MUBO) {
+                        p_obj->step = OBJ_PLAYER_STEP_END_SURVIVAL;// サバイバル/無謀モード
                         p_obj->ct   = 0;
                     } else {
                         p_obj->step = OBJ_PLAYER_STEP_CONTINUE;
@@ -189,12 +191,19 @@ bool objPlayerMain(Obj* const p_obj)
         }
         break;
 
-    case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル モード終了表示
-    case OBJ_PLAYER_STEP_END_CARAVAN:  // キャラバン モード終了表示
+    case OBJ_PLAYER_STEP_END_SURVIVAL:  // サバイバル/無謀 モード終了表示
+    case OBJ_PLAYER_STEP_END_CARAVAN:   // キャラバン モード終了表示
         break;
 
     case OBJ_PLAYER_STEP_DEMO:  // 外で制御
-        if (p_obj->u_geo.geo8.yh < -3) {  // 画面外に出たら消える
+        // 画面はみ出し & 1
+        if (p_obj->u_geo.geo8.xh < 1) {
+            p_obj->u_geo.geo8.xh = 1;
+        } else if (VRAM_WIDTH - 2 <= p_obj->u_geo.geo8.xh) {
+            p_obj->u_geo.geo8.xh = VRAM_WIDTH - 2;
+        }
+        p_obj->ct = 0;                      // 点滅停止
+        if (p_obj->u_geo.geo8.yh < -3) {    // 画面外に出たら消える
             return false;
         }
         break;
@@ -204,6 +213,28 @@ bool objPlayerMain(Obj* const p_obj)
 }
 
 // ---------------------------------------------------------------- 描画
+static const u8* CONTINUE_TAB_[] = { cg_nr0, cg_nr1, cg_nr2, cg_nr3, cg_nr4, cg_nr5, cg_nr6, cg_nr7};
+// 炎
+static const u16 BACKFIRE_TAB1_[] = {
+    VATB_CODE(2, 0, 0, 0xf1),
+    VATB_CODE(6, 0, 0, 0xf2),
+    VATB_CODE(2, 0, 0, 0xf3),
+    VATB_CODE(2, 0, 0, 0xf4),
+    VATB_CODE(6, 0, 0, 0xf5),
+    VATB_CODE(2, 0, 0, 0xf6),
+    VATB_CODE(6, 0, 0, 0xf8),
+    VATB_CODE(2, 0, 0, 0xf9),
+};
+static const u16 BACKFIRE_TAB2_[] = {
+    VATB_CODE(2, 0, 0, 0xf7),
+    VATB_CODE(6, 0, 0, 0xf7),
+    VATB_CODE(2, 0, 0, 0xfb),
+    VATB_CODE(6, 0, 0, 0xfb),
+    VATB_CODE(6, 0, 0, 0xfd),
+    VATB_CODE(6, 0, 0, 0xfe),
+    VATB_CODE(2, 0, 0, 0xff),
+    VATB_CODE(6, 0, 0, 0xff),
+};
 void objPlayerDraw(Obj* const p_obj, u8* draw_addr)
 {
     u8 ct = p_obj->ct;
@@ -217,31 +248,10 @@ void objPlayerDraw(Obj* const p_obj, u8* draw_addr)
         ct &= 1;
         if (!ct) {
             vVramDraw3x3(draw_addr, cg_player);
-            // 炎
-            static const u16 tab1[] = {
-                VATB_CODE(2, 0, 0, 0xf1),
-                VATB_CODE(6, 0, 0, 0xf2),
-                VATB_CODE(2, 0, 0, 0xf3),
-                VATB_CODE(2, 0, 0, 0xf4),
-                VATB_CODE(6, 0, 0, 0xf5),
-                VATB_CODE(2, 0, 0, 0xf6),
-                VATB_CODE(6, 0, 0, 0xf8),
-                VATB_CODE(2, 0, 0, 0xf9),
-            };
-            static const u16 tab2[] = {
-                VATB_CODE(2, 0, 0, 0xf7),
-                VATB_CODE(6, 0, 0, 0xf7),
-                VATB_CODE(2, 0, 0, 0xfb),
-                VATB_CODE(6, 0, 0, 0xfb),
-                VATB_CODE(6, 0, 0, 0xfd),
-                VATB_CODE(6, 0, 0, 0xfe),
-                VATB_CODE(2, 0, 0, 0xff),
-                VATB_CODE(6, 0, 0, 0xff),
-            };
             draw_addr += VVRAM_WIDTH * 2 + 1;
-            vVramDraw1x1(draw_addr, tab2[rand8() & 0x07]);
+            vVramDraw1x1(draw_addr, BACKFIRE_TAB2_[rand8() & 0x07]);
             draw_addr += VVRAM_WIDTH;
-            vVramDraw1x1(draw_addr, tab1[rand8() & 0x07]);
+            vVramDraw1x1(draw_addr, BACKFIRE_TAB1_[rand8() & 0x07]);
         }
         break;
     case OBJ_PLAYER_STEP_DEAD:
@@ -251,8 +261,10 @@ void objPlayerDraw(Obj* const p_obj, u8* draw_addr)
 #include "../../text/continue.h"
             printSetAddr((u8*)VVRAM_TEXT_ADDR(7, 8));
             printString(text_continue);
-            static const u8* TAB[] = { cg_nr0, cg_nr1, cg_nr2, cg_nr3, cg_nr4, cg_nr5, cg_nr6, cg_nr7};
-            vVramDrawRectTransparent((u8*)VVRAM_TEXT_ADDR(18, 10), TAB[p_obj->ct / 32], W8H8(4, 4));
+#pragma disable_warning 110 // 除算最適化警告
+#pragma save
+            vVramDrawRectTransparent((u8*)VVRAM_TEXT_ADDR(18, 10), CONTINUE_TAB_[p_obj->ct / 32], W8H8(4, 4));
+#pragma restore
             if ((p_obj->ct % 32) == 31) {
                 sdPlaySe(SE_CONTINUE);
             }
@@ -261,7 +273,7 @@ void objPlayerDraw(Obj* const p_obj, u8* draw_addr)
     case OBJ_PLAYER_STEP_END_CARAVAN:  // キャラバン モード終了表示
         sceneEndingDispMisses((u8*)VVRAM_TEXT_ADDR(12, 14));
         // fall through
-    case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル モード終了表示
+    case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル/無謀 モード終了表示
         sceneEndingDispEnemies((u8*)VVRAM_TEXT_ADDR(12, 16));
         p_obj->u_geo.geo.w = 0; // 衝突判定を無くす
         {

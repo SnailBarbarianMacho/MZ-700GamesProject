@@ -3,6 +3,8 @@
  * @author Snail Barbarian Macho (NWK)
  */
 
+#include "../../../../src-common/common.h"
+#include "../../../../src-common/hard.h"
 #include "../system/sys.h"
 #include "../system/sound.h"
 #include "../system/vram.h"
@@ -22,6 +24,7 @@ static u8 scene_game_mode_ = GAME_MODE_NORMAL;
 #include "../../text/game_mode_normal.h"
 #include "../../text/game_mode_hard.h"
 #include "../../text/game_mode_survival.h"
+#include "../../text/game_mode_mubo.h"
 #include "../../text/game_mode_caravan.h"
 #include "../../text/game_mode_mz1x03_insensitivity.h"
 static const u8* STR_TAB[] = {
@@ -29,17 +32,20 @@ static const u8* STR_TAB[] = {
     text_game_mode_normal,
     text_game_mode_hard,
     text_game_mode_survival,
+    text_game_mode_mubo,
     text_game_mode_caravan,
     text_game_mode_mz1x03_insensitivity,
 };
 #include "../../text/game_mode_back.h"
 
 // ---------------------------------------------------------------- 初期化
-void sceneGameModeInit()
+#if DEBUG
+static const u8 SCENE_NAME_[] = { DC_M, DC_O, DC_D, DC_E, 0, };
+#endif
+void sceneGameModeInit(void)
 {
 #if DEBUG
-    static const u8 str[] = { DC_M, DC_O, DC_D, DC_E, 0, };
-    scoreSetStepString(str);
+    scoreSetStepString(SCENE_NAME_);
 #endif
     sdSetEnabled(true);
     gameSetMode(scene_game_mode_);
@@ -48,10 +54,10 @@ void sceneGameModeInit()
 #define SYS_SCENE_WORK_START_CT     0
 
 // ---------------------------------------------------------------- メイン
+#include "../../text/game_mode.h"
 void sceneGameModeMain(u16 scene_ct)
 {
-#include "../../text/game_mode.h"
-#define MENU_Y 7
+#define MENU_Y 6
     if (!sysSceneGetWork(SYS_SCENE_WORK_START_CT)) {
         // -------- タイトルに戻る
         u8 inp = inputGetTrigger();
@@ -73,7 +79,7 @@ void sceneGameModeMain(u16 scene_ct)
         if (i & INPUT_MASK_D) { printPutc(DC_CURSOR_DOWN);  }
         if (i & INPUT_MASK_R) { printPutc(DC_CURSOR_RIGHT); }
 
-        printSetAddr((u8*)VVRAM_TEXT_ADDR(9, 20));
+        printSetAddr((u8*)VVRAM_TEXT_ADDR(9, 21));
         printString(text_game_mode_back);
 
         // -------- カーソル移動
@@ -120,7 +126,7 @@ void sceneGameModeMain(u16 scene_ct)
 // ---------------------------------------------------------------- print
 void sceneGamePrintGameMode(u8* const addr, const u8 game_mode, const bool b_with_explanation)
 {
-    STATIC_ASSERT(COUNT_OF(STR_TAB) == NR_GAME_MODES, invalid_game_modes);
+    STATIC_ASSERT(COUNT_OF(STR_TAB) == NR_GAME_MODES, "invalid_game_modes");
     printSetAddr(addr);
     if (b_with_explanation) {
         printString(STR_TAB[game_mode]);
