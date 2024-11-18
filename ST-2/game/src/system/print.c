@@ -905,14 +905,28 @@ __endasm;
 }
 #pragma restore
 
+
+static const u8 SUBSEC_TAB_[] = {   // 0.1秒のテーブル
+    DC_0, DC_0, DC_0, DC_1,  DC_1, DC_1, DC_2, DC_2,
+    DC_2, DC_2, DC_3, DC_3,  DC_3, DC_4, DC_4, DC_4,
+    DC_5, DC_5, DC_5, DC_6,  DC_6, DC_6, DC_6, DC_7,
+    DC_7, DC_7, DC_8, DC_8,  DC_8, DC_9, DC_9, DC_9,
+};
+void printU16LeftDecimal1(const u16 value, const u8 decimal)
+{
+    printU16Left(value);// エンディングで見やすくするために左詰め
+    printPutc(DC_PERIOD);
+    printPutc(SUBSEC_TAB_[decimal]);
+}
+
+
+#if DEBUG
 static const u8 HEX_TAB_[] = {
     DC_0, DC_1, DC_2, DC_3,
     DC_4, DC_5, DC_6, DC_7,
     DC_8, DC_9, DC_A, DC_B,
     DC_C, DC_D, DC_E, DC_F,
 };
-
-#if DEBUG
 #pragma disable_warning 85
 #pragma save
 void printHex8(const u8 value) __z88dk_fastcall __naked

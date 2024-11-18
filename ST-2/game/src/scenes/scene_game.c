@@ -97,11 +97,6 @@ void sceneGameMain(u16 scene_ct)
         printReady();
     }
 
-    // ---------------- キャラバン モード
-    if (gameIsCaravan()) {
-        gameDecCaravanTimer(); // 時間切れ検出は objPlayer で
-    }
-
     // ---------------- ゲーム モードでの挙動. ポーズ, シーン, コンティニュー, ステージ進行
     Obj* const p_player = objGetInUsePlayer();
     if (p_player == nullptr) { return; }
@@ -168,8 +163,13 @@ void sceneGameMain(u16 scene_ct)
             } // while (true)
         }
 #endif
-        break;
+        // fall through
     case OBJ_PLAYER_STEP_DEAD:
+            if (gameIsCaravan()) {          // キャラバン モード
+                gameDecTimer();             // 時間切れ検出は objPlayer で
+            } else if (!gameCanIncLeft()) { // サバイバル, むぼう
+                gameIncTimer();
+            }
         break;
     case OBJ_PLAYER_STEP_CONTINUE:
         if (p_player->ct == 0) {// カウントダウン 0 ならゲームオーバー

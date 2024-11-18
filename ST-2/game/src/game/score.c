@@ -87,12 +87,6 @@ __endasm;
 
 static const u8 STR_1UP_[]  = { DC_1, DC_U, DC_P, 0 };
 static const u8 STR_HI_[]   = { DC_COL7, DC_H, DC_I, 0 };
-static const u8 SUBSEC_TAB_[] = {   // 0.1秒のテーブル
-    DC_0, DC_0, DC_0, DC_1,  DC_1, DC_1, DC_2, DC_2,
-    DC_2, DC_2, DC_3, DC_3,  DC_3, DC_4, DC_4, DC_4,
-    DC_5, DC_5, DC_5, DC_6,  DC_6, DC_6, DC_6, DC_7,
-    DC_7, DC_7, DC_8, DC_8,  DC_8, DC_9, DC_9, DC_9,
-};
 static const u8 SUB_LEVEL_TEXT_TAB_[] = { // サブ レベル 4 * 4 文字 * 7段階
     0x37, 0x7b, 0x3f, 0x43,
 };
@@ -136,14 +130,26 @@ void scoreMain(void) __z88dk_fastcall
     printPutc(DC_0);
 
     // -------- 残機表示
-    if (gameIsCaravan()) {
-        printSetAddr((u8*)VVRAM_TEXT_ADDR(35, 0));
-        u16 timer = gameGetCaravanTimer() / GAME_FPS;
-        printU16Left(timer);
-        printPutc(DC_PERIOD);
-        timer = gameGetCaravanTimer() % GAME_FPS;
-        printPutc(SUBSEC_TAB_[timer]);
+    if (!gameCanIncLeft()) {
+        if (gameIsCaravan()) {          // キャラバン モード
+            printSetAtb(VATB(4, 0, 0));
+            if      (gameGetTimer() < 10 * GAME_FPS) { printSetAtb(VATB(2, 0, 0)); }
+            else if (gameGetTimer() < 100 * GAME_FPS) { printSetAtb(VATB(6, 0, 0)); }
+            printSetAddr((u8*)VVRAM_TEXT_ADDR(35, 0));
+            printU16LeftDecimal1(gameGetTimer() / GAME_FPS, gameGetTimer() % GAME_FPS);
+        } else {                        // サバイバル, むぼう
+            // 時間表示
+            printSetAtb(VATB(2, 0, 0));
+            printSetAddr((u8*)VVRAM_TEXT_ADDR(35, 0));
+            if (gameGetTimer() < 1000) {
+                printU16LeftDecimal1(gameGetTimer(), gameGetSubtimer());
+            } else {
+                printU16Left(gameGetTimer());
+            }
+        }
+        printSetAtb(VATB(7, 0, 0));
     } else {
+        // 残機表示
         u8  left = score_left_;
         if (5 < left) { left = 5; }
         u8* t_addr = (u8*)VVRAM_TEXT_ADDR(35, 0);
@@ -250,7 +256,8 @@ void scoreContinue(void)__z88dk_fastcall
     //score_           = 300;//DEBUG
     //score_for_life_ += score_; // DEBUG
     //score_sub_level_ = 0; // レベルは下がらないが, サブレベルは 0 から再開
-    score_left_        = (GAME_MODE_SURVIVAL <= gameGetMode()) ? 0 : LEFT; // サバイバル, 無謀, キャラバン モードは残機なし
+    score_left_        = 0; // サバイバル, むぼう, キャラバン モードは残機なし
+    if (gameCanIncLeft()) { score_left_ = LEFT; }
 }
 
 // ---------------------------------------------------------------- スコア, ハイ スコア
@@ -258,8 +265,8 @@ bool scoreAdd(const u16 score)__z88dk_fastcall
 {
     if (sysIsGameMode()) {
         score_ = addSaturateU16(score_, score);
-        if (gameIsIncLeft() && (score_ != 0xffff)) {
-            score_for_life_ += score; // ゲーム モードによっては残機は増えない. カンストしたら残機は増えない.
+        if (gameCanIncLeft() && (score_ != 0xffff)) { // ゲーム モードによっては残機は増えない. カンストしたら残機は増えない
+            score_for_life_ += score;
         }
         if (SCORE_BONUS_SHIP < score_for_life_) {
             score_for_life_ -= SCORE_BONUS_SHIP;
@@ -294,7 +301,10 @@ bool scoreDecrementLeft(void)__z88dk_fastcall
             return true;
         }
         if (gameGetMode() == GAME_MODE_HARD) {  // ハードモードではレベル 10% 引
-            score_level_ -= score_level_ / 10;
+#pragma disable_warning 110 // 除算最適化警告
+#pragma save
+            score_level_ -= score_level_ / 8;   // 実際は 8%
+#pragma restore
             score_sub_level_ = 0;
         }
         score_left_ --;

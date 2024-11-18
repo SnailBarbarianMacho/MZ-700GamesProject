@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------- Version (X.XX 形式)
 #define VER_MAJOR  1    // 1桁
 #define VER_MINOR0 1    // 1桁
-#define VER_MINOR1 3    // 1桁
+#define VER_MINOR1 4    // 1桁
 
 // αとかβとかある場合は 0 以外の値を入れます
 #define VER_ALPHA 0    // 1桁

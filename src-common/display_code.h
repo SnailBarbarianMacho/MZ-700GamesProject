@@ -192,19 +192,19 @@
 #define DC_NICOCHAN_1   0xce
 #define DC_NICOCHAN_0   0xcf
 
-#define DC_KNAJI_SUN    0xd0    // 日
-#define DC_KNAJI_MON    0xd1    // 月
-#define DC_KNAJI_TUE    0xd2    // 火
-#define DC_KNAJI_WED    0xd3    // 水
-#define DC_KNAJI_THU    0xd4    // 木
-#define DC_KNAJI_FRI    0xd5    // 金
-#define DC_KNAJI_SAT    0xd6    // 土
-#define DC_KNAJI_LIVE   0xd7    // 生
-#define DC_KNAJI_YEAR   0xd8    // 年
-#define DC_KNAJI_HOUR   0xd9    // 時
-#define DC_KNAJI_MIN    0xda    // 分
-#define DC_KNAJI_SEC    0xdb    // 秒
-#define DC_KNAJI_YEN    0xdc    // 円
+#define DC_KANJI_SUN    0xd0    // 日
+#define DC_KANJI_MON    0xd1    // 月
+#define DC_KANJI_TUE    0xd2    // 火
+#define DC_KANJI_WED    0xd3    // 水
+#define DC_KANJI_THU    0xd4    // 木
+#define DC_KANJI_FRI    0xd5    // 金
+#define DC_KANJI_SAT    0xd6    // 土
+#define DC_KANJI_LIVE   0xd7    // 生
+#define DC_KANJI_YEAR   0xd8    // 年
+#define DC_KANJI_HOUR   0xd9    // 時
+#define DC_KANJI_MIN    0xda    // 分
+#define DC_KANJI_SEC    0xdb    // 秒
+#define DC_KANJI_YEN    0xdc    // 円
 #define DC_YEN          0xdd    // ￥
 #define DC_SNAKE        0xdf
 

@@ -124,11 +124,11 @@ const TAB = [
     '{ufo}'    => 'DC_UFO',      '{snake}' => 'DC_SNAKE',
     '{nicochan1}' => 'DC_NICOCHAN_1', '{nicochan0}' => 'DC_NICOCHAN_0',
 
-    '日' => 'DC_KNAJI_SUN', '月' => 'DC_KNAJI_MON', '火' => 'DC_KNAJI_TUE',
-    '水' => 'DC_KNAJI_WED', '木' => 'DC_KNAJI_THU', '金' => 'DC_KNAJI_FRI',
-    '土' => 'DC_KNAJI_SAT', '生' => 'DC_KNAJI_LIVE', '年' => 'DC_KNAJI_YEAR',
-    '時' => 'DC_KNAJI_HOUR', '分' => 'DC_KNAJI_MIN', '秒' => 'DC_KNAJI_SEC',
-    '円' => 'DC_KNAJI_YEN',
+    '日' => 'DC_KANJI_SUN', '月' => 'DC_KANJI_MON', '火' => 'DC_KANJI_TUE',
+    '水' => 'DC_KANJI_WED', '木' => 'DC_KANJI_THU', '金' => 'DC_KANJI_FRI',
+    '土' => 'DC_KANJI_SAT', '生' => 'DC_KANJI_LIVE', '年' => 'DC_KANJI_YEAR',
+    '時' => 'DC_KANJI_HOUR', '分' => 'DC_KANJI_MIN', '秒' => 'DC_KANJI_SEC',
+    '円' => 'DC_KANJI_YEN',
 
     '{caps}' => 'DC_CAPS',
 ];

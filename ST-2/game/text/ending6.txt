@@ -1,1 +1,1 @@
-{moveDown=2}{col=5}{ufo}{ufo} {col=6}Thank you for playing! {col=5}{ufo}{ufo}
+{col=5}{ufo}{ufo} {col=6}Thank you for playing! {col=5}{ufo}{ufo}

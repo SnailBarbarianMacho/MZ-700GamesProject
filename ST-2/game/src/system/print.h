@@ -78,6 +78,10 @@ void printU16Right(const u16 value) __z88dk_fastcall __naked;
  * 16 bit 値を左詰めで表示します
  */
 void printU16Left(const u16 value) __z88dk_fastcall __naked;
+/**
+ * 16 bit 値を 5 桁左詰めで表示し, 小数点以下も表示します
+ */
+void printU16LeftDecimal1(const u16 value, const u8 decimal);
 
 #if DEBUG
 /**

@@ -25,5 +25,7 @@ void sceneEndingDispMisses(u8* const disp_addr) __z88dk_fastcall;
 void sceneEndingDispItems(u8* const disp_addr) __z88dk_fastcall;
 /** 倒した敵の数を表示します */
 void sceneEndingDispEnemies(u8* const disp_addr) __z88dk_fastcall;
+/** 生存期間を表示します */
+void sceneEndingDispSurviveTime(u8* const disp_addr) __z88dk_fastcall;
 
 #endif  // SCENE_ENDING_H_INCLUDED

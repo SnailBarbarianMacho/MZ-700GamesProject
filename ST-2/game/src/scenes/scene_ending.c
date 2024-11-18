@@ -92,8 +92,11 @@ void sceneEndingMain(u16 scene_ct)
                 printSetAddr((u8*)VVRAM_TEXT_ADDR(6, 5));
                 printString(ENDING_STR_TAB_[str_idx]);
                 if (str_idx == 5) {
-                    sceneEndingDispGameResults((u8*)VVRAM_TEXT_ADDR(10, 9));
-                    sceneGamePrintGameMode(    (u8*)VVRAM_TEXT_ADDR(15, 11), gameGetMode(), false);
+                    sceneEndingDispGameResults((u8*)VVRAM_TEXT_ADDR(10, 7));
+                    sceneGamePrintGameMode(    (u8*)VVRAM_TEXT_ADDR(15, 9), gameGetMode(), false);
+                    if (!gameCanIncLeft()) {
+                        sceneEndingDispSurviveTime((u8*)VVRAM_TEXT_ADDR(10, 13));
+                    }
                     sceneEndingDispContinues(  (u8*)VVRAM_TEXT_ADDR(10, 15));
                     sceneEndingDispMisses(     (u8*)VVRAM_TEXT_ADDR(10, 17));
                     sceneEndingDispItems(      (u8*)VVRAM_TEXT_ADDR(10, 19));
@@ -170,6 +173,14 @@ void sceneEndingDispEnemies(u8* const disp_addr) __z88dk_fastcall
 {
     printSetAddr(disp_addr);
     printString(text_ending6_enemies);
-    u16 nr_killed = objEnemyGetNrKilled();
-    printU16Left(nr_killed);
+    printU16Left(objEnemyGetNrKilled());
+}
+
+#include "../../text/ending6_survive_time.h"
+void sceneEndingDispSurviveTime(u8* const disp_addr) __z88dk_fastcall
+{
+    printSetAddr(disp_addr);
+    printString(text_ending6_survive_time);
+    printU16LeftDecimal1(gameGetTimer(), gameGetSubtimer());
+    printPutc(DC_KANJI_SEC);
 }

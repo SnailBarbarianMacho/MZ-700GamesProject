@@ -153,7 +153,7 @@ bool objPlayerMain(Obj* const p_obj)
 #endif
 
         // -------- キャラバン モード
-        if (gameGetCaravanTimer() == 0) {
+        if (gameIsCaravan() && gameGetTimer() == 0) {
             p_obj->step = OBJ_PLAYER_STEP_END_CARAVAN;
             p_obj->ct = 0;
         }
@@ -274,6 +274,9 @@ void objPlayerDraw(Obj* const p_obj, u8* draw_addr)
         sceneEndingDispMisses((u8*)VVRAM_TEXT_ADDR(12, 14));
         // fall through
     case OBJ_PLAYER_STEP_END_SURVIVAL: // サバイバル/無謀 モード終了表示
+        if (gameGetTimer() != 0) {
+            sceneEndingDispSurviveTime((u8*)VVRAM_TEXT_ADDR(12, 14));
+        }
         sceneEndingDispEnemies((u8*)VVRAM_TEXT_ADDR(12, 16));
         p_obj->u_geo.geo.w = 0; // 衝突判定を無くす
         {

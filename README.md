@@ -17,7 +17,7 @@
   原因は不明です. その場合は, これらを切り離してください.
   If MZ-1R12 (SRAM memory card), MZ-1E05 (FDD I/F), MZ-1E14 (QD I/F) is installed, it may not start.<br>
   The cause is unknown. In that case, disconnect them.
-* MZ-1500 の場合, リセットすると動かなくなるプログラムがあるかもしれません. その場合はロードし直してください.<br>
+* MZ-1500 の場合, リセットすると動かなくなるプログラムがあるかもしれません(モニターROMがワークを破壊する為). その場合はロードし直してください.<br>
   For the MZ-1500, some programs may stop working after resetting. Please reload.
 * MZ-700 に不可能はない! "MZ-700 has NO LIMIT!"
 

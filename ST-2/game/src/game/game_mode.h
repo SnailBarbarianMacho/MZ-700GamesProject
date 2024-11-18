@@ -15,7 +15,8 @@ extern u8   game_mode_;
 extern u8   game_hard_;
 extern bool b_game_caravan_;
 extern bool b_game_inc_left_;
-extern u16  game_caravan_timer_;
+extern u16  game_timer_;
+extern u8   game_subtimer_;
 
 // ---------------------------------------------------------------- マクロ
 
@@ -24,7 +25,7 @@ extern u16  game_caravan_timer_;
 #define GAME_MODE_NORMAL   1    //< ノーマル
 #define GAME_MODE_HARD     2    //< ハード
 #define GAME_MODE_SURVIVAL 3    //< サバイバル
-#define GAME_MODE_MUBO     4    //< 無謀
+#define GAME_MODE_MUBO     4    //< むぼう
 #define GAME_MODE_CARAVAN  5    //< キャラバン
 #define GAME_MODE_MZ1X03_INSENSITIVITY 6 //< MZ1X03 感度の鈍さ
 #define NR_GAME_MODES      7
@@ -45,11 +46,15 @@ inline u8 gameGetMode(void) { return game_mode_; }
 inline u8 gameHard(void) { return game_hard_; }
 /** キャラバンモードかを返します */
 inline bool gameIsCaravan(void) { return b_game_caravan_; }
-/** 自機がスコアで増えるかどうかを返します */
-inline bool gameIsIncLeft(void) { return b_game_inc_left_; }
-/** キャラバン タイマーを返します */
-inline u16 gameGetCaravanTimer(void) { return game_caravan_timer_; }
-/** キャラバン タイマーをデクリメントします */
-u16 gameDecCaravanTimer(void);
+/** 自機がスコアで増えるかどうかを返します (サバイバル, むぼう, キャラバンなら false) */
+inline bool gameCanIncLeft(void) { return b_game_inc_left_; }
+/** キャラバン, サバイバル, むぼう ゲーム モードで使うタイマー値を返します */
+inline u16 gameGetTimer(void) { return game_timer_; }
+/** サバイバル, むぼう ゲーム モードで使うサブタイマー値を返します(0～31) */
+inline u8 gameGetSubtimer(void) { return game_subtimer_; }
+/** タイマーをデクリメントし, その値を返します. 必要に応じてチャイム鳴らします(キャラバンモード用) */
+u16 gameDecTimer(void);
+/** タイマーとサブタイマーをインクリメントします(サバイバル, むぼう用) */
+void gameIncTimer(void);
 
 #endif // GAME_MODE_H_INCLUDED

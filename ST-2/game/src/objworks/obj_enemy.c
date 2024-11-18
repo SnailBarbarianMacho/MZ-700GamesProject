@@ -66,7 +66,7 @@ u16 _objEnemyNrKilled;
 #define SCORE_8_2 200
 #define SCORE_8_3 2000
 
-#if DEBUG && 0// TEST 全ゲームモードのテスト... 全敵がメチャ弱い
+#if DEBUG && 1// TEST 全ゲームモードのテスト... 全敵がメチャ弱い
 #define FITNESS_3_1 1
 #define FITNESS_3_2 1
 #define FITNESS_3_3 1

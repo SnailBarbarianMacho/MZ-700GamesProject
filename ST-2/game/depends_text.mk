@@ -20,6 +20,7 @@ game/text/ending6_continue.h: game/text/ending6_continue.txt
 game/text/ending6_enemies.h: game/text/ending6_enemies.txt
 game/text/ending6_items.h: game/text/ending6_items.txt
 game/text/ending6_miss.h: game/text/ending6_miss.txt
+game/text/ending6_survive_time.h: game/text/ending6_survive_time.txt
 game/text/finish.h: game/text/finish.txt
 game/text/game_end.h: game/text/game_end.txt
 game/text/game_mode.h: game/text/game_mode.txt
