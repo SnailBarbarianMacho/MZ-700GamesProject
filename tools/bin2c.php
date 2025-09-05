@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 /**
- * バイナリデータを c の配列風にダンプします. テスト用`
+ * バイナリデータを c の配列風にダンプします
  * 使い方は, Usage: 行を参照してください
  *
  * @author Snail Barbarian Macho (NWK) 2021.09.25
@@ -38,7 +38,7 @@ $out = '';
 $dump = '';
 foreach ($bytes as $i => $b) {
     $out .= sprintf('0x%02x,', $b);
-    if (ctype_graph($b) && $b != 0x5c) {    // バックスラッシュは含まない
+    if (ctype_graph(chr($b)) && $b !== 0x5c) {    // バックスラッシュは含まない
         $dump .= chr($b);
     } else {
         $dump .= '.';
@@ -57,4 +57,7 @@ for ($i = 15 - (count($bytes) & 15); 0 <= $i; $i--) {
 }
 $out .=  sprintf("// 0x%04x %s\n", $addr, $dump);
 $out .=  sprintf("// total size:0x%04x\n", count($bytes));
-file_put_contents($argv[2], $out);
+if (file_put_contents($argv[2], $out) === false) {
+    fwrite(STDERR, 'File save error:' . $out_filename . "\n");
+    exit(1);
+}

@@ -19,9 +19,9 @@ Class Utils
      * @param $argv        引数一覧を下さい
      * @param $short_opts  '-' で指定する1文字形式オプション(文字列の配列)
      *                     getopt() では文字列ですが, getOpt() では $long_opts と同じ配列形式です
-     *                     getopt() と同じ. ':'(=値は必須) や '::'(=値は任意) も使えます
+     *                     getopt() と同じ. ':'(値は必須) や '::'(値は任意) も使えます
      * @param $long_opts   '--' で指定するロング形式オプション(文字列の配列)
-     *                     getopt() と同じ. ':'(=値は必須) や '::'(=値は任意) も使えます
+     *                     getopt() と同じ. ':'(値は必須) や '::'(値は任意) も使えます
      * @param $r_left_args オプション以外の引数を返します (文字列の配列)
      * @param $r_err       問題の起きた引数一覧を返します (スペースで区切った文字列. エラー無ければ空文字)
      *                     重複, 未知のオプション, 値の指定の間違いなど.
@@ -39,10 +39,10 @@ Class Utils
      *   if ($errs) {
      *       echo("Invalid option(s):$errs\n"); exit(1);
      *   }
-     *   if (isset($options['help'] || isset($options['h']) {
+     *   if (isset($options['help']) || isset($options['h'])) {
      *       usage();
      *   }
-     *   if (isset($options['channels'] || isset($options['c'])) {
+     *   if (isset($options['channels']) || isset($options['c'])) {
      *       // $t に引数が入ります. 両方とも指定した場合どちらを採用するかは実装依存(手抜き)
      *       $t = isset($options['channels']) ? $options['channels'] : $options['c'];
      *       // ...

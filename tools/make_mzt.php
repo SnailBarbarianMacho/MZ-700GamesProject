@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types = 1);
+require_once('nwk-classes/utils/mzt.class.php');
+
 /**
  * バイナリから MZT ファイルを生成します
  * 使い方は, Usage: 行を参照してください
@@ -26,55 +28,43 @@ if (count($argv) !== 6)
     fwrite(STDERR, "  The addresses can be decimal or hexadecimal(0x)\n");
     exit(1);
 }
-$binFilename = $argv[1];
-$progName    = $argv[2];
-$loadAddr    = $argv[3];
-$execAddr    = $argv[4];
-$outMzt      = $argv[5];
+$bin_filename = $argv[1];
+$name         = $argv[2];
+$load_addr    = $argv[3];
+$exec_addr    = $argv[4];
+$mzt_filename = $argv[5];
 
 // ファイル存在チェック
-if (file_exists($binFilename) === false)
+if (file_exists($bin_filename) === false)
 {
-    fwrite(STDERR, "File not found[$binFilename]\n");
+    fwrite(STDERR, "File not found[$bin_filename]\n");
     exit(1);
-}
-
-// プログラム名. 小文字は大文字に, 16文字に揃えて末端に 0x0d で埋めて 17 バイトにします
-$progName = substr(strtoupper($progName), 0, 16);
-for ($i = strlen($progName); $i < 17; $i++) {
-    $progName .= pack("C", 0x0d);
-}
-
-// ロード, 実行アドレス. '0x' で始まるなら 16 進数
-$loadAddr = strtolower($loadAddr);
-$execAddr = strtolower($execAddr);
-if (str_starts_with($loadAddr, '0x')) {
-    $loadAddr = hexdec(substr($loadAddr, 2));
-}
-if (str_starts_with($execAddr, '0x')) {
-    $execAddr = hexdec(substr($execAddr, 2));
 }
 
 // ファイル ロード
-$binData = file_get_contents($binFilename);
-if (!$binData) {
-    fwrite(STDERR, "File open error[$binFilename]\n");
+$bin_data_str = file_get_contents($bin_filename);
+if (!$bin_data_str) {
+    fwrite(STDERR, "File open error[$bin_filename]\n");
     exit(1);
 }
-$binSize =  strlen($binData);
 
-printf("$outMzt:  Load#Size:0x%04x#0x%04x  Exec:0x%04x\n", $loadAddr, $binSize, $execAddr);
-
-
-$data = pack("C", 0x01);        // ファイル モード
-$data .= $progName;             // プログラム名
-$data .= pack("v", $binSize);   // バイナリ サイズ
-$data .= pack("v", $loadAddr);  // ロード アドレス
-$data .= pack("v", $execAddr);  // 実行開始アドレス
-for ($i = 0; $i < 0x68; $i++)
-{
-    $data .= pack("C", 0x00);  // ファイル名
+// ロード, 実行アドレス. '0x' で始まるなら 16 進数
+$load_addr = strtolower($load_addr);
+$exec_addr = strtolower($exec_addr);
+if (str_starts_with($load_addr, '0x')) {
+    $load_addr = hexdec(substr($load_addr, 2));
 }
-$data .=  $binData;
+if (str_starts_with($exec_addr, '0x')) {
+    $exec_addr = hexdec(substr($exec_addr, 2));
+}
 
-file_put_contents($outMzt, $data);
+try {
+    $mzt = new \nwk\utils\MZT($bin_data_str, $name, $load_addr, $exec_addr);
+} catch (\Exceprion $e) {
+    fwrite(STDERR, "[$bin_filename] " . $e->getMessage());
+    exit(1);
+}
+fwrite(STDOUT, "[$mzt_filename] " . $mzt->getInfoString() . "\n");
+if (!$mzt->save($mzt_filename)) {
+    fwrite(STDOUT, "[$mzt_filename] save failed\n");
+}

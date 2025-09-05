@@ -32,7 +32,7 @@ if (file_exists($in_map_filename) === false) {
     exit(1);
 }
 
-// -------------------------------- 入力&整形
+// -------------------------------- マップ ファイルの入力 & 整形
 $fhmap = fopen($in_map_filename, 'r');
 $out_lines = [];
 while ($line = fgets($fhmap)) {
@@ -43,6 +43,6 @@ while ($line = fgets($fhmap)) {
 }
 fclose($fhmap);
 
-// -------------------------------- ソート&出力
+// -------------------------------- シンボル ファイルとしてソート & 出力
 asort($out_lines);
 file_put_contents($out_sym_filename, implode("\n", $out_lines));

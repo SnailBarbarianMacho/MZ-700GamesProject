@@ -5,23 +5,27 @@ declare(strict_types = 1);
 #require_once 'nwk-classes/utils/error.class.php';
 
 /**
- * - --prog は ソース(.z80ana.c, .c)からバイナリ(.bin)を作る依存リストとclean時の削除リストを作成
- *   例: game/src/ game/obj/ OBJS CLEAN_PROG_FILES
- *   game/obj/a.o:  game/src/system/a.c
- *   game/obj/b.o:  game/src/system/b.c game/src/system/x.h game/cg/c.txt game/text/t.txt
- *   game/obj/c.o:  game/src/system/c.c
- *   game/src/system/c.c:  game/src/system/c.z80ana.c game/src/system/x.h
- *   OBJS := game/obj/a.o game/obj/b.o
- *   CLEAN_PROG_FILES := game/obj/a.o game/obj/b.o game/obj/c.o game/src/system/c.c
+ * - --prog は ソース(.z80ana.c, .c)からオブジェクト(.o)を作る依存リストと,
+ *   オブジェクトのリストと,
+ *   clean 時の削除リストを作成
+ *   例: game/src/ OBJS CLEAN_FILES
+ *   game/system/a.c: game/system/a.z80ana.c game/system/sys.h
+ *   game/system/b.c: game/system/b.z80ana.c game/system/sys.h game/cg/c.txt game/text/t.txt
+ *   game/system/c.c: game/system/c.z80ana.c game/system/sys.h
+ *   game/system/a.o:  game/system/a.c
+ *   game/system/b.o:  game/system/b.c
+ *   game/system/c.o:  game/system/c.c
+ *   OBJS := game/system/a.o game/system/b.o
+ *   CLEAN_FILES := game/obj/a.o game/obj/b.o game/obj/c.o game/src/system/c.c
  *
- * - --cg は各 cgedit データ(.cgedit.txt, .cgedit.json) を変換して複数のヘッダ(.h)を作る依存リストを作成
+ * - --cg は各 cgedit データ(.cgedit.txt, .cgedit.json) から複数のヘッダ(.h)を作る依存リストを作成
  *   例: -cgedit game/cg/ CG_FUNC
  *   game/cg/a.h game/cg/b.h: game/cg/a.cgedit.txt game/cg/a.cgedit.json
  *      $(call CG_FUNC)
  *   game/cg/c.h game/cg/d.h: game/cg/b.cgedit.txt game/cg/b.cgedit.json
  *      $(call CG_FUNC)
  *
- * - --music は各楽譜(.mid)からヘッダ(.h)をつくる依存リストを作成
+ * - --music は各楽譜(.mid)からヘッダ(.h)を作る依存リストを作成
  *   例: -music game/music/
  *   game/music/test.h: game/music/test.mid
  *   game/music/foo.h: game/music/foo.mid
@@ -30,12 +34,6 @@ declare(strict_types = 1);
  *   例: -text game/text/
  *   game/text/branch_ahead.h: game/text/branch_ahead.txt
  *   game/text/game_over.h: game/text/game_over.txt
- *
- * - --stages は各ステージデータ(.c)をビルドして zx0 圧縮して結合したバイナリ(.pak)を作る依存リストを作成
- *   例: -stages game/stages/ STAGE_ZX0S
- *   game/stage/stage1.zx0: game/stage/stage1.c game/stage/stage.h
- *   game/stage/stage2.zx0: game/stage/stage2.c game/stage/stage.h
- *   STAGE_ZX0S := game/stage/stage1.zx0 game/stage/stage2.zx0
  *
  * 使い方は, Usage: 行を参照してください
  *
@@ -46,14 +44,13 @@ declare(strict_types = 1);
 // 引数チェック
 $out_file     = '';
 $prog_dir     = '';
-$obj_dir      = '';
 $objs_macro   = '';
 $clean_files_macro = '';
 $cg_dir       = '';
 $cg_func      = '';
 $music_dir    = '';
 $text_dir     = '';
-$stage_dir    = '';
+$storage_dir  = '';
 $stags_macro  = '';
 
 if (count($argv) <= 2) { usage_($argv); }
@@ -61,14 +58,12 @@ $out_file = $argv[1];
 for ($i = 2; $i < count($argv); $i++) {
     switch ($argv[$i]) {
         case '--prog':
-            if (count($argv) <= $i + 4) { usage_($argv); }
+            if (count($argv) <= $i + 3) { usage_($argv); }
             $prog_dir          = $argv[$i + 1];
-            $obj_dir           = $argv[$i + 2];
-            $objs_macro        = $argv[$i + 3];
-            $clean_files_macro = $argv[$i + 4];
+            $objs_macro        = $argv[$i + 2];
+            $clean_files_macro = $argv[$i + 3];
             if (substr($prog_dir, -1) != '/') { $prog_dir .= '/'; }
-            if (substr($obj_dir, -1) != '/') { $obj_dir .= '/'; }
-            $i += 4;
+            $i += 3;
             break;
         case '--cg':
             if (count($argv) <= $i + 2) { usage_($argv); }
@@ -88,13 +83,6 @@ for ($i = 2; $i < count($argv); $i++) {
             $text_dir = $argv[$i + 1];
             if (substr($text_dir, -1) != '/') { $text_dir .= '/'; }
             $i += 1;
-            break;
-        case '--stages':
-            if (count($argv) <= $i + 2) { usage_($argv); }
-            $stage_dir    = $argv[$i + 1];
-            $stages_macro = $argv[$i + 2];
-            if (substr($stage_dir, -1) != '/') { $stage_dir .= '/'; }
-            $i += 2;
             break;
         default: usage_($argv);
     }
@@ -142,7 +130,7 @@ if ($prog_dir !== '') {
             $out_str .= $c_source2 . ': ' . implode(' ', $pathname_list) . "\n";
 
             $filename2 = pathinfo($c_source2, PATHINFO_FILENAME);
-            $o_pathname  = $obj_dir . $filename2 . '.o';
+            $o_pathname  = $prog_dir . $filename2 . '.o';
             $o_pathnames[]       = $o_pathname;
             $o_clean_pathnames[] = $o_pathname;
             $out_str .= "$o_pathname: $c_source2\n";
@@ -154,7 +142,7 @@ if ($prog_dir !== '') {
             continue;
         }
         $pathname_list  = [];
-        $o_pathname  = $obj_dir . $filename . '.o';
+        $o_pathname  = $prog_dir . $filename . '.o';
         $o_pathnames[]       = $o_pathname;
         $o_clean_pathnames[] = $o_pathname;
 
@@ -234,12 +222,12 @@ if ($text_dir !== '') {
     }
 }
 
-// ---------------------------------------------------------------- stage
-if ($stage_dir !== '') {
-    $out_str .= "\n# stages\n";
+// ---------------------------------------------------------------- storage
+if ($storage_dir !== '') {
+    $out_str .= "\n# storage\n";
 
-    // $stage_dir 以下を, 再帰的に .c を探します
-    $it = createRecursiveDirectoryIterator_($stage_dir);
+    // $storage_dir 以下を, 再帰的に .c を探します
+    $it = createRecursiveDirectoryIterator_($storage_dir);
     $zx0_files = [];
     foreach ($it as $pathname => $info) {
         if (str_ends_with($pathname, '.c')) {
@@ -257,7 +245,7 @@ if ($stage_dir !== '') {
             $out_str .= "\n";
         }
     }
-    $out_str .= "$stages_macro := " . implode(' ', $zx0_files) . "\n";
+    $out_str .= "$storage_macro := " . implode(' ', $zx0_files) . "\n";
 }
 
 // ---------------------------------------------------------------- 出力して終了
@@ -361,10 +349,9 @@ function usage_($argv): void
 {
     fwrite(STDERR, 'Usage: php ' . $argv[0] . " outfile [params...]\n" .
         "params are:\n" .
-        "  --prog   prog_dir obj_dir objs_macro del_files_macro\n" .
-        "  --cg     cg_dir cg_func\n" .
-        "  --music  music_dir\n" .
-        "  --text   text_dir\n" .
-        "  --stages stages_dir stages_macro\n");
+        "  --prog    prog_dir objs_macro_name clean_files_macro_name\n" .
+        "  --cg      cg_dir cg_func\n" .
+        "  --music   music_dir\n" .
+        "  --text    text_dir\n");
     exit(1);
 }

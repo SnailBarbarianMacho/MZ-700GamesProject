@@ -32,7 +32,7 @@ declare(strict_types = 1);
  *   - 通常モードの場合, C 言語形式で, TEXT と ATB が別々に出力されます:
  *     #define CG_HOGE_WIDTH 4
  *     #define CG_HOGE_HEIGHT 4
- *     static const u8 cg_hoge[] = {
+ *     static u8 const cg_hoge[] = {
  *       // TEXT
  *       0xfa, 0xf7, 0xf3, 0xff,
  *       0x00, 0x00, 0xfe, 0xf1,
@@ -48,7 +48,7 @@ declare(strict_types = 1);
  *   - Transparent モードの場合, TEXT と ATB が交互に出力されます. テキスト == 0x00 の場合は ATB は出力しません:
  *     #define CG_HOGE_WIDTH 4
  *     #define CG_HOGE_HEIGHT 4
- *     static const u8 cg_hoge[] = {
+ *     static u8 const cg_hoge[] = {
  *       // TEXT + ATB transparent + interleaved
  *       0xfa, 0x70, 0xf7, 0x70, 0xf3, 0x70, 0xff, 0x70,
  *       0x00,       0x00,       0xfe, 0x70, 0xf1, 0x70,
@@ -59,7 +59,7 @@ declare(strict_types = 1);
  *  - TextOnly モードの場合, テキストのみが出力されます
  *     #define CG_HOGE_WIDTH 4
  *     #define CG_HOGE_HEIGHT 4
- *     static const u8 cg_hoge[] = {
+ *     static u8 const cg_hoge[] = {
  *       // TEXT
  *       0xfa, 0xf7, 0xf3, 0xff,
  *       0x00, 0x00, 0xfe, 0xf1,
@@ -268,7 +268,7 @@ function printCSourceBegin_($name_upper, $name, $w, $h): string
 {
     $ret  = sprintf("#define CG_{$name_upper}_WIDTH {$w}\n");
     $ret .= sprintf("#define CG_{$name_upper}_HEIGHT {$h}\n");
-    $ret .= sprintf("static const u8 cg_{$name}[] = {\n");
+    $ret .= sprintf("static u8 const cg_{$name}[] = {\n");
     return $ret;
 }
 

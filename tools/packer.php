@@ -29,8 +29,9 @@ if (count($argv) < 3) {
 // ファイル読み込み
 $err = false;
 $data_arr   = [];
+$filenames  = [];
 for ($i = 1; $i < count($argv) - 1; $i ++) {
-    $filename = $argv[$i];
+    $filenames[] = $filename = $argv[$i];
     $data = file_get_contents($filename);
     if ($data === false) {
         fwrite(STDERR, "File load error[$filename]\n");
@@ -49,7 +50,7 @@ $out = pack('C1', count($data_arr));
 
 $addr = count($data_arr) * 2 + 2 + 1;
 foreach ($data_arr as $idx => $data) {
-    //echo(sprintf("0x%02x:addr:0x%04x\n", $idx, $addr));
+    //echo(sprintf("%d:0x%04x#0x%04x [%s]: \n", $idx, $addr, strlen($data), $filenames[$idx])); デバッグ用
     $out .= pack('v', $addr);
     $addr += strlen($data);
 }

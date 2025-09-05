@@ -7,7 +7,7 @@ declare(strict_types = 1);
  */
 
 // --------------------------------
-printf("static const u8 sAtan2Tab[] = {\n");
+printf("static u8 const sAtan2Tab[] = {\n");
 for ($y = 0; $y < 16; $y++) {
     print("    ");
     for ($x = 0; $x < 16; $x++) {
@@ -25,7 +25,7 @@ for ($y = 0; $y < 16; $y++) {
 printf("};\n");
 
 // -------------------------------- sin は 1/4 PI だけ.  残りの部分とcos はこれから作ります
-printf("static const s8 sSinTab[] = {\n");
+printf("static s8 const sSinTab[] = {\n");
 for ($i = 0; $i <= 64; $i++) {
     if (($i % 16) == 0) { printf("    "); }
     $a = $i * 2 * M_PI / 256;

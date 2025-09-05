@@ -74,7 +74,8 @@ printf("[$in_map_filename]: 256-byte alignment check ... OK!\n");
 
 /**
  * $labels の中に, $label_end があるかチェックして,
- * あればアドレスチェック
+ * あればアドレス調査
+ * addr_start と addr_end は同じセグメント内になければなりません
  */
 function check($label_start, $label_end, $labels)
 {
@@ -83,12 +84,12 @@ function check($label_start, $label_end, $labels)
         return false;
     }
 
-    $addr_start = $labels[$label_start];
-    $addr_end   = $labels[$label_end];
+    $addr_start = hexdec($labels[$label_start]);
+    $addr_end   = hexdec($labels[$label_end]);
     //print("$addr_start - $addr_end  $label_start\n");
-    if (((hexdec($addr_end) - 1) & 0xff00) !== (hexdec($addr_start) & 0xff00)) {
+    if (($addr_end & 0xff00) !== ($addr_start & 0xff00)) {
         $err = true;
-        fwrite(STDERR, "alignment error! labels [$label_start($addr_start)] and [$label_end($addr_end)] is not same 256-segment\n");
+        fwrite(STDERR, "alignment error! labels [$label_start($labels[$label_start])] and [$label_end($labels[$label_end])] is not same 256-segment\n");
         return false;
     }
     return true;

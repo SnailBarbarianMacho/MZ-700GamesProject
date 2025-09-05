@@ -19,7 +19,6 @@ declare(strict_types = 1);
  *
  * 使い方は, Usage: 行を参照してください
  *
- * @author Snail Barbarian Macho (NWK) 2021.09.08
  */
 
 // --------------------------------
@@ -72,7 +71,15 @@ const TAB = [
     'π' => 'DC_PI',            '￥' => 'DC_YEN',      '\\' => 'DC_BACK_SLASH',
     '←' => 'DC_R_ARROW',       '↑' => 'DC_U_ARROW',
 
-    '■' => 'DC_SQUARE',
+    '■' => 'DC_FULL_BLOCK',
+    '▀' => 'DC_UPPER_HALF_BLOCK',
+    '▄' => 'DC_LOWER_HALF_BLOCK',
+    '▌' => 'DC_LEFT_HALF_BLOCK',
+    '▐' => 'DC_RIGHT_HALF_BLOCK',
+    '◤' => 'DC_UPPER_LEFT_TRIANGLE',
+    '◥' => 'DC_UPPER_RIGHT_TRIANGLE',
+    '◣' => 'DC_LOWER_LEFT_TRIANGLE',
+    '◢' => 'DC_LOWER_RIGHT_TRIANGLE',
     '♠' => 'DC_SPADE', '♦' => 'DC_DIAMOND', '♣' => 'DC_CLUB', '♥' => 'DC_HEART',
 
     'ア' => 'DC_KANA_A',  'イ' => 'DC_KANA_I',  'ウ' => 'DC_KANA_U',  'エ' => 'DC_KANA_E',  'オ' => 'DC_KANA_O',
@@ -141,6 +148,7 @@ $inText = rtrim($inText); // 最後の改行コード等はカット
 
 // 1 文字 1 文字読む`
 $arr = [];
+$len = 0;
 $tag = '';          // タグモード       '{..}' 文字列
 $nrLfs = 0;         // 改行モード       連続する改行数
 $bCaps = false;     // CAPS モード(false/true = AZカナ/azかな)
@@ -165,19 +173,19 @@ for ($i = 0; $i < strlen($inText); $i++) {
         }
         // タグ モード終了
         if (strpos($tag, '{col=') === 0) {
-            if (checkTagColor($tag, $fgColor, $bgColor, $bCaps, $arr) === false) {
+            if (checkTagColor($tag, $fgColor, $bgColor, $bCaps, $arr, $len) === false) {
                 $nrErrs++;
             }
             $tag = '';
             continue;
         } else if (strpos($tag, '{moveRight=') === 0) {
-            if (checkTagMoveRight($tag, $arr) === false) {
+            if (checkTagMoveRight($tag, $arr, $len) === false) {
                 $nrErrs++;
             }
             $tag = '';
             continue;
         } else if (strpos($tag, '{moveDown=') === 0) {
-            if (checkTagMoveDown($tag, $arr) === false) {
+            if (checkTagMoveDown($tag, $arr, $len) === false) {
                 $nrErrs++;
             }
             $tag = '';
@@ -185,6 +193,7 @@ for ($i = 0; $i < strlen($inText); $i++) {
         }
         if (isset(TAB[$tag])) {
             $arr[] = TAB[$tag];
+            $len++;
         } else {
             $nrErrs++;
             fwrite(STDERR, "ERROR: The $tag tag is not exist\n");
@@ -223,6 +232,10 @@ for ($i = 0; $i < strlen($inText); $i++) {
             //echo var_export($bCaps, true)."[$c]\n";
             if (isset(TAB[$c])) {
                 $arr[] = TAB[$c];
+                $len++;
+                if (preg_match('/[がぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽヴガギグゲゴザジズゼドダヂヅデドバビブベボパピプペポ]/u', $c)) {
+                    $len++;
+                }
             } else {
                 fwrite(STDERR, "ERROR: The character [$c] is not exist\n");
                 $nrErrs++;
@@ -240,10 +253,10 @@ optimizeAtb($arr, '0x40', 'DC_COL4');
 optimizeAtb($arr, '0x50', 'DC_COL5');
 optimizeAtb($arr, '0x60', 'DC_COL6');
 optimizeAtb($arr, '0x70', 'DC_COL7');
-outData($inText, $outFilename, $arr);
+outData($inText, $outFilename, $arr, $len);
 
 // -------------------------------- 引数を持つタグの処理関数
-function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, array &$arr): bool
+function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, array &$arr, int &$len): bool
 {
     $matches = [];
     if (preg_match('/^\{col=([0-9]),([0-9])\}$/', $tag, $matches) &&
@@ -275,7 +288,7 @@ function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, a
     return false;
 }
 
-function checkTagMoveRight(string $tag, array &$arr): bool
+function checkTagMoveRight(string $tag, array &$arr, int &$len): bool
 {
     $matches = [];
     if (!preg_match('/^\{moveRight=([0-9]{1,2})\}$/', $tag, $matches) ||
@@ -287,10 +300,11 @@ function checkTagMoveRight(string $tag, array &$arr): bool
     }
     $arr[] = 'DC_MOVE_RIGHT';
     $arr[] = sprintf('0x%02x', $matches[1]);
+    $len += $matches[1];
     return true;
 }
 
-function checkTagMoveDown(string $tag, array &$arr): bool
+function checkTagMoveDown(string $tag, array &$arr, int &$len): bool
 {
     $matches = [];
     if (!preg_match('/^\{moveDown=([0-9]{1,2})\}$/', $tag, $matches) ||
@@ -302,6 +316,7 @@ function checkTagMoveDown(string $tag, array &$arr): bool
     }
     $arr[] = 'DC_MOVE_DOWN';
     $arr[] = sprintf('0x%02x', $matches[1]);
+    //$len += $matches[1];
     return true;
 }
 
@@ -354,7 +369,7 @@ function optimizeAtb(array &$arr, string $value, string $out): void
 
 
 // -------------------------------- 出力
-function outData(string $inText, string $outFilename, array $arr): void
+function outData(string $inText, string $outFilename, array $arr, int $len): void
 {
     // 安全のために 256 文字に抑えておく
     if (256 <= count($arr)) {
@@ -368,14 +383,16 @@ function outData(string $inText, string $outFilename, array $arr): void
     foreach ($textArr as $t) {
         $outStr .= '// ' . $t . "\n";
     }
-    $outStr .= 'static const u8 text_' . pathinfo($outFilename, PATHINFO_FILENAME) . "[] = { \n    ";
+    $label = pathinfo($outFilename, PATHINFO_FILENAME);
+    $outStr .= "static u8 const text_" . $label . "[] = { \n    ";
     foreach ($arr as $c) {
         $outStr .= $c . ', ';
-        if (($c === 'DC_LF') || ($c === 'DC_LF2')) {
+        if ($c === 'DC_LF' || $c === 'DC_LF2') {
             $outStr .= "\n    ";
         }
     }
-    $outStr .= "\n    0, };";
+    $outStr .= "\n    0, };\n";
+    $outStr .= "#define TEXT_" . strtoupper($label) . "_LEN $len\n"; // 特殊コードを除いた表示文字の長さ
     file_put_contents($outFilename, $outStr);
 
     //$macro = strtoupper(ltrim(strtolower(preg_replace('/[A-Z]/', '_\0', $outFilename)), '_')) . "_INCLUDED";// camelCase を SNAKE_CASE に

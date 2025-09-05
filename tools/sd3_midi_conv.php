@@ -649,7 +649,7 @@ function outMml1(array $mmlss): string
             if (str_starts_with($mml, 'mml')) {
                 $ret .= '#define ' . $var_name . ' ' . $mml . "\n";
             } else {
-                $ret .= 'static const u8 ' . $var_name . '[] = { ' . $mml . "0 }; \n";
+                $ret .= 'static u8 const' . $var_name . '[] = { ' . $mml . "0 }; \n";
             }
         }
     }
@@ -722,7 +722,7 @@ function outMmlN(array $mmlss, int $nr_bars): string
             if (str_starts_with($mml, 'mml')) {
                 $ret .= '#define ' . $var_name . ' ' . $mml . "\n";
             } else {
-                $ret .= 'static const u8 ' . $var_name . "[] = {\n" . $mml . "    0 };\n";
+                $ret .= 'static u8 const' . $var_name . "[] = {\n" . $mml . "    0 };\n";
             }
         }
     }

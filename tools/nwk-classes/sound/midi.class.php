@@ -1089,7 +1089,7 @@ class MidiReader {
 
     // MARK: createScoreDump()
     /** 楽譜の内容を表示します. $score を省略するとインスタンス内の情報を返します */
-    public function debugScoreDump(\nwk\sound\Score $score = null): void
+    public function debugScoreDump(\nwk\sound\Score $score = undefined): void
     {
         if (!$score) {
             $score = $this->score_;
