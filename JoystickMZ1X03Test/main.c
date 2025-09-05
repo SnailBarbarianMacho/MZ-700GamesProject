@@ -52,7 +52,7 @@ __asm
     ld  BC, __BSS_END_head - __BSS_head - 1
     ld  (HL), 0x00
     ldir
-    BANK_VRAM_MMIO  C
+    BANKH_VRAM_MMIO  C
 __endasm;
 }
 
