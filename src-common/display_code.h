@@ -54,7 +54,15 @@
 #define DC_PERIOD       0x2e    // . 唯一の ASCII / Display Code 一致キャラ
 #define DC_COMMA        0x2f    // ,
 
-#define DC_SQUARE       0x43    // ■
+#define DC_FULL_BLOCK           0x43// ■ 完全なブロック
+#define DC_UPPER_HALF_BLOCK     0x7a// ▀ 上半分ブロック
+#define DC_LOWER_HALF_BLOCK     0x3a// ▄ 下半分ブロック
+#define DC_LEFT_HALF_BLOCK      0x7b// ▌ 左半分ブロック
+#define DC_RIGHT_HALF_BLOCK     0x3b// ▐ 右半分ブロック
+#define DC_UPPER_LEFT_TRIANGLE  0x56// ◤
+#define DC_UPPER_RIGHT_TRIANGLE 0x42// ◥
+#define DC_LOWER_LEFT_TRIANGLE  0x4d// ◣
+#define DC_LOWER_RIGHT_TRIANGLE 0x4e// ◢
 
 #define DC_R_ARROW      0x40    // ←
 #define DC_QUESTION     0x49    // ?

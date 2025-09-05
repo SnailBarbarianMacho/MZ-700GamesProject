@@ -6,15 +6,53 @@
 #ifndef ASM_MACROS_H_INCLUDED
 #define ASM_MACROS_H_INCLUDED
 
+// ---------------------------------------------------------------- MARK:オペコード
+// アルファベット順
+#define OPCODE_ADD_HL   0x86
+#define OPCODE_ADD_N    0xc6
+#define OPCODE_AND_N    0xe6
+#define OPCODE_DEC_A    0x3d
+#define OPCODE_DEC_D    0x15
+#define OPCODE_DEC_E    0x1d
+#define OPCODE_INC_A    0x3c
+#define OPCODE_INC_D    0x14
+#define OPCODE_INC_E    0x1c
+#define OPCODE_JP       0xc3
+#define OPCODE_JP_C     0xda
+#define OPCODE_JP_NC    0xd2
+#define OPCODE_JR       0x18
+#define OPCODE_JR_NZ    0x20
+#define OPCODE_JR_Z     0x28
+#define OPCODE_LD_A_N   0x3e    // 相対ジャンプしない代わりに使用
+#define OPCODE_LD_A_HL  0x7e
+#define OPCODE_LD_BC_NN 0x01
+#define OPCODE_LD_C_HL  0x4e
+#define OPCODE_LD_HL_N  0x36
+#define OPCODE_LD_HL_NN 0x21    // ジャンプしない代わりに使用
+#define OPCODE_NOP      0x00
+#define OPCODE_OR_A     0xb7    // cf = 0
+#define OPCODE_OR_N     0xf6
+#define OPCODE_OR_HL    0xb6
+#define OPCODE_RES_0_L  0x85
+#define OPCODE_RET      0xc9
+#define OPCODE_SCF      0x37    // cf = 1
+#define OPCODE_SET_0_L  0xc5
+#define OPCODE_SUB_HL   0x96
+#define OPCODE_SUB_N    0xd6
+#define OPCODE_XOR_HL   0xae
+#define OPCODE_XOR_A    0xaf    // A = 0
+
+
+// ---------------------------------------------------------------- NARK:マクロ定義
 static void asm_macros_(void) __naked
 {
 __asm
+    // -------------------------------- MARK:空っぽ
     /** 何もしないコードです. 空の引数の代わりに. */
     macro   NO_OP
     endm
 
-    // ---------------------------------------------------------------- 8 bit インクリメント2/デクリメント
-
+    // -------------------------------- MARK:8 bit inc/dec
     /** 2つの8bit レジスタをインクリメントします */
     macro   INC2    reg1, reg2
         inc     reg1
@@ -27,12 +65,13 @@ __asm
         dec     reg2
     endm
 
-    // ---------------------------------------------------------------- 8 bit ビット反転・回転・抽出
+    // -------------------------------- MARK:8 bit not
     /** Aレジスタのビット反転です */
     macro   NOT8A
         cpl
     endm
 
+    // -------------------------------- MARK:8 bit 回転
     /** A レジスタを任意回数左ローテートします
      * - N は回数を, 最後の A は対象レジスタを示します
      * @param n 回数
@@ -40,7 +79,7 @@ __asm
      * - n == 0 なら何もしません
      * - n >  4 ならば反対回転します
      */
-    macro   RLCNA  n
+    macro   RLCA_N  n
         if      (n) < 0
             if      ((-(n)) & 7) <= 4
                 rept    (-(n)) & 7
@@ -72,7 +111,7 @@ __asm
      * - n == 0 なら何もしません
      * - n >  4 ならば反対回転します
      */
-    macro   RRCNA   n
+    macro   RRCA_N  n
         if      (n) < 0
             if      ((-(n)) & 7) <= 4
                 rept    (-(n)) & 7
@@ -97,13 +136,14 @@ __asm
         endif
     endm
 
+    // -------------------------------- MARK:8 bit 抽出
     /** A レジスタからパラメータを抽出します
-     * - 最後の A は対象レジスタを示します
-     * @param mask  マスクかける値
-     * @param shift シフト値(右が正, 負の場合は左回転します)
+     * @param A 破壊されるので明記します
+     * @param mask  マスクかける値 (0xff 相当ならば and 処理はしません)
+     * @param shift シフト(ローテート)値 (右回転が正, 左回転は負. 0 ならばシフトしません)
      * @example PEXTA mask, shift
      */
-    macro   PEXTA mask, shift
+    macro   PEXTA A, mask, shift
         if      (mask) != 0xff
             and     A,  mask
         endif
@@ -132,10 +172,10 @@ __asm
     endm
 
 
-    // ---------------------------------------------------------------- 8 bit 即値加算
+    // -------------------------------- MARK:8 bit 即値加減
 
-    /** A レジスタに 8 bit 即値を加算します */
-    macro   ADDA    val
+    /** A レジスタに 8 bit 即値を加算します. ±1以内なら最適化します */
+    macro   ADDA    A, val
         if ((val) & 0xff) == 0xff
             dec     A
             exitm
@@ -150,8 +190,8 @@ __asm
         add     A,  val
     endm
 
-    /** A レジスタに 8 bit 即値を減算します */
-    macro   SUBA    val
+    /** A レジスタに 8 bit 即値を減算します. ±1以内なら最適化します */
+    macro   SUBA    A, val
         if ((val) & 0xff) == 0xff
             inc     A
             exitm
@@ -176,7 +216,7 @@ __asm
      *   |d| == 1        4                  12
      *   |d| == 2        8                  16
      *   |d| == 3       12                  20
-     *   |d| >= 3       15 A レジスタ破壊   22
+     *   |d| >= 3       15 A レジスタ破壊    22
      * @param r 移動したいレジスタ, (H,L,B,C,D,E)
      *          ※(HL) や A は推奨しません
      * @param val  加算 8bit 値
@@ -296,7 +336,7 @@ __asm
     endm
 
 
-    // ---------------------------------------------------------------- 8/16 bit 演算
+    // -------------------------------- MARK:8/16 bit 演算
 
     /** A -> 16bit へ符号拡張します
      * - 4 bytes, 16 T-states
@@ -332,8 +372,7 @@ __asm
 ADD16_U8T_100:
     endm
 
-
-    // ---------------------------------------------------------------- 16 bit 符号反転, シフト
+    // -------------------------------- MARK:16 bit neg
 
     /** 16bit 値の符号反転します
      * - 6 bytes, 24 T-states
@@ -341,7 +380,8 @@ ADD16_U8T_100:
      * @return
      * - dst_h, dst_l: 反転した 16bit 値
      * - A             dst_h
-     * - zf            A == 0 なら '1'
+     * - zf            dst_h == 0 なら '1'
+     * - sf            dst_h の符号が反映されます
      */
     macro   NEG16T  dst_h, dst_l, src_h, src_l, A
         xor     A,      A
@@ -352,7 +392,8 @@ ADD16_U8T_100:
         ld      dst_h,  A
     endm
 
-    /** 16bit 算術右シフトします
+    // -------------------------------- MARK:16 bit シフト
+    /** 16bit 算術右シフト(signed >>)します
      * - 下位バイトの演算結果をフラグに反映します
      * @attention
      * - 負値を右シフトし続けると 0xffff になります.
@@ -380,7 +421,7 @@ ADD16_U8T_100:
         rr      reg_l
     endm
 
-    /** 16bit 論理右シフトします
+    /** 16bit 論理右シフト(unsigned >>)します
      * - 下位バイトの演算結果をフラグに反映します
      * @return
      * - reg_h, reg_l: シフトした値
@@ -391,7 +432,7 @@ ADD16_U8T_100:
         rr      reg_l
     endm
 
-    /** 16bit 算術左シフトします
+    /** 16bit 左シフト(<<)します
      * - 上位バイトの演算結果をフラグに反映します
      * @return
      * - reg_h, reg_l: シフトした値
@@ -403,16 +444,16 @@ ADD16_U8T_100:
     endm
 
 
-    // ---------------------------------------------------------------- 16 bit 即値加算
+    // -------------------------------- MARK:16 bit 即値加算
 
     /** 16 bit レジスタに 16 bit 即値を加算します
      * - 最後の 'T' はテンポラリを意味します
-     * - 処理時間
-     *    d  == 0           0 T-states
-     *   |d| == 1           6 T-states
-     *   |d| == 2          12 T-states
-     *   |d| == 3          18 T-states
-     *   |d| >= 4          21 T-states tmp レジスタ破壊
+     * - 処理時間 (T-states)
+     *    val  == 0      0
+     *   |val| == 1      6
+     *   |val| == 2     12
+     *   |val| == 3     18
+     *   それ以外       21 tmp レジスタ破壊
      * @param HL   移動したいレジスタ (HL固定)
      * @param val  加算値(16bit)
      * @param tmp  テンポラリ レジスタ (BC or DE) 値が破壊されます
@@ -500,8 +541,81 @@ ADD16_U8T_100:
         error ADD16_value_overflow
     endm
 
+    /** SP レジスタに 16 bit 即値を加算します
+     * - 最後の 'T' はテンポラリを意味します
+     * - 処理時間 (T-states)
+     *    val == -4     24
+     *    val == -3     18
+     *    val == -2     12
+     *    val == -1      6
+     *    val == 0       0
+     *    val == 1       6
+     *    val == 2      10 tmp レジスタ破壊
+     *    val == 3      16 tmp レジスタ破壊
+     *    val == 4      20 tmp レジスタ破壊
+     *    val == 5      26 tmp レジスタ破壊
+     *    それ以外      27 tmp レジスタ破壊(tmp == HL でなければなりません)
+     * @param val  加算値(16bit)
+     * @param tmp  破壊されるテンポラリ レジスタ(HL, DE, BC)
+     */
+    macro   ADDSP16T  val, tmp
+        if ((val) & 0xffff) == 0xfffc   // 24
+            dec     SP
+            dec     SP
+            dec     SP
+            dec     SP
+            exitm
+        endif
+        if ((val) & 0xffff) == 0xfffd   // 18
+            dec     SP
+            dec     SP
+            dec     SP
+            exitm
+        endif
+        if ((val) & 0xffff) == 0xfffe   // 12
+            dec     SP
+            dec     SP
+            exitm
+        endif
+        if ((val) & 0xffff) == 0xffff   // 6
+            dec     SP
+            exitm
+        endif
+        if ((val) & 0xffff) == 0x0000   // 0
+            exitm
+        endif
+        if ((val) & 0xffff) == 0x0001   // 6
+            inc     SP
+            exitm
+        endif
+        if ((val) & 0xffff) == 0x0002   // 10
+            pop     tmp
+            exitm
+        endif
+        if ((val) & 0xffff) == 0x0003   // 16
+            inc     SP
+            pop     tmp
+            exitm
+        endif
+        if ((val) & 0xffff) == 0x0004   // 20
+            pop     tmp
+            pop     tmp
+            exitm
+        endif
+        if ((val) & 0xffff) == 0x0005   // 26
+            inc     SP
+            pop     tmp
+            pop     tmp
+            exitm
+        endif
+        ld      tmp, 0 + (val)          // 10+11+6=27
+        add     tmp, SP
+        ld      SP, tmp
+    endm
 
-    // ---------------------------------------------------------------- 16 bit ロード
+
+
+    // -------------------------------- MARK:16 bit ロード
 
     /** ld DE, (HL) 相当の挙動をします
      * @param HL HL のうち, L が +1 されるので, 明示します
@@ -526,7 +640,7 @@ ADD16_U8T_100:
     endm
 
 
-    // ---------------------------------------------------------------- 16 bit 演算
+    // -------------------------------- MARK:16 bit 平均
 
     /** HL = (DE + BC) / 2  (unsigned 版)
      * - 8+11+8+8 = 35 T-states
@@ -559,7 +673,7 @@ ADD16_U8T_100:
     endm
 
 
-    // ---------------------------------------------------------------- テーブルジャンプ
+    // -------------------------------- MARK:テーブルジャンプ
 
     /**
      * テーブル ジャンプを検索して, ジャンプ先アドレスを HL に返します
@@ -635,7 +749,5 @@ ADD16_U8T_100:
 
 __endasm;
 }
-
-
 
 #endif // ASM_MACROS_H_INCLUDED

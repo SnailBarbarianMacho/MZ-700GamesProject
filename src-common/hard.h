@@ -1,5 +1,5 @@
 /**
- * ハードウェア
+ * MZ-700 ハードウェア
  *
  * - 名前空間 MMIO_, IO_
  * - c 側でアドレスを使う場合は (u8*) キャストを付けてください.
@@ -12,6 +12,16 @@
 #define HARD_H_INCLUDED
 #define CPU_CLOCK                   3579545f
 
+// ---------------------------------------------------------------- 色
+#define BLACK   0
+#define BLUE    1
+#define RED     2
+#define MAGENTA 3
+#define GREEN   4
+#define CYAN    5
+#define YELLOW  6
+#define WHITE   7
+
 // ---------------------------------------------------------------- VRAM
 #define VRAM_TEXT                   0xd000  /// テキストVRAM
 #define VRAM_ATB                    0xd800  /// アトリビュート VRAM(text から atb への移動は, set 3, H でもOK)
@@ -22,19 +32,18 @@
 #define VRAM_ATB_BG_COL_SHIFT       0
 #define VRAM_TEXT_ADDR(x, y)        (VRAM_TEXT + VRAM_WIDTH * (y) + (x))   // VRAM TEXT のアドレス
 #define VRAM_ATB_ADDR(x, y)         (VRAM_ATB  + VRAM_WIDTH * (y) + (x))   // VRAM ATB  のアドレス
-    /** atb を生成するマクロ */
-#define VATB(fg_col, bg_col, b_atb) ((u8)(  \
+/** atb を生成するマクロ(u8) */
+#define VATB(fg_col, bg_col, b_atb) (       \
     ((fg_col) << VRAM_ATB_FG_COL_SHIFT) |   \
     ((bg_col) << VRAM_ATB_BG_COL_SHIFT) |   \
-    ((b_atb) << VRAM_ATB_ATB_SHIFT)))
-/** atb を生成するマクロ(アセンブラ用) */
-#define VATB_ASM(fg_col, bg_col, b_atb) (((fg_col) << VRAM_ATB_FG_COL_SHIFT) | ((bg_col) << VRAM_ATB_BG_COL_SHIFT) | ((b_atb) << VRAM_ATB_ATB_SHIFT))
-/** text+atb を生成するマクロ */
-#define VATB_CODE(fg_col, bg_col, b_atb, display_code) ((u16)(\
-    ((fg_col) << (VRAM_ATB_FG_COL_SHIFT + 8)) | \
-    ((bg_col) << (VRAM_ATB_BG_COL_SHIFT + 8)) | \
-    ((b_atb)  << (VRAM_ATB_ATB_SHIFT    + 8)) | \
-    (display_code)))
+    ((b_atb) << VRAM_ATB_ATB_SHIFT))
+/** text+atb を生成するマクロ(u16) */
+#define VATB_CODE(fg_col, bg_col, b_atb, display_code) (    \
+    ((fg_col) << (VRAM_ATB_FG_COL_SHIFT + 8)) |             \
+    ((bg_col) << (VRAM_ATB_BG_COL_SHIFT + 8)) |             \
+    ((b_atb)  << (VRAM_ATB_ATB_SHIFT    + 8)) |             \
+    (display_code))
+
 
 // ---------------------------------------------------------------- メモリマップド I/O
 #define MMIO_8255_PORTA                 0xe000  /// Key strobe
@@ -191,29 +200,46 @@ static void hard_asm_macros_(void) __naked
 __asm
     // -------------------------------- バンク切替
 
-    /** バンクを切り替えて, メモリ上位を VRAM/MMIO に切り替えます
-     * - メモリ下位は常に RAM です
+    /** メモリ上位を VRAM/MMIO に切り替えます
+     * - メモリ下位は変化しません
      * - C レジスタを破壊するので, 引数で明示します
      */
-    macro   BANK_VRAM_MMIO  C
+    macro   BANKH_VRAM_MMIO C
     ld      C,  IO_BANKH_VRAM_MMIO
     out     (C), A              // 値はなんでもいい
     endm
 
-    /** バンクを切り替えて, メモリ上位を RAM に切り替えます
-     * - メモリ下位は常に RAM です
+    /** メモリ上位を RAM に切り替えます
+     * - メモリ下位は変化しません
      * - C レジスタを破壊するので, 引数で明示します
      */
-    macro   BANK_RAM    C
+    macro   BANKH_RAM   C
     ld      C,  IO_BANKH_RAM
     out     (C), A              // 値はなんでもいい
     endm
 
+    /** メモリ下位を RAM に切り替えます
+     * - メモリ上位は変化しません
+     * - C レジスタを破壊するので, 引数で明示します
+     */
+    macro   BANKL_RAM   C
+    ld      C,  IO_BANKL_RAM
+    out     (C), A              // 値はなんでもいい
+    endm
+
+    /** メモリ下位を ROM に切り替えます
+     * - メモリ上位は変化しません
+     * - C レジスタを破壊するので, 引数で明示します
+     */
+    macro   BANKL_ROM   C
+    ld      C,  IO_BANKL_ROM
+    out     (C), A              // 値はなんでもいい
+    endm
 
     /** メモリ下位をモニタROM, 上位を VRAM/MMIO に切り替えます
      * - C レジスタを破壊するので, 引数で明示します
      */
-    macro   BANK_ROM_VRAM_MMIO C
+    macro   BANKL_ROM_BANKH_VRAM_MMIO   C
     ld      C,  IO_BANKL_ROM_BANKH_VRAM_MMIO
     out     (C), A              // 値はなんでもいい
     endm

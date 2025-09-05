@@ -15,6 +15,7 @@ typedef signed   short s16;
 typedef unsigned long  u32;
 typedef signed   long  s32;
 typedef unsigned char  bool;
+typedef unsigned short uintptr_t;   // ポインタの大きさの整数(z88dkには無さそうだったので)
 
 // アセンブラ用
 #define SIZEOF_U8 1
@@ -29,7 +30,7 @@ typedef unsigned char  bool;
 // ---------------------------------------------------------------- 定数
 #define true  1
 #define false 0
-#define nullptr ((void*)0x0000)
+#define nullptr ((void *)0x0000)
 
 // ---------------------------------------------------------------- 便利マクロ
 /** 配列の大きさを知ります */
@@ -66,6 +67,8 @@ typedef unsigned char  bool;
 #define X8Y8(x, y)              (((u16)(x) << 8) | (y))
 /** u8 x 2 を, u16 にパック.    注: y の上位ビットのカットはしてません */
 #define W8H8(w, h)              (((u16)(w) << 8) | (h))
+/** u8 x 2 を, u16 にパック.    注: y の上位ビットのカットはしてません */
+#define H8W8(h, w)              (((u16)(h) << 8) | (w))
 /** u8 + u16 を, u32 にパック.  注: x, y の上位ビットのカットはしてません */
 #define X8Y16(x, y)             (((u32)(x) << 16) | (y))
 /** u16 + u8 を, u32 にパック.  注: y の上位ビットのカットはしてません */
@@ -78,7 +81,7 @@ typedef unsigned char  bool;
 #define X8Y8Z8(x, y, z)         (((u32)(x) << 16) | ((y)<<8) | (z))
 /** u8 x 4 を, u32 にパック.    注: y, z, w の上位ビットのカットはしてません */
 #define X8Y8Z8W8(x, y, z, w)    (((u32)(x) << 24) | ((y)<<16) | ((z)<<8) | (w))
-/** u8 x 2 + void* を, u32 にパック. 注: y, p の上位ビットのカットはしてません */
+/** u8 x 2 + void * を, u32 にパック. 注: y, p の上位ビットのカットはしてません */
 #define X8Y8P16(x, y, p)        (((u32)(x) << 24) | ((y)<<16) | (p))
 /** u8 x 3 を u32 にパック.     注: z, y, x  の上位ビットのカットはしてません */
 //#define Z8Y8X8(z, y, x)     (((u32)(z) << 16) | ((y)<<8) | x)
