@@ -1,6 +1,6 @@
 .PHONY:    all clean depend
 
-# ざっくりのビルド フロー
+# ざっくりのビルド フロー(上から下へ)
 #
 #        music/chronos.dms music/drum0.txt
 #                 :        music/drum1.txt
@@ -24,9 +24,10 @@
 #
 
 # -------- macros
-# 特別な命令に使われる音長. この音長の音符は使えません(makefile で定義)
+# Lead にて特別な命令に使われる音長. この音長の音符は使えません(4の倍数, makefile で定義). 曲にあわせて設定してください
 SD6_EXCEPT_LEN		:= 180
-SD6_EXCEPT_LEN_SZ	:= 24	# 0,4,8,12,16,29,24 の 7つ
+# 180,184,188,192,196,209,224 の7個の音長が使用不可. このマクロは MIDI コンバーターで使用します
+SD6_EXCEPT_LEN_SZ	:= 24
 
 TOOLS   	:= ../tools
 CRT0 		:= crt0.asm
@@ -36,7 +37,8 @@ PHP         := php
 CC      	:= zcc
 DEBUG   	:= -DDEBUG=1
 ORG     	:= 0x1200
-CFLAGS  	:= +mz -lndos -compiler=sdcc -OS3 $(DEBUG) -DSD6_EXCEPT_LEN=$(SD6_EXCEPT_LEN) -DSD6_EXCEPT_LEN_SZ=$(SD6_EXCEPT_LEN_SZ)
+CFLAGS  	:= +mz -lndos -compiler=sdcc -OS3 $(DEBUG) \
+	-DSD6_EXCEPT_LEN=$(SD6_EXCEPT_LEN)
 LFLAGS      := +mz -mz80 -m\
 	-lndos\
 	-crt0$(CRT0)\
@@ -47,8 +49,8 @@ RMF			:= $(PHP) $(TOOLS)/rmf.php
 MUSIC_DIR   := music
 GAME_DEPENDS_PROG	:= depends-prog.mk
 GAME_DEPENDS_MUSIC	:= depends-music.mk
-DRUMS       := $(MUSIC_DIR)/drum0.txt $(MUSIC_DIR)/drum1.txt $(MUSIC_DIR)/drum2.txt
-PULSE       := $(MUSIC_DIR)/pulse.txt
+SD6_DRUMS   := $(MUSIC_DIR)/drum0.txt $(MUSIC_DIR)/drum1.txt $(MUSIC_DIR)/drum2.txt
+SD6_PULSE   := $(MUSIC_DIR)/pulse.txt
 SD6_DATA    := $(MUSIC_DIR)/sd6_data.h
 
 # -------- ビルド
@@ -56,9 +58,9 @@ all: $(OUTFILE).mzt
 -include $(GAME_DEPENDS_PROG)
 -include $(GAME_DEPENDS_MUSIC)
 
-$(SD6_DATA): $(DRUMS) $(PULSE)
+$(SD6_DATA): $(SD6_DRUMS) $(SD6_PULSE)
 	@echo Genating sd6 table ... [$@]
-	@$(PHP) $(TOOLS)/sd6_gen_data.php $(PULSE) $(DRUMS) $@
+	@$(PHP) $(TOOLS)/sd6_gen_data.php $(SD6_PULSE) $(SD6_DRUMS) $@
 
 $(OUTFILE).mzt: $(OBJS) $(CRT0)
 	@echo Linking ... [$@]
@@ -82,7 +84,7 @@ $(OUTFILE).mzt: $(OBJS) $(CRT0)
 # -------- 依存関係生成
 depend $(GAME_DEPENDS_PROG) $(GAME_DEPENDS_MUSIC):
 	@echo Generating dependencies...
-	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_PROG)  --prog  . . OBJS PROG_CLEAN_FILES
+	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_PROG)  --prog  . OBJS PROG_CLEAN_FILES
 	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_MUSIC) --music music
 
 # -------- clean

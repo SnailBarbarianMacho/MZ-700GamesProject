@@ -10,7 +10,7 @@
 static void bankRomVramMmio(void) __naked
 {
 __asm
-    BANK_ROM_VRAM_MMIO  C
+    BANKL_ROM_BANKH_VRAM_MMIO  C
     jp      0x0006          // CALL LETNL
 __endasm;
 }

@@ -9,7 +9,7 @@
 
 #pragma disable_warning 85
 #pragma save
-static void puts(const u8* const str) __naked
+static void puts(u8 const * const str) __naked
 {
 __asm
     ld      DE, HL
@@ -22,7 +22,7 @@ __endasm;
 static void bankRomVramMmio(void) __naked
 {
 __asm
-    BANK_ROM_VRAM_MMIO  C
+    BANKL_ROM_BANKH_VRAM_MMIO C
     jp      0x0006          // CALL LETNL
 __endasm;
 }
@@ -31,7 +31,7 @@ __endasm;
 #if 1
 #include "music/chronos.h"
 #else
-static const u8 score0[] = {
+static u8 const score0[] = {
 #if 0   // 無音
     SD4_L_REST(0x100), SD4_B_REST(0x100), SD4_C2_REST(0x100), SD4_D_REST(0x100),
     SD4_L_REST(0x100), SD4_B_REST(0x100), SD4_C2_REST(0x100), SD4_D_REST(0x100),
@@ -308,13 +308,9 @@ static const u8 score0[] = {
 void main(void)
 {
     sd4Init();
-    u8 c = sd4play(((u32)1 << 16) | (const u16)score0);
+    u8 c = sd4play(((u32)1 << 16) | (u16 const)score0);
 
     bankRomVramMmio();
-    if (c & KEY9_F1_MASK) {
-        puts("ABORTED WITH F1 KEY.\x0d");
-        return;
-    }
     if (c & KEY9_F2_MASK) {
         puts("ABORTED WITH F2 KEY.\x0d");
         return;

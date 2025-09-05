@@ -43,36 +43,21 @@ __endasm;
 
 
 #ifndef SD6_EXCEPT_LEN
-#define SD6_EXCEPT_LEN      1
+#define SD6_EXCEPT_LEN      0
 #endif
-#ifndef SD6_EXCEPT_LEN_SZ
-#define SD6_EXCEPT_LEN_SZ   1
-#endif
-
-
-
-
-#define JR          0x18
-#define JR_NZ       0x20
-#define JR_Z        0x28
-
-#define LD_A_N      0x3e    
-#define INC_A       0x3c
-#define DEC_A       0x3d
-
-
 
 
 #define PULSE_L MMIO_8253_CT0_MODE0
 #define PULSE_H MMIO_8253_CT0_MODE3
 
 
-#pragma disable_warning 85
 #pragma save
+#pragma disable_warning 85          
+#pragma disable_warning 59          
 
 
 
-static const u8 SD6_DATA_[] = {
+static u8 const SD6_DATA_[] = {
 #include "music/sd6_data.h"
 };
 
@@ -80,56 +65,50 @@ static const u8 SD6_DATA_[] = {
 
 
 
-void sd6Init(void)  __naked
+void sd6Init(void) 
 {
 __asm
-// line 83
+// line 70
   extern _SD6_DATA_
-// line 84
+// line 71
   extern sd6Init_dataLoop
-// line 87
+// line 74
   ld HL, 0 + _SD6_DATA_
-// line 88
+// line 75
   ld DE, 0 + ADDR_SD6_DRUM
-// line 89
+// line 76
   ld BC, 0 + SZ_SD6_DRUM
-// line 90
+// line 77
   ldir
-// line 92
+// line 79
   ld HL, 0 + ADDR_SD6_DRUM
-// line 93
-  ld B, 0 + SZ_SD6_VTAB & 0xff
-// line 94
+// line 80
+  ld B, 0 + SZ_SD6_TAB & 0xff
+// line 81
 sd6Init_dataLoop:
-// line 95
+// line 82
     ld A, (HL)
     and A, 0 + 0x1f
     ld (DE), A
-// line 96
+// line 83
     xor A, (HL)
-    rept 4
-      rlca
-    endr
     ld (HL), A
-// line 97
+// line 84
     inc L
     inc E
-// line 98
-    djnz B, 0 + sd6Init_dataLoop
-// line 102
-  BANK_VRAM_MMIO C
-// line 103
+  djnz B, 0 + sd6Init_dataLoop
+// line 88
+  BANKH_VRAM_MMIO C
+// line 89
   ld HL, 0 + MMIO_ETC
-// line 104
+// line 90
   ld (HL), 0 + MMIO_ETC_GATE_MASK
-// line 105
+// line 91
   dec L
-// line 106
+// line 92
   ld (HL), 0 + MMIO_8253_CT0_MODE3
-// line 107
-  BANK_RAM C
-// line 109
-  ret
+// line 93
+  BANKH_RAM C
 __endasm;
 }
 
@@ -163,298 +142,298 @@ void SD6PLAY_NOTE_LEAD(
 __asm
 SD6PLAY_NOTE_LEAD macro reg_wlc, reg_slc, reg_tmp_h, reg_tmp_l, reg_tmp_hl, addr_rep_1, addr_vol_1, addr_wl_1, addr_slide_0, addr_mod_vol_speed_1, addr_beeper1_sync_0, addr_end
 local SD6PLAY_NOTE_LEAD__0, SD6PLAY_NOTE_LEAD__1, SD6PLAY_NOTE_LEAD__2, SD6PLAY_NOTE_LEAD__3, SD6PLAY_NOTE_LEAD__4, SD6PLAY_NOTE_LEAD__5, SD6PLAY_NOTE_LEAD__6, SD6PLAY_NOTE_LEAD__7, SD6PLAY_NOTE_LEAD__8, SD6PLAY_NOTE_LEAD__9, SD6PLAY_NOTE_LEAD__10, SD6PLAY_NOTE_LEAD__11, SD6PLAY_NOTE_LEAD__12, SD6PLAY_NOTE_LEAD__13, SD6PLAY_NOTE_LEAD__14, SD6PLAY_NOTE_LEAD__15, SD6PLAY_NOTE_LEAD__16
-// line 139
+// line 123
   extern sd6playNoteLead_pop, sd6playNoteLead_rep_2, sd6playNoteLead_initEnd, sd6playNoteLead_initEndSlur, sd6playNoteLead_modBranch, sd6playNoteLead_modWl, sd6playNoteLead_modWlEnd_1, sd6playNoteLead_modWlSpeed_1, sd6playNoteLead_modWlAdd_0, sd6playNoteLead_modVol, sd6playNoteLead_modVolVal_1, sd6playNoteLead_modVolEnd_1, sd6playNoteLead_modVolInc_0, sd6playNoteLead_modEnd
-// line 149
+// line 133
   dec reg_slc
   jp nz, SD6PLAY_NOTE_LEAD__0
-// line 150
+// line 134
 sd6playNoteLead_pop:
-// line 151
+// line 135
       pop reg_tmp_hl
-// line 154
+// line 138
       ld A, reg_tmp_l
       add A, A
       jp c, SD6PLAY_NOTE_LEAD__1
-// line 155
+// line 139
           add A, A
           ld reg_slc, A
           jr c, SD6PLAY_NOTE_LEAD__2
-// line 157
+// line 141
               cp A, 0 + SD6_EXCEPT_LEN
               jp c, SD6PLAY_NOTE_LEAD__3
-// line 158
+// line 142
                   cp A, 0 + SD6_EXCEPT_LEN + 4 * 7
                   jp nc, SD6PLAY_NOTE_LEAD__4
-// line 159
+// line 143
                       dec SP
-// line 160
+// line 144
                       sub A, 0 + SD6_EXCEPT_LEN - 8
-// line 161
+// line 145
                       rept 2
                         rrca
                       endr
-// line 162
+// line 146
                       ld HL, (addr_rep_1 + 1)
-// line 163
+// line 147
                       inc L
                       ld (sd6playNoteLead_rep_2 + 2), HL
 sd6playNoteLead_rep_2:
                       ld (0x0000), SP
-// line 164
+// line 148
                       inc L
                       inc L
                       ld (HL), A
-// line 165
+// line 149
                       ld (addr_rep_1 + 1), HL
-// line 166
+// line 150
                       jp sd6playNoteLead_pop
 SD6PLAY_NOTE_LEAD__4:
 SD6PLAY_NOTE_LEAD__3:
-// line 171
+// line 155
               dec SP
-// line 172
+// line 156
               xor A, A
               ld (addr_wl_1  + 1), A
-// line 173
+// line 157
               inc A
               ld (addr_vol_1 + 1), A
-// line 174
+// line 158
               ld HL, 0 + sd6playNoteLead_modEnd
-// line 175
+// line 159
               jp sd6playNoteLead_initEndSlur
 SD6PLAY_NOTE_LEAD__2:
-// line 179
+// line 163
           cp A, 0 + SD6_EXCEPT_LEN
           jr nz, SD6PLAY_NOTE_LEAD__5
-// line 180
+// line 164
 addr_rep_1:
               ld HL, 0 + 0x0000
               dec (HL)
               jr nz, SD6PLAY_NOTE_LEAD__6
-// line 181
+// line 165
                   dec L
                   dec L
                   dec L
                   ld (addr_rep_1 + 1), HL
-// line 182
+// line 166
                   dec SP
-// line 183
+// line 167
                   jp sd6playNoteLead_pop
 SD6PLAY_NOTE_LEAD__6:
-// line 186
+// line 170
               dec L
               ld A, (HL)
               dec L
               ld L, (HL)
               ld H, A
               ld SP, HL
-// line 187
+// line 171
               jp sd6playNoteLead_pop
 SD6PLAY_NOTE_LEAD__5:
-// line 191
-// line 192
+// line 175
+// line 176
             cp A, 0 + SD6_EXCEPT_LEN + 4
             jp z, 0 + addr_end
-// line 196
-// line 197
+// line 180
+// line 181
             ld A, reg_tmp_h
             ld (addr_wl_1 + 1), A
-// line 198
-            ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 182
+            ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
             ld reg_tmp_l, A
             ld A, (reg_tmp_hl)
-// line 199
+// line 183
             ld (           sd6playNoteLead_modVolEnd_1 + 1), A
-// line 200
+// line 184
             ld A, 0 + 2
             ld (sd6playNoteLead_modVolVal_1 + 1), A
-// line 201
+// line 185
             ld (addr_vol_1 + 1), A
-// line 202
-            ld A, 0 + INC_A
-            ld (sd6playNoteLead_modVolInc_0    ), A
-// line 203
+// line 186
+            ld A, 0 + OPCODE_INC_A
+            ld (sd6playNoteLead_modVolInc_0), A
+// line 187
             ld HL, 0 + sd6playNoteLead_modVol
-// line 204
+// line 188
             jp sd6playNoteLead_initEnd
 SD6PLAY_NOTE_LEAD__1:
-// line 207
+// line 191
       add A, A
       ld reg_slc, A
       jr c, SD6PLAY_NOTE_LEAD__7
-// line 209
+// line 193
           cp A, 0 + SD6_EXCEPT_LEN
           jp c, SD6PLAY_NOTE_LEAD__8
-// line 210
+// line 194
               cp A, 0 + SD6_EXCEPT_LEN + 4 * 4
               jp nc, SD6PLAY_NOTE_LEAD__9
-// line 211
+// line 195
                   sub A, 0 + SD6_EXCEPT_LEN - 1
-// line 212
-                  ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 196
+                  ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
                   ld reg_tmp_l, A
                   ld A, (reg_tmp_hl)
-// line 213
+// line 197
                   ld (addr_mod_vol_speed_1 + 1), A
-// line 214
+// line 198
                   dec SP
-// line 215
+// line 199
                   jp sd6playNoteLead_pop
 SD6PLAY_NOTE_LEAD__9:
 SD6PLAY_NOTE_LEAD__8:
-// line 220
-// line 221
+// line 204
+// line 205
             ld A, reg_tmp_h
             ld (addr_wl_1 + 1), A
-// line 222
-            ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 206
+            ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
             ld reg_tmp_l, A
             ld A, (reg_tmp_hl)
-// line 223
+// line 207
             ld (           sd6playNoteLead_modVolVal_1 + 1), A
-// line 224
+// line 208
             ld (addr_vol_1                             + 1), A
-// line 225
+// line 209
             ld A, 0 + 2
             ld (sd6playNoteLead_modVolEnd_1 + 1), A
-// line 226
-            ld A, 0 + DEC_A
+// line 210
+            ld A, 0 + OPCODE_DEC_A
             ld (sd6playNoteLead_modVolInc_0    ), A
-// line 227
+// line 211
             ld HL, 0 + sd6playNoteLead_modVol
-// line 228
+// line 212
             jp sd6playNoteLead_initEnd
 SD6PLAY_NOTE_LEAD__7:
-// line 232
+// line 216
       cp A, 0 + SD6_EXCEPT_LEN
       jp c, SD6PLAY_NOTE_LEAD__10
-// line 234
+// line 218
           jr nz, SD6PLAY_NOTE_LEAD__11
-// line 235
-              ld A, 0 + JR
+// line 219
+              ld A, 0 + OPCODE_JR
               ld (addr_slide_0), A
-// line 236
+// line 220
               dec SP
-// line 237
+// line 221
               jp sd6playNoteLead_pop
 SD6PLAY_NOTE_LEAD__11:
-// line 241
+// line 225
           cp A, 0 + SD6_EXCEPT_LEN + 4 * 4
           jp nc, SD6PLAY_NOTE_LEAD__12
-// line 242
+// line 226
               sub A, 0 + SD6_EXCEPT_LEN - 2
-// line 243
-              ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 227
+              ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
               ld reg_tmp_l, A
               ld A, (reg_tmp_hl)
-// line 244
+// line 228
               ld (sd6playNoteLead_modWlSpeed_1 + 1), A
-// line 245
-              ld A, 0 + LD_A_N
+// line 229
+              ld A, 0 + OPCODE_LD_A_N
               ld (addr_slide_0), A
-// line 246
+// line 230
               dec SP
-// line 247
+// line 231
               jp sd6playNoteLead_pop
 SD6PLAY_NOTE_LEAD__12:
 SD6PLAY_NOTE_LEAD__10:
-// line 252
+// line 236
 addr_slide_0:
       jr nz, SD6PLAY_NOTE_LEAD__13
-// line 253
+// line 237
           ld A, reg_tmp_h
           ld (sd6playNoteLead_modWlEnd_1 + 1), A
-// line 255
+// line 239
           ld A, (addr_wl_1 + 1)
           cp A, reg_tmp_h
-          ld A, 0 + INC_A
+          ld A, 0 + OPCODE_INC_A
           jr c, SD6PLAY_NOTE_LEAD__14
               inc A
 SD6PLAY_NOTE_LEAD__14:
-// line 256
+// line 240
           ld (sd6playNoteLead_modWlAdd_0), A
-// line 257
+// line 241
           ld HL, 0 + sd6playNoteLead_modWl
-// line 258
+// line 242
           jp sd6playNoteLead_initEndSlur
 SD6PLAY_NOTE_LEAD__13:
-// line 262
-// line 263
+// line 246
+// line 247
         ld A, reg_tmp_h
         ld (addr_wl_1 + 1), A
-// line 264
-        ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 248
+        ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
         ld reg_tmp_l, A
         ld A, (reg_tmp_hl)
-// line 265
+// line 249
         ld (addr_vol_1               + 1), A
-// line 266
+// line 250
         ld HL, 0 + sd6playNoteLead_modEnd
-// line 270
+// line 254
 sd6playNoteLead_initEnd:
-// line 271
+// line 255
       ld reg_wlc, 0 + 1
-// line 272
+// line 256
 #if  BEEPER1_SYNC
-      ld A, 0 + LD_A_N
+      ld A, 0 + OPCODE_LD_A_N
       ld (addr_beeper1_sync_0), A
-// line 274
+// line 258
 #endif 
-// line 276
+// line 260
 sd6playNoteLead_initEndSlur:
-// line 277
+// line 261
       ld (sd6playNoteLead_modBranch + 1), HL
 SD6PLAY_NOTE_LEAD__0:
-// line 281
+// line 265
 sd6playNoteLead_modBranch:
   jp 0 + sd6playNoteLead_modEnd
-// line 284
+// line 268
 sd6playNoteLead_modWl:
-// line 285
+// line 269
   ld A, reg_slc
 sd6playNoteLead_modWlSpeed_1:
   and A, 0 + 0x00
   jr nz, 0 + sd6playNoteLead_modEnd
-// line 286
+// line 270
     ld A, (addr_wl_1 + 1)
 sd6playNoteLead_modWlEnd_1:
     cp A, 0 + 0x00
-// line 287
+// line 271
     jr z, 0 + sd6playNoteLead_modEnd
 sd6playNoteLead_modWlAdd_0:
     inc A
     ld (addr_wl_1 + 1), A
-// line 288
-    ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 272
+    ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
     ld reg_tmp_l, A
     ld A, (reg_tmp_hl)
-// line 289
+// line 273
     ld (addr_vol_1 + 1), A
-// line 290
+// line 274
     jp sd6playNoteLead_modEnd
-// line 294
+// line 278
 sd6playNoteLead_modVol:
-// line 295
+// line 279
   ld A, reg_slc
 addr_mod_vol_speed_1:
   and A, 0 + 0x00
   jp nz, SD6PLAY_NOTE_LEAD__15
-// line 296
+// line 280
 sd6playNoteLead_modVolVal_1:
       ld A, 0 + 0x00
 sd6playNoteLead_modVolEnd_1:
       cp A, 0 + 0x00
-// line 297
+// line 281
       jr z, SD6PLAY_NOTE_LEAD__16
 sd6playNoteLead_modVolInc_0:
           inc A
           ld (sd6playNoteLead_modVolVal_1 + 1), A
 SD6PLAY_NOTE_LEAD__16:
-// line 298
+// line 282
       ld (addr_vol_1 + 1), A
 SD6PLAY_NOTE_LEAD__15:
-// line 302
+// line 286
 sd6playNoteLead_modEnd:
 endm
 __endasm;
@@ -481,118 +460,121 @@ void SD6PLAY_NOTE_BASE(
 __asm
 SD6PLAY_NOTE_BASE macro reg_wlc, reg_slc, reg_tmp_h, reg_tmp_l, reg_tmp_hl, addr_vol_1, addr_wl_1
 local SD6PLAY_NOTE_BASE__0, SD6PLAY_NOTE_BASE__1, SD6PLAY_NOTE_BASE__2, SD6PLAY_NOTE_BASE__3, SD6PLAY_NOTE_BASE__4, SD6PLAY_NOTE_BASE__5, SD6PLAY_NOTE_BASE__6, SD6PLAY_NOTE_BASE__7
-// line 323
+// line 309
   extern sd6playNoteBase_fl, sd6playNoteBase_initEnd, sd6playNoteBase_modStart, sd6playNoteBase_modVol, sd6playNoteBase_modVolEnd, sd6playNoteBase_modVolInc, sd6playNoteBase_modVolConv, sd6playNoteBase_modEnd
-// line 333
+// line 319
   dec reg_slc
   jp nz, SD6PLAY_NOTE_BASE__0
-// line 334
+// line 320
       pop reg_tmp_hl
-// line 337
+// line 323
       ld A, reg_tmp_l
       add A, A
       jp c, SD6PLAY_NOTE_BASE__1
-// line 338
+// line 324
           add A, A
           ld reg_slc, A
           jr c, SD6PLAY_NOTE_BASE__2
-// line 340
+// line 326
               dec SP
-// line 341
+// line 327
               xor A, A
               ld (addr_wl_1  + 1), A
-// line 342
+// line 328
               inc A
               ld (      addr_vol_1 + 1), A
-// line 343
-              ld A, 0 + JR
-// line 344
+// line 329
+              ld A, 0 + OPCODE_JR
+// line 330
               jp sd6playNoteBase_initEnd
 SD6PLAY_NOTE_BASE__2:
-// line 346
-// line 348
+// line 332
+// line 334
             ld A, reg_tmp_h
-            ld (addr_wl_1             + 1), A
-// line 349
-            ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+            ld (addr_wl_1         + 1), A
+// line 335
+            ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
             ld reg_tmp_l, A
             ld A, (reg_tmp_hl)
-// line 350
-            ld (           sd6playNoteBase_modVolEnd + 1), A
-// line 351
+// line 336
+            ld (       sd6playNoteBase_modVolEnd + 1), A
+// line 337
             ld A, 0 + 2
             ld (sd6playNoteBase_modVol    + 1), A
-// line 352
-            ld (           addr_vol_1                + 1), A
-// line 353
-            ld A, 0 + INC_A
-            ld (sd6playNoteBase_modVolInc    ), A
-// line 354
-            ld A, 0 + LD_A_N
+// line 338
+            ld (       addr_vol_1                + 1), A
+// line 339
+            ld A, 0 + OPCODE_INC_A
+            ld (sd6playNoteBase_modVolInc), A
+// line 340
+            ld A, 0 + OPCODE_LD_A_N
         jp SD6PLAY_NOTE_BASE__3
 SD6PLAY_NOTE_BASE__1:
-// line 357
+// line 343
           add A, A
           ld reg_slc, A
-// line 358
+// line 344
           ld A, reg_tmp_h
           ld (addr_wl_1 + 1), A
-// line 359
-          ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 345
+          ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
           ld reg_tmp_l, A
           ld A, (reg_tmp_hl)
-// line 360
+// line 346
           jr c, SD6PLAY_NOTE_BASE__4
-// line 362
-              ld (           sd6playNoteBase_modVol    + 1), A
-// line 363
-              ld (           addr_vol_1                + 1), A
-// line 364
+// line 348
+              ld (       sd6playNoteBase_modVol    + 1), A
+// line 349
+              ld (       addr_vol_1                + 1), A
+// line 350
               ld A, 0 + 2
               ld (sd6playNoteBase_modVolEnd + 1), A
-// line 365
-              ld A, 0 + DEC_A
-              ld (sd6playNoteBase_modVolInc    ), A
-// line 366
-              ld A, 0 + LD_A_N
+// line 351
+              ld A, 0 + OPCODE_DEC_A
+              ld (sd6playNoteBase_modVolInc), A
+// line 352
+              ld A, 0 + OPCODE_LD_A_N
             jp SD6PLAY_NOTE_BASE__5
 SD6PLAY_NOTE_BASE__4:
-// line 369
+// line 355
               ld (addr_vol_1 + 1), A
-// line 370
-              ld A, 0 + JR
+// line 356
+              ld A, 0 + OPCODE_JR
 SD6PLAY_NOTE_BASE__5:
 SD6PLAY_NOTE_BASE__3:
-// line 373
+// line 359
 sd6playNoteBase_initEnd:
-// line 374
+// line 360
       ld (sd6playNoteBase_modStart), A
-// line 375
+// line 361
       ld reg_wlc, 0 + 1
 SD6PLAY_NOTE_BASE__0:
-// line 379
+// line 365
 sd6playNoteBase_modStart:
-// line 380
+// line 366
   jr 0 + sd6playNoteBase_modEnd
-// line 383
+// line 369
   ld A, reg_slc
   and A, 0 + BASE_VOL_SPEED_R
   jp nz, SD6PLAY_NOTE_BASE__6
-// line 384
+// line 370
 sd6playNoteBase_modVol:
       ld A, 0 + 0x00
+// line 371
 sd6playNoteBase_modVolEnd:
       cp A, 0 + 0x00
-// line 385
+// line 372
       jr z, SD6PLAY_NOTE_BASE__7
+// line 373
 sd6playNoteBase_modVolInc:
           inc A
+// line 374
           ld (sd6playNoteBase_modVol + 1), A
 SD6PLAY_NOTE_BASE__7:
-// line 386
+// line 376
       ld (addr_vol_1 + 1), A
 SD6PLAY_NOTE_BASE__6:
-// line 390
+// line 380
 sd6playNoteBase_modEnd:
 endm
 __endasm;
@@ -623,133 +605,136 @@ void SD6PLAY_NOTE_CHORD2(
 __asm
 SD6PLAY_NOTE_CHORD2 macro reg_wlc0, reg_wlc1, reg_wlc10, reg_slc, reg_tmp_h, reg_tmp_l, reg_tmp_hl, reg_vol01, addr_wl0_1, addr_wl1_1
 local SD6PLAY_NOTE_CHORD2__0, SD6PLAY_NOTE_CHORD2__1, SD6PLAY_NOTE_CHORD2__2, SD6PLAY_NOTE_CHORD2__3, SD6PLAY_NOTE_CHORD2__4, SD6PLAY_NOTE_CHORD2__5, SD6PLAY_NOTE_CHORD2__6, SD6PLAY_NOTE_CHORD2__7
-// line 415
+// line 407
   extern sd6playNoteChord2_initEnd, sd6playNoteChord2_modStart_0, sd6playNoteChord2_modVol_1, sd6playNoteChord2_modVolEnd_1, sd6playNoteChord2_modVolInc_0, sd6playNoteChord2_modEnd
-// line 425
+// line 417
   dec reg_slc
   jp nz, SD6PLAY_NOTE_CHORD2__0
-// line 426
+// line 418
       dec SP
       pop AF
-// line 428
+// line 420
       add A, A
       jp c, SD6PLAY_NOTE_CHORD2__1
-// line 429
+// line 421
           add A, A
           ld reg_slc, A
           jr c, SD6PLAY_NOTE_CHORD2__2
-// line 431
+// line 423
               xor A, A
               ld (addr_wl0_1 + 1), A
-// line 432
+// line 424
               ld (           addr_wl1_1 + 1), A
-// line 434
+// line 426
               ld reg_vol01, A
-// line 436
-              ld A, 0 + JR
-// line 437
+// line 428
+              ld A, 0 + OPCODE_JR
+// line 429
               jp sd6playNoteChord2_initEnd
 SD6PLAY_NOTE_CHORD2__2:
-// line 439
-// line 440
+// line 431
+// line 432
             pop reg_wlc10
-// line 443
+// line 435
             ld A, reg_wlc1
             ld (addr_wl1_1 + 1), A
-// line 444
+// line 436
             ld A, reg_wlc0
             ld (addr_wl0_1 + 1), A
-// line 446
-            ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 438
+            ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
             ld reg_tmp_l, A
             ld A, (reg_tmp_hl)
-// line 447
+// line 439
             ld (sd6playNoteChord2_modVolEnd_1 + 1), A
-// line 449
+// line 441
             ld A, 0 + 2
-// line 450
+// line 442
             ld (sd6playNoteChord2_modVol_1 + 1), A
-// line 451
+// line 443
             ld reg_vol01, A
-// line 453
-            ld A, 0 + INC_A
-// line 454
+// line 445
+            ld A, 0 + OPCODE_INC_A
+// line 446
             ld (sd6playNoteChord2_modVolInc_0), A
-// line 456
-            ld A, 0 + LD_A_N
+// line 448
+            ld A, 0 + OPCODE_LD_A_N
         jp SD6PLAY_NOTE_CHORD2__3
 SD6PLAY_NOTE_CHORD2__1:
-// line 459
+// line 451
           add A, A
           ld reg_slc, A
-// line 460
+// line 452
           pop reg_wlc10
-// line 462
+// line 454
           ld A, reg_wlc0
           ld (addr_wl0_1 + 1), A
-// line 463
-          ld reg_tmp_h, 0 + ADDR_SD6_VTAB / 256
+// line 455
+          ld reg_tmp_h, 0 + ADDR_SD6_TAB / 256
           ld reg_tmp_l, A
           ld A, (reg_tmp_hl)
-// line 464
+// line 456
           ld reg_vol01, A
-// line 466
+// line 458
           jr c, SD6PLAY_NOTE_CHORD2__4
-// line 468
+// line 460
               ld (sd6playNoteChord2_modVol_1 + 1), A
-// line 470
+// line 462
               ld A, reg_wlc1
               ld (addr_wl1_1 + 1), A
-// line 472
+// line 464
               ld A, 0 + 2
-// line 473
+// line 465
               ld (sd6playNoteChord2_modVolEnd_1 + 1), A
-// line 475
-              ld A, 0 + DEC_A
-// line 476
+// line 467
+              ld A, 0 + OPCODE_DEC_A
+// line 468
               ld (sd6playNoteChord2_modVolInc_0), A
-// line 478
-              ld A, 0 + LD_A_N
+// line 470
+              ld A, 0 + OPCODE_LD_A_N
             jp SD6PLAY_NOTE_CHORD2__5
 SD6PLAY_NOTE_CHORD2__4:
-// line 481
+// line 473
               ld A, reg_wlc1
               ld (addr_wl1_1 + 1), A
-// line 483
-              ld A, 0 + JR
+// line 475
+              ld A, 0 + OPCODE_JR
 SD6PLAY_NOTE_CHORD2__5:
 SD6PLAY_NOTE_CHORD2__3:
-// line 486
+// line 478
 sd6playNoteChord2_initEnd:
-// line 487
+// line 479
       ld (sd6playNoteChord2_modStart_0), A
-// line 488
+// line 480
       ld reg_wlc0, 0 + 1
-// line 489
+// line 481
       ld reg_wlc1, reg_wlc0
 SD6PLAY_NOTE_CHORD2__0:
-// line 493
+// line 485
 sd6playNoteChord2_modStart_0:
   jr 0 + sd6playNoteChord2_modEnd
-// line 495
+// line 487
   ld A, reg_slc
   and A, 0 + CHORD2_VOL_SPEED_R
   jp nz, SD6PLAY_NOTE_CHORD2__6
-// line 497
+// line 489
 sd6playNoteChord2_modVol_1:
       ld A, 0 + 0x00
+// line 490
 sd6playNoteChord2_modVolEnd_1:
       cp A, 0 + 0x00
-// line 498
+// line 491
       jr z, SD6PLAY_NOTE_CHORD2__7
+// line 492
 sd6playNoteChord2_modVolInc_0:
           inc A
+// line 493
           ld (sd6playNoteChord2_modVol_1 + 1), A
 SD6PLAY_NOTE_CHORD2__7:
-// line 499
+// line 495
       ld reg_vol01, A
 SD6PLAY_NOTE_CHORD2__6:
-// line 503
+// line 499
 sd6playNoteChord2_modEnd:
 endm
 __endasm;
@@ -769,27 +754,27 @@ void SD6PLAY_NOTE_DRUM(int reg_sl, int reg_tmp, int addr_drum_nr_1)  __naked
 __asm
 SD6PLAY_NOTE_DRUM macro reg_sl, reg_tmp, addr_drum_nr_1
 local SD6PLAY_NOTE_DRUM__0
-// line 518
+// line 516
   ld A, 0 + 0x46
-// line 519
+// line 517
   dec reg_sl
   jp nz, SD6PLAY_NOTE_DRUM__0
-// line 520
+// line 518
       dec SP
       pop AF
-// line 521
+// line 519
       ld reg_tmp, A
       and A, 0 + 0xfc
       ld reg_sl, A
-// line 522
+// line 520
       xor A, reg_tmp
-// line 523
+// line 521
       rept 3
         rlca
       endr
-      or A, 0 + 0x46
+      add A, 0 + 0x66
 SD6PLAY_NOTE_DRUM__0:
-// line 525
+// line 523
   ld (addr_drum_nr_1 + 1), A
 endm
 __endasm;
@@ -820,6 +805,7 @@ addr_wl_1:
 SD6PLAY_BEEPER_WAVE__0:
 // line 546
       ld A, reg_wl
+// line 547
 addr_vol_1:
       cp A, 0 + 0x02
       jr nc, SD6PLAY_BEEPER_WAVE__2
@@ -844,15 +830,15 @@ void SD6PLAY_BEEPER_WAVE_R(int reg_wl, int reg_pulse, int reg_vol, int addr_wl_1
 __asm
 SD6PLAY_BEEPER_WAVE_R macro reg_wl, reg_pulse, reg_vol, addr_wl_1
 local SD6PLAY_BEEPER_WAVE_R__0, SD6PLAY_BEEPER_WAVE_R__1, SD6PLAY_BEEPER_WAVE_R__2
-// line 564
+// line 567
   dec reg_wl
   jp nz, SD6PLAY_BEEPER_WAVE_R__0
-// line 565
+// line 568
 addr_wl_1:
       ld reg_wl, 0 + 0x00
     jp SD6PLAY_BEEPER_WAVE_R__1
 SD6PLAY_BEEPER_WAVE_R__0:
-// line 568
+// line 571
       ld A, reg_wl
       cp A, reg_vol
       jr nc, SD6PLAY_BEEPER_WAVE_R__2
@@ -877,25 +863,25 @@ void SD6PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_pulse, int reg_vol, int addr_wl_
 __asm
 SD6PLAY_BEEPER_WAVE_BR macro reg_wl, reg_pulse, reg_vol, addr_wl_1
 local SD6PLAY_BEEPER_WAVE_BR__0
-// line 584
-local sd6play_beeperWaveBr, sd6play_beeperWaveBrEnd
-// line 585
-  extern sd6play_beeperWaveBr, sd6play_beeperWaveBrEnd
-// line 588
-  djnz B, 0 + sd6play_beeperWaveBr
 // line 589
+local sd6play_beeperWaveBr, sd6play_beeperWaveBrEnd
+// line 590
+  extern sd6play_beeperWaveBr, sd6play_beeperWaveBrEnd
+// line 593
+  djnz B, 0 + sd6play_beeperWaveBr
+// line 594
 addr_wl_1:
     ld reg_wl, 0 + 0x00
     jr 0 + sd6play_beeperWaveBrEnd
-// line 591
+// line 596
 sd6play_beeperWaveBr:
-// line 593
+// line 598
     ld A, reg_wl
     cp A, reg_vol
     jr nc, SD6PLAY_BEEPER_WAVE_BR__0
         ld reg_pulse, 0 + PULSE_H
 SD6PLAY_BEEPER_WAVE_BR__0:
-// line 595
+// line 600
 sd6play_beeperWaveBrEnd:
 endm
 __endasm;
@@ -910,14 +896,15 @@ __endasm;
 
 
 
-void SD6PLAY_BEEPER_DRUM(int reg_wav, int reg_pulse, int addr_drum_nr)  __naked
+void SD6PLAY_BEEPER_DRUM(int reg_wav, int reg_pulse, int addr_drum_nr_1)  __naked
 {
 __asm
-SD6PLAY_BEEPER_DRUM macro reg_wav, reg_pulse, addr_drum_nr
+SD6PLAY_BEEPER_DRUM macro reg_wav, reg_pulse, addr_drum_nr_1
 local SD6PLAY_BEEPER_DRUM__0
-// line 611
-addr_drum_nr:
+// line 618
+addr_drum_nr_1:
   bit 0, (reg_wav)
+// line 619
   jr z, SD6PLAY_BEEPER_DRUM__0
       ld reg_pulse, 0 + PULSE_H
 SD6PLAY_BEEPER_DRUM__0:
@@ -928,189 +915,187 @@ __endasm;
 
 
 
-u8 sd6play(u32 param)  __z88dk_fastcall __naked
+u8 sd6play(u32 param)  __z88dk_fastcall
 {
 __asm
-// line 620
-  extern sd6play_waitUntilKeyOff1
-// line 621
-  extern sd6play_waitUntilKeyOff2
-// line 622
-  extern sd6Play_rep_1
-// line 623
-  extern sd6play_setVols, sd6play_loop, sd6play_beeperLoop
-// line 624
-  extern sd6play_beeper0_wl, sd6play_slide0, sd6play_modVolSpeed0
-// line 625
-  extern sd6play_beeper1_wl
-// line 626
-  extern sd6play_beeper2_wl
-// line 627
-  extern sd6play_beeper3_wl
-// line 628
-  extern sd6play_beeper4_wl
-// line 629
-  extern sd6play_beeper5_drumNr
 // line 630
-  extern sd6play_beeper1_sync, sd6play_beeper1_syncEnd
+  extern sd6play_waitUntilKeyOff1
 // line 631
-  extern sd6play_end
+  extern sd6play_waitUntilKeyOff2
 // line 632
-  extern sd6play_restoreSP
+  extern sd6Play_rep_1
 // line 633
-  extern tmp
+  extern sd6play_setVols, sd6play_loop, sd6play_beeperLoop
+// line 634
+  extern sd6play_beeper0_wl, sd6play_slide0, sd6play_modVolSpeed0
+// line 635
+  extern sd6play_beeper1_wl
 // line 636
-  push IX
+  extern sd6play_beeper2_wl
 // line 637
-  BANK_VRAM_MMIO C
+  extern sd6play_beeper3_wl
+// line 638
+  extern sd6play_beeper4_wl
+// line 639
+  extern sd6play_beeper5_drumNr
 // line 640
+  extern sd6play_beeper1_sync, sd6play_beeper1_syncEnd
+// line 641
+  extern sd6play_end
+// line 642
+  extern sd6play_restoreSP
+// line 643
+  extern tmp
+// line 646
+  push IX
+// line 647
+  BANKH_VRAM_MMIO C
+// line 650
   ld A, 0 + 0xf9
   ld (MMIO_8255_PORTA), A
-// line 641
+// line 651
 sd6play_waitUntilKeyOff1:
-// line 642
+// line 652
   ld A, (MMIO_8255_PORTB)
   cpl
-  and A, 0 + KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F4_MASK
+  and A, 0 + KEY9_F2_MASK | KEY9_F4_MASK
   jr nz, 0 + sd6play_waitUntilKeyOff1
-// line 645
+// line 655
   dec E
   jr z, sd6play__0
-// line 646
+// line 656
       ld A, 0 + 0xfa
       ld (MMIO_8255_PORTA), A
 sd6play__0:
-// line 661
+// line 671
   ld (sd6play_restoreSP + 1), SP
   ld SP, HL
-// line 662
+// line 672
   xor A, A
-// line 663
+// line 673
   ld C, 0 + BEEPER1_WL_CT_VAL
   ld (sd6play_beeper1_wl + 1), A
-// line 664
+// line 674
   inc A
-// line 665
+// line 675
   ld IXH, A
   ld IXL, A
   ld IYL, A
   ld IYH, A
-// line 666
+// line 676
   ld A, 0 + 7
   ld (sd6play_modVolSpeed0 + 1), A
-// line 667
-  ld A, 0 + JR
+// line 677
+  ld A, 0 + OPCODE_JR
   ld (sd6play_slide0          ), A
-// line 668
+// line 678
   ld HL, 0 + ADDR_SD6_REP + 0xff
   ld (sd6Play_rep_1 + 1), HL
-// line 669
+// line 679
 #if  BEEPER1_SYNC
   ld (sd6play_beeper1_sync            ), A
-// line 671
-#endif 
-// line 675
-sd6play_loop:
-// line 678
-  SD6PLAY_NOTE_LEAD B,  IXH, H, L, HL,         sd6Play_rep_1,         sd6play_setVols + 1, sd6play_beeper0_wl, sd6play_slide0, sd6play_modVolSpeed0, sd6play_beeper1_sync, sd6play_end
 // line 681
+#endif 
+// line 685
+sd6play_loop:
+// line 688
+  SD6PLAY_NOTE_LEAD B,  IXH, H, L, HL,         sd6Play_rep_1,         sd6play_setVols + 1, sd6play_beeper0_wl, sd6play_slide0, sd6play_modVolSpeed0, sd6play_beeper1_sync, sd6play_end
+// line 691
   SD6PLAY_NOTE_BASE D,  IXL, H, L, HL,         sd6play_setVols,     sd6play_beeper2_wl
-// line 683
+// line 693
 sd6play_setVols:
   ld HL, 0 + 0x0000
-// line 684
+// line 694
   exx
-// line 685
-  SD6PLAY_NOTE_CHORD2 B,   C,   BC,   IYH, H, L, HL, D,    sd6play_beeper3_wl, sd6play_beeper4_wl
-// line 686
-  SD6PLAY_NOTE_DRUM                   IYL,    L,     sd6play_beeper5_drumNr
-// line 687
-  ld HL, 0 + (ADDR_SD6_DRUM) | TEMPO
-// line 690
-sd6play_beeperLoop:
-// line 691
-// line 692
-    exx
 // line 695
-    ld E, 0 + PULSE_L
+  SD6PLAY_NOTE_CHORD2 B,   C,   BC,   IYH, H, L, HL, D,    sd6play_beeper3_wl, sd6play_beeper4_wl
 // line 696
-    SD6PLAY_BEEPER_WAVE_BR     B,  E,    H,  sd6play_beeper0_wl
+  SD6PLAY_NOTE_DRUM                   IYL,    L,     sd6play_beeper5_drumNr
 // line 697
+  ld HL, 0 + ADDR_SD6_DRUM | TEMPO
+// line 700
+sd6play_beeperLoop:
+// line 701
+// line 702
+    exx
+// line 705
+    ld E, 0 + PULSE_L
+// line 706
+    SD6PLAY_BEEPER_WAVE_BR     B,  E,    H,  sd6play_beeper0_wl
+// line 707
     SD6PLAY_BEEPER_WAVE_R      C,  E,    H,  sd6play_beeper1_wl
-// line 698
+// line 708
     SD6PLAY_BEEPER_WAVE_R      D,  E,    L,  sd6play_beeper2_wl
-// line 699
+// line 709
     ld A, E
     exx
     ld E, A
-// line 700
+// line 710
     SD6PLAY_BEEPER_WAVE_BR B,  E,    D,  sd6play_beeper3_wl
-// line 701
+// line 711
     SD6PLAY_BEEPER_WAVE_R  C,  E,    D,  sd6play_beeper4_wl
-// line 702
+// line 712
     SD6PLAY_BEEPER_DRUM HL,    E,    sd6play_beeper5_drumNr
-// line 704
+// line 714
     ld A, E
     ld (MMIO_8253_CTRL), A
-// line 705
+// line 715
     inc L
     jp nz, 0 + sd6play_beeperLoop
-// line 708
+// line 718
   exx
-// line 711
+// line 721
   ld A, IXH
   and A, 0 + 3
   LEAD_ECHO_DELAY 
   jr nz, sd6play__1
-// line 713
+// line 723
 #if  BEEPER1_SYNC                                        
-// line 714
+// line 724
 sd6play_beeper1_sync:
       jr 0 + sd6play_beeper1_syncEnd
-// line 715
+// line 725
         ld C, 0 + BEEPER1_WL_CT_VAL
-// line 716
-        ld A, 0 + JR
+// line 726
+        ld A, 0 + OPCODE_JR
         ld (sd6play_beeper1_sync), A
-// line 718
+// line 728
 sd6play_beeper1_syncEnd:
-// line 719
+// line 729
 #endif 
       ld A, (sd6play_beeper0_wl + 1)
       ld (sd6play_beeper1_wl + 1), A
 sd6play__1:
-// line 723
+// line 733
   ld A, (MMIO_8255_PORTB)
   cpl
-  and A, 0 + KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F4_MASK
+  and A, 0 + KEY9_F2_MASK | KEY9_F4_MASK
   jp z, 0 + sd6play_loop
-// line 724
+// line 734
   ld L, A
-// line 725
+// line 735
   jr 0 + sd6play_waitUntilKeyOff2
-// line 728
+// line 738
 sd6play_end:
-// line 729
+// line 739
   ld L, 0 + 0x00
-// line 731
+// line 741
 sd6play_waitUntilKeyOff2:
-// line 732
+// line 742
   ld A, (MMIO_8255_PORTB)
   cpl
-  and A, 0 + KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F4_MASK
+  and A, 0 + KEY9_F2_MASK | KEY9_F4_MASK
   jr nz, 0 + sd6play_waitUntilKeyOff2
-// line 735
+// line 745
   ld A, 0 + MMIO_8253_CT0_MODE3
   ld (MMIO_8253_CTRL), A
-// line 737
-  BANK_RAM C
-// line 739
+// line 747
+  BANKH_RAM C
+// line 749
 sd6play_restoreSP:
   ld SP, 0 + 0x0000
-// line 740
+// line 750
   pop IX
-// line 742
-  ret
 __endasm;
 }
 

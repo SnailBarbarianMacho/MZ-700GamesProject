@@ -23,9 +23,10 @@
 #
 
 # -------- macros
-# 特別な命令に使われる音長. この音長の音符は使えません(makefile で定義)
-SD6_EXCEPT_LEN		:= 180
-SD6_EXCEPT_LEN_SZ	:= 24	# 0,4,8,12,16,29,24 の 7つ
+# Lead にて特別な命令に使われる音長. この音長の音符は使えません(4の倍数, makefile で定義). 曲にあわせて設定してください
+SD4_EXCEPT_LEN		:= 180
+# 180,184,188,192,196,209,224 の7個の音長が使用不可. このマクロは MIDI コンバーターで使用します
+SD4_EXCEPT_LEN_SZ	:= 24
 
 TOOLS   	:= ../tools
 CRT0 		:= crt0.asm
@@ -35,7 +36,8 @@ PHP         := php
 CC      	:= zcc
 DEBUG   	:= -DDEBUG=1
 ORG     	:= 0x1200
-CFLAGS  	:= +mz -lndos -compiler=sdcc -OS3 $(DEBUG) -DSD6_EXCEPT_LEN=$(SD6_EXCEPT_LEN) -DSD6_EXCEPT_LEN_SZ=$(SD6_EXCEPT_LEN_SZ)
+CFLAGS  	:= +mz -lndos -compiler=sdcc -OS3 $(DEBUG) \
+	-DSD4_EXCEPT_LEN=$(SD4_EXCEPT_LEN)
 LFLAGS      := +mz -mz80 -m\
 	-lndos\
 	-crt0$(CRT0)\
@@ -78,7 +80,7 @@ $(MUSIC_DIR)/%.h: $(MUSIC_DIR)/%.bmp
 # -------- 依存関係生成
 depend $(GAME_DEPENDS_PROG) $(GAME_DEPENDS_MUSIC):
 	@echo Generating dependencies...
-	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_PROG)  --prog  . . OBJS PROG_CLEAN_FILES
+	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_PROG)  --prog  . OBJS PROG_CLEAN_FILES
 	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_MUSIC) --music music
 
 # -------- clean
