@@ -10,6 +10,38 @@
 start:
     di
 
+    ; -------- チェックサム計算
+    ld      HL, __head
+    ld      BC, __tail-__head
+    ld      DE, 0x0000                                  ; DE = 計算したチェックサム値
+
+checkSum:
+        ld      A, E
+        add     A, (HL)
+        ld      E, A
+        jr      nc, checkSum_100
+            inc     D
+checkSum_100:
+        inc     HL
+        dec     BC 
+        ld      A, B
+        or      C       
+    jr      nz, checkSum
+
+    ld      HL, (__tail)                                ; チェックサム値が入ってる
+    or      A
+    sbc     HL, DE
+    jr      z, checkSum_ok
+
+    call    0x0006                                      ; 改行
+    ld      DE,  checkSumErrorStr
+    call    0x0015                                      ; ASCII文字列表示
+    halt
+checkSumErrorStr:
+    db      "CHECK SUM ERROR", 0x0d
+
+checkSum_ok:
+
     ; -------- バンク切替マクロ
 macro   bankAllRam
         ld      C, 0xe0
@@ -86,7 +118,6 @@ memCheck1_loop2:
     memWrite1   vram_head, vram_size, inc
     bankAllRam
         memWrite1   ram_head, ram_size, inc
-aaaa:        
         memCheck1   ram_head, ram_size, inc
     bankRomVram
     memCheck1   vram_head, vram_size, inc
@@ -253,4 +284,3 @@ text_ram_error: ; "RAM BAD xxxx"
     db      0x12, 0x01, 0x0d, 0x00
     db      0x02, 0x01, 0x04
     db      0x00, 0x00, 0x00, 0x00, 0x00
-
