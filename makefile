@@ -1,6 +1,7 @@
 .PHONY: all release clean
 
 all:
+	cd ram-check && make
 	cd SoundTest && make
 	cd SoundTest2 && make
 	cd SoundTest3 && make
@@ -10,6 +11,7 @@ all:
 	cd Baryon && make
 
 release:
+	@cd ram-check && make
 	@cd SoundTest && make
 	@cd SoundTest2 && make
 	@cd SoundTest3 && make
@@ -19,6 +21,7 @@ release:
 	@cd Baryon && make release
 
 clean:
+	@cd ram-check && make clean
 	@cd SoundTest && make clean
 	@cd SoundTest2 && make clean
 	@cd SoundTest3 && make clean
