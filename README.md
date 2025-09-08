@@ -1,6 +1,6 @@
 # MZ-700 Game Projects
 
-![title](MZ-700GamesProject.png)
+![title](MZ-700-games-project.png)
 
 * ある日唐突に MZ-700 で動くゲームを作ってみたくなったので, 作りました！
 * 実行可能バイナリ (.mzt) は残してるので, ビルドしないで遊ぶことができます

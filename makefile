@@ -11,7 +11,7 @@ all:
 	cd Baryon && make
 
 release:
-	@cd ram-check && make
+	@cd ram-check && make release
 	@cd SoundTest && make
 	@cd SoundTest2 && make
 	@cd SoundTest3 && make
