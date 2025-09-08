@@ -1,5 +1,5 @@
 .SUFFIXES:
-.PHONY: all clean
+.PHONY: all clean release
 
 TOOLS     	:= ../tools
 ASM      	:= z80asm
@@ -28,3 +28,6 @@ $(WAV): $(SRC)
 clean:
 	@echo cleaning...
 	$(RMF) $(OBJ) $(BIN) $(MAP) $(SUM) $(MZT) $(WAV)
+
+release:
+	@make
