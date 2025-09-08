@@ -3,6 +3,7 @@
 declare(strict_types = 1);
 /**
  * バイナリデータを指定したサイズに分割します.
+ * foo -> foo0, foo1, ...
  * 使い方は, Usage: 行を参照してください
  *
  * @author Snail Barbarian Macho (NWK) 2024.02.26
@@ -53,7 +54,7 @@ while (true) {
     if (empty($subdata)) {
         break;
     }
-    $out_name = $out_dirname.'/'.$out_filename.'_'.$ct.'.'.$out_extension;
+    $out_name = $out_dirname.'/'.$out_filename.$ct.'.'.$out_extension;
     //echo($out_name);
     if (file_put_contents($out_name, $subdata) === false) {
         fwrite(STDERR, 'File save error:' . $out_name . "\n");
