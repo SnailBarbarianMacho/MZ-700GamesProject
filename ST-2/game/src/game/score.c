@@ -12,9 +12,9 @@
 #include "../system/math.h"
 #include "../system/print.h"
 #include "../system/input.h"
-#include "../game/game_mode.h"
-#include "../objworks/obj_item.h"
-#include "../objworks/obj_enemy.h"
+#include "../game/game-mode.h"
+#include "../objworks/obj-item.h"
+#include "../objworks/obj-enemy.h"
 #include "se.h"
 #include "score.h"
 
@@ -27,6 +27,7 @@ u8   score_level_;
 u8   score_sub_level_;
 u8   score_left_;
 bool b_score_enabled_;
+bool b_game_over_enabled_;
 u16  score_nr_continues_;
 u16  score_nr_misses_;
 #if DEBUG
@@ -51,6 +52,7 @@ void scoreInit(void) __z88dk_fastcall
     score_hi_score_   = 500;
     score_left_       = 0;
     b_score_enabled_  = true;
+    b_game_over_enabled_ = true;
 
     // サブ レベル テーブル作成
     u8* p = (u8*)ADDR_SUB_LEVEL;
@@ -75,9 +77,9 @@ void scoreInit(void) __z88dk_fastcall
 static u8 cursorBlank(void) __naked
 {
 __asm
-    BANK_VRAM_MMIO(C)           // バンク切替
+    BANKH_VRAM_MMIO C           // バンク切替
     LD      A, (MMIO_8255_PORTC)
-    BANK_RAM(C)                 // バンク切替
+    BANKH_RAM C                 // バンク切替
     AND     A, 0 + MMIO_8255_PORTC_556OUT_MASK
     LD      L, A
     RET
@@ -93,9 +95,9 @@ static const u8 SUB_LEVEL_TEXT_TAB_[] = { // サブ レベル 4 * 4 文字 * 7�
 #if DEBUG
 static const u8 STR_MS_[] = { DC_CAPS, DC_M, DC_S, DC_CAPS, 0 };// msec
 #endif
-#include "../../text/game_over.h"
-#include "../../text/input_am7j.h"
-#include "../../text/input_mz1x03.h"
+#include "../../text/game-over.h"
+#include "../../text/input-am7j.h"
+#include "../../text/input-mz1x03.h"
 void scoreMain(void) __z88dk_fastcall
 {
     if (!b_score_enabled_) {
@@ -106,12 +108,12 @@ void scoreMain(void) __z88dk_fastcall
     // -------- スコア表示
     printSetAtb(VATB(7, 0, 0));
     if (score_hi_score_ < score_) {
-        printSetAtb(VATB(6, 0, 0));    // ハイ スコア突破したら色が変わる
+        printSetAtb(VATB(6, 0, 0));                     // ハイ スコア突破したら色が変わる
     }
     printSetAddr((u8*)VVRAM_TEXT_ADDR(0, 0));
     if (sysIsGameMode()) {
         if (cursorBlank()) {
-            printString(STR_1UP_);        // プレイ中は点滅します
+            printString(STR_1UP_);                      // プレイ中は点滅します
         } else {
             printAddAddr(3);
         }
@@ -131,13 +133,13 @@ void scoreMain(void) __z88dk_fastcall
 
     // -------- 残機表示
     if (!gameCanIncLeft()) {
-        if (gameIsCaravan()) {          // キャラバン モード
+        if (gameIsCaravan()) {                          // キャラバン モード
             printSetAtb(VATB(4, 0, 0));
             if      (gameGetTimer() < 10 * GAME_FPS) { printSetAtb(VATB(2, 0, 0)); }
             else if (gameGetTimer() < 100 * GAME_FPS) { printSetAtb(VATB(6, 0, 0)); }
             printSetAddr((u8*)VVRAM_TEXT_ADDR(35, 0));
             printU16LeftDecimal1(gameGetTimer() / GAME_FPS, gameGetTimer() % GAME_FPS);
-        } else {                        // サバイバル, むぼう
+        } else {                                        // サバイバル, むぼう
             // 時間表示
             printSetAtb(VATB(2, 0, 0));
             printSetAddr((u8*)VVRAM_TEXT_ADDR(35, 0));
@@ -162,8 +164,11 @@ void scoreMain(void) __z88dk_fastcall
 
     if (!sysIsGameMode()) {
         // -------- ゲーム オーバー表示
-        printSetAddr((u8*)VVRAM_TEXT_ADDR(15, 15));
-        printString(text_game_over);
+        if (b_game_over_enabled_) {
+            printSetAddr((u8*)VVRAM_TEXT_ADDR(15, 15));
+            printString(text_game_over);
+        }
+        b_game_over_enabled_ = true;
 
         // -------- AM7J / MZ-1X03 検出表示
         if (INPUT_JOY_MODE_AM7J_DETECTED <= inputGetJoyMode() && inputGetJoyMode() < INPUT_JOY_MODE_MZ1X03_DETECTING) {

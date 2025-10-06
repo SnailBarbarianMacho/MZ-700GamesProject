@@ -6,11 +6,11 @@
 #include "../system/sys.h"
 #include "../system/sound.h"
 #include "../system/math.h"
-#include "../objworks/obj_enemy.h"
-#include "../objworks/obj_player.h"
+#include "../objworks/obj-enemy.h"
+#include "../objworks/obj-player.h"
 #include "bgm.h"
 #include "se.h"
-#include "game_mode.h"
+#include "game-mode.h"
 #include "stage.h"
 
 // ---------------------------------------------------------------- ステージ テーブル
@@ -39,6 +39,7 @@
 static const u8 STG_TAB_[] = {
 #if 1   // TEST STAGE 1 3_2 が後半に登場.
     ST_BGM1,
+/*
 #if DEBUG // TEST いろいろ敵のテスト
     E3_1(3), 0,
     //E3_1(1), 0, E3_2(1), 0, E3_3(1), 0, E3_4(1), 0, E3_5(1), 0, E3_6(1), 0,
@@ -52,7 +53,7 @@ static const u8 STG_TAB_[] = {
     //E4_2(1), 0,
     //E8_1(1), 0,
     ST_END,//TEST 即エンディング
-#endif
+#endif/**/
     E3_1(3), 0,
     E3_1(4), 0,
     E3_1(5), 0,

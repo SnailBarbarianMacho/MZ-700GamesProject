@@ -7,7 +7,7 @@
 #include "../system/obj.h"
 #include "../system/sound.h"
 #include "../system/math.h"
-#include "../objworks/obj_player.h"  // OBJ_PLAYER_STEP_NORMAL
+#include "../objworks/obj-player.h"  // OBJ_PLAYER_STEP_NORMAL
 #include "../game/stage.h"
 #include "bgm.h"
 

@@ -20,6 +20,10 @@ start:
         di
 ;        call	crt0_init_bss ローダーでは不要
 
+        call    0x0006          ; LETNL
+        ld      DE, msg_starting
+        call    0x0015          ; MSG
+
 ; -------- モニタ ROM, VRAM を切り離して オール RAM 構成にします
         ld      c, 0xe0
         out     (c), a          ; モニタ ROM を RAM に. 値は何でもいい
@@ -33,6 +37,11 @@ start:
 ; -------- 関数ポインタの飛び先
 ;l_dcal:
 ;        jp	(hl)
+
+
+; -------- 起動中メッセージ表示
+msg_starting:
+        db      "STARTING UP...", 0x0d
 
 ; -------- これが無いと DATA 領域が空っぽ
 ;        INCLUDE "crt/classic/crt_section.asm" ローダーでは不要

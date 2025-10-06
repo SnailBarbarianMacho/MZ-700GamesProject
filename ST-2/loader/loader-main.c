@@ -5,6 +5,7 @@
  */
 
 #include "../../src-common/common.h"
+#include "../../src-common/hard.h"
 #include "deexo3.h"
 
 // ゲーム本体(GAME_ORG～) を GAME_TMP 以降に転送します.
@@ -24,24 +25,25 @@ __asm
 __endasm;
 }
 
+static void go(void)
+{
+__asm
+    // PCG-700 の設定を戻す
+    BANKH_VRAM_MMIO     C
+    PCG700_DISABLE      A
+    BANKH_RAM           C
+
+    // GO!
+    jp  ADDR_GAME_ORG
+__endasm;
+}
+
+
 void main(void) __naked
 {
     moveGame();
 
-#if 0
-    u8* p = (u8*)ADDR_GAME_ORG;
-    for (u16 i = 0; i < 0x8000; i++) {
-        *p++ = 0xff;
-    }
-    p = (u8*)ADDR_DEEXO_WORK;
-    for (u16 i = 0; i < 0x100; i++) {
-        *p++ = 0xff;
-    }
-#endif
-
     deexo3((const u8* const)ADDR_GAME_TMP, (u8* const)ADDR_GAME_ORG); // 展開
 
-__asm
-    jp  ADDR_GAME_ORG           // GO!
-__endasm;
+    go();
 }

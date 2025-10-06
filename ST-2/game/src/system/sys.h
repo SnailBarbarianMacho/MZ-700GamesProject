@@ -28,7 +28,7 @@ inline u8 sysGetCounter(void) { return sys_ct_; }
 
 // ---------------------------------------------------------------- ゲーム モード(アトラクトorゲーム)
 /** ゲーム モードをセットします(false/true = アトラクト/ゲーム). 初期値:false */
-inline void sysSetMode(const bool b_game) { b_sys_game_ = b_game; }
+inline void sysSetGameMode(const bool b_game) { b_sys_game_ = b_game; }
 /** 現在アトラクト モード(false)かゲーム モード(true)かを返します */
 inline bool sysIsGameMode(void) { return b_sys_game_; }
 

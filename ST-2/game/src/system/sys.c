@@ -10,7 +10,8 @@
 #include "vram.h"
 #include "sys.h"
 #include "../game/bgm.h"
-#include "../scenes/scene_title.h"
+#include "../scenes/scene-title.h"
+#include "../scenes/scene-game-mode.h"
 
 // ---------------------------------------------------------------- 変数
 static void (*sys_scene_main_func_)(u16 counter);     // シーン メイン関数
@@ -37,13 +38,14 @@ void sysMain(void)
     // ゲーム モードでないならば,
     if (b_sys_game_ == false) {
         u8 trg = inputGetTrigger();
-        // 右ボタンでスキップ
-        if (trg & INPUT_MASK_R) {
+        // F2/F4でスキップ
+        if (trg & INPUT_MASK_CANCEL) {
             sys_scene_ct_ = 0;
         }
-        // タイトル画面以外でスタートでタイトルへ
+        // タイトル画面またはメニュー画面以外でスタートでタイトルへ
         if (trg & INPUT_MASK_START) {
-            if (sys_scene_main_func_ != sceneTitleMain) {
+            if (sys_scene_main_func_ != sceneTitleMain &&
+                sys_scene_main_func_ != sceneGameModeMain) {
                 vramFill(0x0000);
                 sysSetScene(sceneTitleInit, sceneTitleMain);
                 return;

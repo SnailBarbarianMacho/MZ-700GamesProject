@@ -1,0 +1,5 @@
+# **** This file is made by ../tools/make-depend.php. DO NOT MODIFY ! ****
+
+# cg
+game/cg/comment-system.h game/cg/Pause.h game/cg/nr0.h game/cg/nr1.h game/cg/nr2.h game/cg/nr3.h game/cg/nr4.h game/cg/nr5.h game/cg/nr6.h game/cg/nr7.h game/cg/comment-player.h game/cg/player.h game/cg/item.h game/cg/sub-level.h game/cg/player-bullet.h game/cg/comment-enemy.h game/cg/enemy3-1.h game/cg/enemy3-2.h game/cg/enemy3-3.h game/cg/enemy3-4.h game/cg/enemy3-5.h game/cg/enemy3-6.h game/cg/enemy4-1.h game/cg/enemy4-2.h game/cg/enemy4-3.h game/cg/enemy5-1.h game/cg/enemy5-2.h game/cg/enemy5-3.h game/cg/enemy8-1.h game/cg/comment-enemyDamage.h game/cg/enemy-damage3.h game/cg/enemy-damage3-6.h game/cg/enemy-damage4.h game/cg/enemy-damage5.h game/cg/enemy-damage8.h game/cg/enemy-red8.h game/cg/comment-explosions.h game/cg/explosion0.h game/cg/explosion1.h game/cg/explosion2.h game/cg/explosion3.h game/cg/explosion4.h game/cg/explosion5.h game/cg/explosion6.h game/cg/explosion7.h game/cg/comment-title.h game/cg/title-s.h game/cg/title-t.h game/cg/title-hyphen.h game/cg/title-2.h: game/cg/cg.cgedit.txt game/cg/cg.cgedit.json
+	$(call BUILD_CG)

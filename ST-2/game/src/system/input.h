@@ -16,9 +16,10 @@ extern u8 input_;            // キー入力 + ジョイスティック入力デ
 extern u8 input_trg_;        // キー入力 + ジョイスティック入力 OFF->ONトリガ データ
 extern u8 input_joy_;        // ジョイスティック入力データ
 extern u8 input_joy_mode_;   // ジョイスティック検出モード兼カウンタ
-extern u8 input_mz1x03_insensitivity_;    // MZ-1X03 の感度の鈍さ (1敏感～4鈍い)
-#define INPUT_MZ1X03_INSENSITIVITY_MIN 1  // MZ-1X03 の感度の鈍さ (敏感)
-#define INPUT_MZ1X03_INSENSITIVITY_MAX 4  // MZ-1X03 の感度の鈍さ (鈍い)
+extern u8 input_mz1x03_sensitivity_;    // MZ-1X03 の感度(0鈍い～3敏感)
+
+#define INPUT_MZ1X03_SENSITIVITY_MIN 0  // MZ-1X03 の感度の鈍さ (敏感)
+#define INPUT_MZ1X03_SENSITIVITY_MAX 3  // MZ-1X03 の感度の鈍さ (鈍い)
 
 // ---------------------------------------------------------------- マクロ
 // inputGet(), inputGetTrigger() 戻値のビット マスク. AM7J(..UDRLBA) 互換です
@@ -34,13 +35,23 @@ extern u8 input_mz1x03_insensitivity_;    // MZ-1X03 の感度の鈍さ (1敏感
 #define INPUT_SHIFT_NC  0x7   // ジョイスティックの場合, 未検出フラグになります
 
 // input_joy_mode_ の取る値
-#define INPUT_JOY_MODE_AM7J_DETECTING       0   // AM7J   検出中
-#define INPUT_JOY_MODE_AM7J_DETECTED        10  // AM7J   検出
-#define INPUT_JOY_MODE_AM7J_UNDETECTING     11  // AM7J   検出したがデータが来ない
-#define INPUT_JOY_MODE_MZ1X03_DETECTING     20  // MZ1X03 検出中
-#define INPUT_JOY_MODE_MZ1X03_DETECTED      30  // MZ1X03 検出
-#define INPUT_JOY_MODE_MZ1X03_UNDETECTING   31  // MZ1X03 検出したがデータが来ない
-#define INPUT_JOY_MODE_MAX                  40
+#if 1
+#define INPUT_JOY_MODE_AM7J_DETECTING       0   // AM7J   を検出中
+#define INPUT_JOY_MODE_AM7J_DETECTED        20  // AM7J   モード
+#define INPUT_JOY_MODE_AM7J_UNDETECTING     21  // AM7J   モードだがデータ異常
+#define INPUT_JOY_MODE_MZ1X03_DETECTING     40  // MZ1X03 を検出中
+#define INPUT_JOY_MODE_MZ1X03_DETECTED      60  // MZ1X03 モード
+#define INPUT_JOY_MODE_MZ1X03_UNDETECTING   61  // MZ1X03 モードだがデータ異常
+#define INPUT_JOY_MODE_MAX                  80
+#else   // デバッグ用
+#define INPUT_JOY_MODE_AM7J_DETECTING       0   // AM7J   を検出中
+#define INPUT_JOY_MODE_AM7J_DETECTED        50  // AM7J   モード
+#define INPUT_JOY_MODE_AM7J_UNDETECTING     51  // AM7J   モードだがデータ異常
+#define INPUT_JOY_MODE_MZ1X03_DETECTING     100 // MZ1X03 を検出中
+#define INPUT_JOY_MODE_MZ1X03_DETECTED      150 // MZ1X03 モード
+#define INPUT_JOY_MODE_MZ1X03_UNDETECTING   151 // MZ1X03 モードだがデータ異常
+#define INPUT_JOY_MODE_MAX                  200
+#endif
 
 // ---------------------------------------------------------------- システム
 /** 入力の初期化を行います */
@@ -61,27 +72,27 @@ inline u8 inputGetJoy(void) { return input_joy_; }
 inline u8 inputGetJoyMode(void) { return input_joy_mode_; }
 
 // ---------------------------------------------------------------- MZ-1X13
-/** MZ-1X03 ボタンを読んで, VBLANK を待ち, 接続をテストして, 感度の鈍さの分だけ待って, 軸読み取り1をします
- * - 1) MZ-1X03 ボタンABのリード
- * - 2) /VBLK == L になるまで待つ
- * - 3) 100 T-states 待つ
- * - 4) 50  T-states の間, ボタンABが 'L' でなければ非接続
- * - 5) 130 T-states 待つ
- * - 6) 834 * (4 - mz11x03_insensitivity) だけ待つ
- * - 7) 軸読み取り 1 する
- * */
-void inputMZ1X03ButtonVSyncAxis1(const u8 mz1x03_insensitivity) __z88dk_fastcall __naked;
-/** MZ-1X03 軸読み取り2をして, 結果を返します */
-void inputMZ1X03Axis2(void) __z88dk_fastcall __naked;
+/** 強制 MZ-1X03 モードにします(このモードでは自動検出しません) */
+void inputSetMZ1X03Enabled(bool const b) __z88dk_fastcall;
+/** 強制 MZ-1X03 モードかどうかを返します */
+bool inputIsMZ1X03Enabled(void);
 
-/** MZ-1X03 感度の鈍さ(1敏感～4鈍い)を返します */
-inline u8 inputGetMZ1X03Insensitivity(void) { return input_mz1x03_insensitivity_; }
-/** MZ-1X03 感度の鈍さ(1敏感～4鈍い) を -1 します */
-inline void inputDecMZ1X03Insensitivity(void)
+/** MZ-1X03 ボタンを読んで, VBLANK を待ち, 接続をテストして, 感度の鈍さの分だけ待って, 軸読み取りaをします
+ * - この関数が呼んでる時点で /VBLK == 'H' (ブランク外) でなければなりません ('L' だったら assert します)
+ */
+void inputMZ1X03ButtonVSyncAxis1(const u8 mz1x03_sensitivity) __z88dk_fastcall __naked;
+/** MZ-1X03 軸読み取りbをして, 結果を返します */
+void inputMZ1X03Axis2(void) __naked;
+
+
+/** MZ-1X03 感度(0鈍い～3敏感)を返します */
+inline u8 inputGetMZ1X03sensitivity(void) { return input_mz1x03_sensitivity_; }
+/** MZ-1X03 感度(0鈍い～3敏感)を +1 します */
+inline void inputIncMZ1X03sensitivity(void)
 {
-    input_mz1x03_insensitivity_ --;
-    if (input_mz1x03_insensitivity_ == 0) {
-        input_mz1x03_insensitivity_ = INPUT_MZ1X03_INSENSITIVITY_MAX;
+    input_mz1x03_sensitivity_++;
+    if (input_mz1x03_sensitivity_ > INPUT_MZ1X03_SENSITIVITY_MAX) {
+        input_mz1x03_sensitivity_ = 0;
     }
 }
 

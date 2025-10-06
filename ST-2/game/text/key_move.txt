@@ -1,3 +1,0 @@
-{col=4}[{col=7}W{col=4}][{col=7}S{col=4}][{col=7}A{col=4}][{col=7}D{col=4}]
-[{col=7}U{col=4}][{col=7}M{col=4}][{col=7}H{col=4}][{col=7}K{col=4}]
-[{col=7}{↑}{col=4}][{col=7}{↓}{col=4}][{col=7}{←}{col=4}][{col=7}{→}{col=4}]{col=7}  ... Move

@@ -54,8 +54,8 @@ l_dcal:
 
 ; -------- ビルド番号が収められる
 _build_nr:
-       INCLUDE "build_nr.asm"
-       
+       INCLUDE "build-nr.asm"
+
 ; -------- 各セクションの定義
 ;    INCLUDE "crt/classic/crt_section.inc"
     SECTION CODE
@@ -81,4 +81,3 @@ _build_nr:
     SECTION bss_clib
     SECTION bss_error
     SECTION BSS_END
-

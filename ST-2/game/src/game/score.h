@@ -14,6 +14,7 @@
 extern u16  score_;
 extern u8   score_level_;
 extern bool b_score_enabled_;
+extern bool b_game_over_enabled_;
 extern u16  score_nr_continues_;
 extern u16  score_nr_misses_;
 #if DEBUG
@@ -31,8 +32,10 @@ void scoreInit(void) __z88dk_fastcall;
 void scoreMain(void) __z88dk_fastcall;
 
 // ---------------------------------------------------------------- 制御
-/** スコア等の描画を停止します. 次のフレームでは許可されます */
+/** スコア, ゲームオーバー等の描画を停止します. 次のフレームでは許可されます */
 inline void scoreSetDisabled(void) { b_score_enabled_ = false; }
+/** ゲームオーバーの描画を停止します. 次のフレームでは許可されます */
+inline void scoreSetGameOverDisabled(void) { b_game_over_enabled_ = false; }
 
 // ---------------------------------------------------------------- スタート, コンティニュー
 /** スコアを 0 点に初期化します. アトラクト モード時は初期化しません */

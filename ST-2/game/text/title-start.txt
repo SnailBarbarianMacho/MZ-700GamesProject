@@ -1,0 +1,1 @@
+{col=7}Press {col=4}[{col=7}F1{col=4}]{col=7} to start

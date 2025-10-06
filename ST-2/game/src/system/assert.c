@@ -6,7 +6,7 @@
 
 #include "assert.h"
 #include "../../../../src-common/hard.h"
-#include "../../../../src-common/display_code.h"
+#include "../../../../src-common/display-code.h"
 
 // ---------------------------------------------------------------- assert
 #if DEBUG
@@ -15,7 +15,7 @@
 void assert(u16 val) __z88dk_fastcall __naked
 {
 __asm
-    BANK_VRAM_MMIO(C)
+    BANKH_VRAM_MMIO C
     ld      SP, 0 + VRAM_TEXT + 40
 
     // -------- TEXT

@@ -1,1 +1,2 @@
-Press {col=4}[{col=7}F1{col=4}]{col=7} key to continue
+Press {col=4}[{col=7}F1{col=4}]{col=7} to continue,
+{col=4}[{col=7}F2{col=4}]{col=7} to skip countdown

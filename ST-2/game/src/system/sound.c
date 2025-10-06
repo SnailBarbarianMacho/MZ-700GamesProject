@@ -138,7 +138,7 @@ void sdSetEnabled(const bool bEnabled) __z88dk_fastcall __naked
     // (MMIO_8253_CTRL) = MMIO_8253_CT0_MODE3;
 __asm
     // ---------------- 準備
-    BANK_VRAM_MMIO(C)          // バンク切替
+    BANKH_VRAM_MMIO C          // バンク切替
 
     // ---------------- 制御
     ld      A, L
@@ -156,7 +156,7 @@ SOUND_SET_ENABLED:
     ld      (HL), A
 
     // ---------------- 後始末
-    BANK_RAM(C)                    // バンク切替
+    BANKH_RAM C                    // バンク切替
     ret
 __endasm;
 }
@@ -195,7 +195,7 @@ void sdMake(const u16 interval) __z88dk_fastcall __naked
     // if (!HL) { (MMIO_8253_CTRL) = MMIO_8253_CT0_MODE3; }
 __asm
     // ---------------- 準備
-    BANK_VRAM_MMIO(C)          // バンク切替
+    BANKH_VRAM_MMIO C          // バンク切替
 
     // ---------------- 音程 0x0000 の場合の処理
     // 音程が 0 ならば音を止めて, 優先順位を最低にします
@@ -219,7 +219,7 @@ SDM_NON_ZERO:
 
     // ---------------- 後始末
 SDM_END:
-    BANK_RAM(C)                  // バンク切替
+    BANKH_RAM C                  // バンク切替
     ret
 __endasm;
 }
@@ -238,7 +238,7 @@ __asm
     ld      H, (HL)
     ld      L, A                // HL = 音程
 
-    BANK_VRAM_MMIO(C)           // バンク切替
+    BANKH_VRAM_MMIO C           // バンク切替
 
     // ---------------- 音程 0x0000 の場合の処理
     // 音程が 0 ならば音を止めて, 優先順位を最低にします
@@ -261,7 +261,7 @@ SD1_NON_ZERO:
 
     // ---------------- 後始末
 SD1_END:
-    BANK_RAM(C)                 // バンク切替
+    BANKH_RAM C                 // バンク切替
     ret
 __endasm;
 }
@@ -324,10 +324,11 @@ __asm
                     push    HL                          // 11 / 0
                 endif
                 ld  HL, (p_mml)                         // 16 小計26
-                // ---- F1 キーでキャンセル
+                // ---- F1～F4 キーでキャンセル
                 ld  A, (MMIO_8255_PORTB)                // 13
-                and A, A                                //  4
-                jp  p, SD3_CANCEL_END                   // 10 小計27
+                and A, KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK // 7
+                cp  A, KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK // 7
+                jp  nz, SD3_CANCEL_END                  // 10 小計44
                 // ---- 波長初期値
                 ld  A, (HL)                             //  7 A = 波長初期値
                 and A                                   //  4
@@ -405,7 +406,7 @@ __asm
     pop     HL                                          // L= キャンセル可能フラグ
 
     ld      SP, 0 + ADDR_TMP_SP                         // バンク切替による 臨時 SP
-    BANK_VRAM_MMIO(C)                                   // バンク切替
+    BANKH_VRAM_MMIO C                                   // バンク切替
 
     // 音長カウンタの初期化
     exx
@@ -439,10 +440,11 @@ SD3_LOOP_END:
 
     // ---------------- 後始末
 SD3_CANCEL_END:
-    // F1 キーが離れるまで待ちます
+    // F1～F4 キーが離れるまで待ちます
     ld      A, (MMIO_8255_PORTB)
-    and     A, A
-    jp      p, SD3_CANCEL_END
+    and     A, KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK
+    cp      A, KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK
+    jr      nz, SD3_CANCEL_END
     ld      H, 0                                        // return false
 
 SD3_END:
@@ -451,7 +453,7 @@ SD3_END:
     ld      A, 0 + MMIO_8253_CT0_MODE3
     ld      (MMIO_8253_CTRL), A
 
-    BANK_RAM(C)                                         // バンク切替
+    BANKH_RAM C                                         // バンク切替
 
 SD3_PLAY_SP_RESTORE:
     ld      SP, 0x0000                                  // SP を復帰

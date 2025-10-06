@@ -60,7 +60,7 @@ __asm
         push    DE
     endm
 
-    BANK_VRAM_MMIO(C)                  // バンク切替
+    BANKH_VRAM_MMIO C                  // バンク切替
 
     // ---------------- デバッグ用カウント計測
 #if DEBUG
@@ -124,7 +124,7 @@ VBLK_SYNC1:
     jp      A, m,    VBLK_SYNC1
 #endif
 
-    BANK_RAM(C)                             // バンク切替
+    BANKH_RAM C                             // バンク切替
     ret
 __endasm;
 }
@@ -144,7 +144,7 @@ __asm
     or      A
     ret     z
     ld      (VRAM_TRANS_SP_RESTORE + 1), SP;            // スタック保存
-    BANK_VRAM_MMIO(C)                                   // バンク切替
+    BANKH_VRAM_MMIO C                                   // バンク切替
 
 VRAM_TRANS_LOOP:
     // ---- TEXT 0 番目の 10 bytes
@@ -253,7 +253,7 @@ VRAM_TRANS_ATB_DST_3:
 
 VRAM_TRANS_SP_RESTORE:
     ld      sp, 0000
-    BANK_RAM(C)                                         // バンク切替
+    BANKH_RAM C                                         // バンク切替
     ret
 __endasm;
 }
@@ -277,7 +277,7 @@ __asm
     // CT1 は モード2 (ct=262),
     // CT2 は モード0 (ct=65535)
     // で運用します
-    BANK_VRAM_MMIO(C)           // バンク切替
+    BANKH_VRAM_MMIO C           // バンク切替
 
     // -------- V カウンタの設定(1)
     ld      HL, 0 + MMIO_8255_PORTC
@@ -327,7 +327,7 @@ VRAM_VBLK_SYNC_19:
     ld      (HL), E                                     // ct1 カウンタ L
     ld      (HL), D                                     // ct1 カウンタ H カウント開始
 
-    BANK_RAM(C)                                         // バンク切替
+    BANKH_RAM C                                         // バンク切替
 
 VRAM_INIT_SP_RESTORE:
     ld      SP, 0x0000
@@ -361,7 +361,7 @@ __endasm;
 static u8 vramGetVCounter_(void) __z88dk_fastcall __naked
 {
 __asm
-    BANK_VRAM_MMIO(C)                                   // バンク切替
+    BANKH_VRAM_MMIO C                                   // バンク切替
     // カウンタ ラッチ モードを使ってデータを読みだす
     ld      HL, 0 + MMIO_8253_CTRL
     ld      (HL), 0 + MMIO_8253_CTRL_RL_LATCH_MASK | MMIO_8253_CTRL_CT1_MASK
@@ -369,7 +369,7 @@ __asm
     ld      A,  (HL)                                    // ct1 L
     ld      H,  (HL)                                    // ct1 H
     ld      L,  A
-    BANK_RAM(C)                                         // バンク切替
+    BANKH_RAM C                                         // バンク切替
     // HL = 1～262
 #if 0 // カウンタと /VBLK の対比をチェックするデバッグ(VRAM_GET_VCOUNTER_TEST1でブレークをかける)
 #define VCT 260
@@ -441,13 +441,14 @@ __endasm;
         // 32 |-----...--(8行x21)-|BBBBBBBBB...BBBBBBBBBBBBBBBBBBB|=====...==|A|
 
         u8 vc = vramGetVCounter_(); // 0～32
-        u8 is = inputGetMZ1X03Insensitivity(); //  MZ-1X03 の感度の鈍さ (1敏感～4鈍い)
+        u8  s = inputGetMZ1X03sensitivity(); // MZ-1X03 感度(0鈍い～3敏感)
         vramTransMain_(vc);
         // この時点で必ず /VBLK 外の筈!
-        inputMZ1X03ButtonVSyncAxis1(is);
-        vramTransMain_(is);
+        inputMZ1X03ButtonVSyncAxis1(s);
+        s = 4 - s;
+        vramTransMain_(s);
         inputMZ1X03Axis2();
-        vramTransMain_(VRAM_HEIGHT - vc - is);
+        vramTransMain_(VRAM_HEIGHT - vc - s);
     }
 
 __asm
@@ -580,7 +581,7 @@ void vramFill(const u16 code) __z88dk_fastcall __naked
     // 1/60 sec でクリアされます.
 __asm
     ld      (VRAM_FILL_SP_RESTORE + 1), SP              // SP 保存(自己書換)
-    BANK_VRAM_MMIO(C)                                   // バンク切替
+    BANKH_VRAM_MMIO C                                   // バンク切替
 
     ld      BC, HL                                      // ATB + TEXT
     ld      SP, 0 + VRAM_TEXT_ADDR(10, 0)
@@ -609,7 +610,7 @@ VRAM_FILL_LOOP:
         dec A
         jr  nz, VRAM_FILL_LOOP
 
-    BANK_RAM(C)                                         // バンク切替
+    BANKH_RAM C                                         // バンク切替
 VRAM_FILL_SP_RESTORE:
     ld      SP, 0x0000                                  // SP 復活
     ret
@@ -752,7 +753,7 @@ __asm
     ld      SP, 0 + ADDR_TMP_SP                         // 臨時スタックポインタ
 
     ld      A, C                                        // h 保存
-    BANK_VRAM_MMIO(C)                                   // バンク切替(C 破壊)
+    BANKH_VRAM_MMIO C                                   // バンク切替(C 破壊)
     ld      C, A                                        // h 復帰
 
     // -------- TEXT
@@ -807,7 +808,7 @@ RVRAM_DRAW_RECT_ATB_LOOP_Y:
     //exx   よく考えてみたら最後の exx は不要
 
     // -------- 終了
-    BANK_RAM(C)                                         // バンク切替
+    BANKH_RAM C                                         // バンク切替
 VRAM_DRAW_RECT_SP_RESTORE:
     ld      SP, 0x0000                                  // SP 復帰
     ret
