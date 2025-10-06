@@ -6,7 +6,7 @@
 
 #include "../src-common/common.h"
 #include "../src-common/hard.h"
-#include "../src-common/asm_macros.h"
+#include "../src-common/asm-macros.h"
 
 #include "addr.h"
 #include "sound.h"

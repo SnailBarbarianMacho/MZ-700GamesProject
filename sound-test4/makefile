@@ -1,6 +1,6 @@
 .PHONY:    all clean depend
 
-# ざっくりのビルド フロー
+# ざっくりのビルド フロー(上から下へ)
 #
 #        music/chronos.dms music/drum[1-3].bmp
 #                 :              |
@@ -20,6 +20,7 @@
 #      |                     |
 # soundTest4.bin       soundTest4.map
 # soundTest4.mzt       soundTest4.emuz.sym
+# soundTest4.wav
 #
 
 # -------- macros
@@ -30,7 +31,7 @@ SD4_EXCEPT_LEN_SZ	:= 24
 
 TOOLS   	:= ../tools
 CRT0 		:= crt0.asm
-OUTFILE 	:= SoundTest4
+NAME 		:= sound-test4
 PROG_NAME 	:= 'SOUND TEST 4'
 PHP         := php
 CC      	:= zcc
@@ -46,20 +47,21 @@ LFLAGS      := +mz -mz80 -m\
 	-pragma-define:CLIB_EXIT_STACK_SIZE=0
 RMF			:= $(PHP) $(TOOLS)/rmf.php
 MUSIC_DIR   := music
-GAME_DEPENDS_PROG   := depends-prog.mk
+GAME_DEPENDS_PROG	:= depends-prog.mk
 GAME_DEPENDS_MUSIC	:= depends-music.mk
 
 # -------- ビルド
-all: $(OUTFILE).mzt
+all: bin/$(NAME).mzt
 -include $(GAME_DEPENDS_PROG)
 -include $(GAME_DEPENDS_MUSIC)
 
-$(OUTFILE).mzt: $(OBJS) $(CRT0)
+bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@echo Linking ... [$@]
-	@$(CC) $(LFLAGS) -o $(OUTFILE).bin $(OBJS)
-	@$(PHP) $(TOOLS)/map2emuzsym.php $(OUTFILE).map $(OUTFILE).emuz.sym
-	@$(PHP) $(TOOLS)/bss_remover.php $(OUTFILE).bin $(OUTFILE).map $(OUTFILE).code_data.bin
-	@$(PHP) $(TOOLS)/make_mzt.php $(OUTFILE).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
+	@$(CC) $(LFLAGS) -o $(NAME).bin $(OBJS)
+	@$(PHP) $(TOOLS)/map2emuzsym.php $(NAME).map $(NAME).emuz.sym
+	@$(PHP) $(TOOLS)/bss-remover.php $(NAME).bin $(NAME).map $(NAME).code_data.bin
+	@$(PHP) $(TOOLS)/bin2mzt.php $(NAME).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
+	@$(PHP) $(TOOLS)/mzt2wav.php $@ bin/$(NAME).wav
 
 %.c: %.z80ana.c
 	@echo Converting ... [$<]
@@ -71,17 +73,17 @@ $(OUTFILE).mzt: $(OBJS) $(CRT0)
 
 %.h: %.mid
 	@echo Converting midi file ... [$<]
-	@$(PHP) $(TOOLS)/sd4_midi_conv.php $< $@ --exceptLengths=$(SD6_EXCEPT_LEN)#$(SD6_EXCEPT_LEN_SZ) --verbose
+	@$(PHP) $(TOOLS)/sd4-midi-conv.php $< $@ --exceptLengths=$(SD4_EXCEPT_LEN)#$(SD4_EXCEPT_LEN_SZ) --verbose
 
 $(MUSIC_DIR)/%.h: $(MUSIC_DIR)/%.bmp
 	@echo Converting pcm drum file ... [$<]
-	@$(PHP) $(TOOLS)/sd4_wav_conv.php $< $@ $(basename $<).wav
+	@$(PHP) $(TOOLS)/sd4-wav-conv.php $< $@ $(basename $<).wav
 
 # -------- 依存関係生成
 depend $(GAME_DEPENDS_PROG) $(GAME_DEPENDS_MUSIC):
 	@echo Generating dependencies...
-	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_PROG)  --prog  . OBJS PROG_CLEAN_FILES
-	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_MUSIC) --music music
+	@$(PHP) $(TOOLS)/make-depend.php $(GAME_DEPENDS_PROG)  --prog  . OBJS PROG_CLEAN_FILES
+	@$(PHP) $(TOOLS)/make-depend.php $(GAME_DEPENDS_MUSIC) --music music
 
 # -------- clean
 clean: clean_prog clean_music
@@ -89,7 +91,8 @@ clean: clean_prog clean_music
 	@$(RMF) *.bin
 	@$(RMF) *.map
 	@$(RMF) *.sym
-#	@$(RMF) $(OUTFILE).mzt
+	@$(RMF) bin/$(NAME).mzt
+	@$(RMF) bin/$(NAME).wav
 
 clean_prog:
 	@echo Cleaning programs ...

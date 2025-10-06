@@ -1,4 +1,4 @@
-/**** This file is made by ../tools/sd4_midi_conv.php. DO NOT MODIFY! ****/
+/**** This file is made by ../tools/sd4-midi-conv.php. DO NOT MODIFY! ****/
 // Lead 音階ヒストグラム(計453):
 //   A#3 x 12
 //   A#4 x 4
@@ -88,7 +88,7 @@
 
 //----------------------------------------------------------------♩
 //  Lead                    Base                    Chord0/1                          Drum             
-static const u8 score0[] = {
+static u8 const score0[] = {
     // -------- 小節2(t=0)
     SD4_L_FL(8, SD4_CS4),   SD4_B_FL(8, SD4_AS3),   SD4_C2_FL(24, SD4_CS3, SD4_AS2),  SD4_D_1(16),     
     SD4_L_FL(8, SD4_AS3),   SD4_B_FL(8, SD4_FS3),                                                      
