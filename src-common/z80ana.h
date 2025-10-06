@@ -8,9 +8,9 @@
 #define __z80ana_macro
 #define Z80ANA_DEF_VARS volatile int A, B, C, D, E, F, H, L, IXH, IXL, IYH, IYL, AF, BC, DE, HL, PC, SP, I, R, IX, IY,\
     z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po,\
-    z_er, eq_er, nz_er, ne_er, c_er, lt_er, nc_er, ge_er, p_er, m_er, v_er, nv_er, pe_er, po_er,\
-    z_r, eq_r, nz_r, ne_r, c_r, lt_r, nc_r, ge_r,\
-    z_rr, eq_rr, nz_rr, ne_rr, c_rr, lt_rr, nc_rr, ge_rr, \
+    z_jr, eq_jr, nz_jr, ne_jr, c_jr, lt_jr, nc_jr, ge_jr, \
+    z_else_jr, eq_else_jr, nz_else_jr, ne_else_jr, c_else_jr, lt_else_jr, nc_else_jr, ge_else_jr, p_else_jr, m_else_jr, v_else_jr, nv_else_jr, pe_else_jr, po_else_jr,\
+    z_jr_else_jr, eq_jr_else_jr, nz_jr_else_jr, ne_jr_else_jr, c_jr_else_jr, lt_jr_else_jr, nc_jr_else_jr, ge_jr_else_jr, \
     *mem, *port, asmpc
 #define Z80ANA_DEF_DUMMY_VARS(...) volatile int __VA_ARGS__; // 任意の使用しない変数を定義
 #define Z80ANA_LOCAL(...)

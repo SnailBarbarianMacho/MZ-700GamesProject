@@ -18,14 +18,19 @@
 #define OPCODE_INC_D    0x14
 #define OPCODE_INC_E    0x1c
 #define OPCODE_JP       0xc3
-#define OPCODE_JP_C     0xda
+#define OPCODE_JP_NZ    0xc2
+#define OPCODE_JP_Z     0xca
 #define OPCODE_JP_NC    0xd2
+#define OPCODE_JP_C     0xda
 #define OPCODE_JR       0x18
 #define OPCODE_JR_NZ    0x20
 #define OPCODE_JR_Z     0x28
+#define OPCODE_JR_NC    0x30
+#define OPCODE_JR_C     0x38
 #define OPCODE_LD_A_N   0x3e    // 相対ジャンプしない代わりに使用
 #define OPCODE_LD_A_HL  0x7e
-#define OPCODE_LD_BC_NN 0x01
+#define OPCODE_LD_A_MM  0x3a    // ld A, (mm)
+#define OPCODE_LD_BC_NN 0x01    // ld BC, nn
 #define OPCODE_LD_C_HL  0x4e
 #define OPCODE_LD_HL_N  0x36
 #define OPCODE_LD_HL_NN 0x21    // ジャンプしない代わりに使用
@@ -336,7 +341,7 @@ __asm
     endm
 
 
-    // -------------------------------- MARK:8/16 bit 演算
+    // -------------------------------- MARK:8->16 符号拡張
 
     /** A -> 16bit へ符号拡張します
      * - 4 bytes, 16 T-states
@@ -349,12 +354,19 @@ __asm
         ld      dst_h,  A
     endm
 
-    /** 16bit += A(unsigned)
+    // -------------------------------- MARK:8+16 加算
+    /** 16bitレジスタ += A(unsigned)
      * - 5 bytes, 19(繰り上がり有り)/20(同無し) T-states
      * - 次のコード(4 bytes, 21 T-states)より速いです
-     *   ld  B, 0
-     *   ld  C, A
-     *   add HL, BC
+     *   ld     B,  0
+     *   ld     C,  A
+     *   add    HL, BC
+     * - 次のコード(5 bytes, 20 T-states)より速いです
+     *   add    A,  L
+     *   ld     L,  A
+     *   adc    A,  H
+     *   sub    A,  L
+     *   ld     H,  A
      * @param dst_h H, D, B, IXH, IYH など
      * @param dst_l L, E, C, IXL, IYL など
      * @param A     A レジスタを破壊するので, 引数で明示します
@@ -365,12 +377,36 @@ __asm
      */
     macro   ADD16_U8T    dst_h, dst_l, A
         local   ADD16_U8T_100
-        add     A,  dst_l
+        add     A,      dst_l
         ld      dst_l,  A
-        jr      nc, ADD16_U8T_100
+        jr      nc,     ADD16_U8T_100
             inc     dst_h
 ADD16_U8T_100:
     endm
+
+    /** 16bitレジスタ = 16bit即値 + A(unsigned)
+     * - テーブル検索に使えます
+     * - 7 bytes, 26 T-states
+     * - 次のコード(8 bytes, 29/30 T-states)より速いです
+     *  ld  HL, xxxx            // 10
+     *  ADD16_U8T(HL, A)        // 19/20
+     * @param dst_h H, D, B, IXH, IYH など
+     * @param dst_l L, E, C, IXL, IYL など
+     * @param imm16 16bit即値
+     * @param A     A レジスタを破壊するので, 引数で明示します
+     * @note
+     * - A が符号付きの場合は, 次のように書きます.
+     *   EXT16T D, E, A
+     *   add    HL, DE
+     */
+    macro   ADD_IMM16_U8T   dst_h, dst_l, imm16, A
+        add     A,      0 + (imm16) % 256
+        ld      dst_l,  A
+        adc     A,      0 + (imm16) / 256
+        sub     A,      dst_l
+        ld      dst_h,  A
+    endm
+
 
     // -------------------------------- MARK:16 bit neg
 

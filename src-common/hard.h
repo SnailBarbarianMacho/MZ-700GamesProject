@@ -107,6 +107,19 @@
 #define MMIO_ETC_GATE_SHIFT             0       /// 8253 Ch 0 Gate GATE (0 = サウンド停止)
 #define MMIO_ETC_GATE_MASK              0x01    /// 8253 Ch 0 Gate GATE (0 = サウンド停止)
 
+// ---------------------------------------------------------------- PCG-700
+#define MMIO_PCG700_DATA                0xe010  /// PCG-RAM 書込
+#define MMIO_PCG700_ADDR                0xe011  /// PCG-RAM アドレス 7:0
+#define MMIO_PCG700_CTRL                0xe012  /// PCG-RAM 制御
+#define MMIO_PCG700_COPY_SHIFT          5       /// PCG に書き込むデータのソース 0/1 = PCG700_DATA/CGROM
+#define MMIO_PCG700_COPY_MASK           0x20
+#define MMIO_PCG700_WE_SHIFT            4       /// 0->1->0 とトグルするとデータを書き込みます. 普段は 0.
+#define MMIO_PCG700_WE_MASK             0x10
+#define MMIO_PCG700_SSW_SHIFT           3       /// 0/1 = PCGを使用する/使用しない
+#define MMIO_PCG700_SSW_MASK            0x08
+#define MMIO_PCG700_ADDR8_10_SHIFT      0       /// PCG-RAM アドレス 10:8
+#define MMIO_PCG700_ADDR8_10_MASK       0x07
+
 // ---------------------------------------------------------------- キー
 #define KEY0_KANA_MASK          0x80
 #define KEY0_GRAPH_MASK         0x40
@@ -242,6 +255,16 @@ __asm
     macro   BANKL_ROM_BANKH_VRAM_MMIO   C
     ld      C,  IO_BANKL_ROM_BANKH_VRAM_MMIO
     out     (C), A              // 値はなんでもいい
+    endm
+
+    // -------------------------------- PCG-700
+    /** PCG-700 を無効化します
+     * - WE = 0, SSW = 1
+     * - A レジスタを破壊するので, 引数で明示します
+     */
+    macro   PCG700_DISABLE  A
+    ld  A, 0 + MMIO_PCG700_SSW_MASK
+    ld  (MMIO_PCG700_CTRL), A
     endm
 
 __endasm;
