@@ -1,4 +1,4 @@
-/**** This file is made by ../tools/sd6_midi_conv.php. DO NOT MODIFY! ****/
+/**** This file is made by ../tools/sd6-midi-conv.php. DO NOT MODIFY! ****/
 // Lead 音階ヒストグラム(計453):
 //   A#3 x 12
 //   A#4 x 4

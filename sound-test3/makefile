@@ -7,7 +7,7 @@
 #                 :        music/drum2.txt
 #        music/chronos.mid music/pulse.txt
 #                 |              |
-#        music/chronos.h   music/sd6_data.h
+#        music/chronos.h   music/sd6-data.h
 #                 |              |
 #                 |        sound-sd6.z80ana.c
 #                 |              |
@@ -21,6 +21,7 @@
 #      |                     |
 # soundTest3.bin       soundTest3.map
 # soundTest3.mzt       soundTest3.emuz.sym
+# soundTest3.wav
 #
 
 # -------- macros
@@ -31,7 +32,7 @@ SD6_EXCEPT_LEN_SZ	:= 24
 
 TOOLS   	:= ../tools
 CRT0 		:= crt0.asm
-OUTFILE 	:= SoundTest3
+NAME 		:= SoundTest3
 PROG_NAME 	:= 'SOUND TEST 3'
 PHP         := php
 CC      	:= zcc
@@ -51,23 +52,24 @@ GAME_DEPENDS_PROG	:= depends-prog.mk
 GAME_DEPENDS_MUSIC	:= depends-music.mk
 SD6_DRUMS   := $(MUSIC_DIR)/drum0.txt $(MUSIC_DIR)/drum1.txt $(MUSIC_DIR)/drum2.txt
 SD6_PULSE   := $(MUSIC_DIR)/pulse.txt
-SD6_DATA    := $(MUSIC_DIR)/sd6_data.h
+SD6_DATA    := $(MUSIC_DIR)/sd6-data.h
 
 # -------- ビルド
-all: $(OUTFILE).mzt
+all: bin/$(NAME).mzt
 -include $(GAME_DEPENDS_PROG)
 -include $(GAME_DEPENDS_MUSIC)
 
 $(SD6_DATA): $(SD6_DRUMS) $(SD6_PULSE)
 	@echo Genating sd6 table ... [$@]
-	@$(PHP) $(TOOLS)/sd6_gen_data.php $(SD6_PULSE) $(SD6_DRUMS) $@
+	@$(PHP) $(TOOLS)/sd6-gen-data.php $(SD6_PULSE) $(SD6_DRUMS) $@
 
-$(OUTFILE).mzt: $(OBJS) $(CRT0)
+bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@echo Linking ... [$@]
-	@$(CC) $(LFLAGS) -o $(OUTFILE).bin $(OBJS)
-	@$(PHP) $(TOOLS)/map2emuzsym.php $(OUTFILE).map $(OUTFILE).emuz.sym
-	@$(PHP) $(TOOLS)/bss_remover.php $(OUTFILE).bin $(OUTFILE).map $(OUTFILE).code_data.bin
-	@$(PHP) $(TOOLS)/make_mzt.php $(OUTFILE).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
+	@$(CC) $(LFLAGS) -o $(NAME).bin $(OBJS)
+	@$(PHP) $(TOOLS)/map2emuzsym.php $(NAME).map $(NAME).emuz.sym
+	@$(PHP) $(TOOLS)/bss-remover.php $(NAME).bin $(NAME).map $(NAME).code_data.bin
+	@$(PHP) $(TOOLS)/bin2mzt.php $(NAME).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
+	@$(PHP) $(TOOLS)/mzt2wav.php $@ bin/$(NAME).wav
 
 %.c: %.z80ana.c
 	@echo Converting ... [$<]
@@ -79,13 +81,13 @@ $(OUTFILE).mzt: $(OBJS) $(CRT0)
 
 %.h: %.mid
 	@echo Converting midi file ... [$<]
-	$(PHP) $(TOOLS)/sd6_midi_conv.php $< $@ --exceptLengths=$(SD6_EXCEPT_LEN)#$(SD6_EXCEPT_LEN_SZ) --verbose
+	$(PHP) $(TOOLS)/sd6-midi-conv.php $< $@ --exceptLengths=$(SD6_EXCEPT_LEN)#$(SD6_EXCEPT_LEN_SZ) --verbose
 
 # -------- 依存関係生成
 depend $(GAME_DEPENDS_PROG) $(GAME_DEPENDS_MUSIC):
 	@echo Generating dependencies...
-	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_PROG)  --prog  . OBJS PROG_CLEAN_FILES
-	@$(PHP) $(TOOLS)/make_depend.php $(GAME_DEPENDS_MUSIC) --music music
+	@$(PHP) $(TOOLS)/make-depend.php $(GAME_DEPENDS_PROG)  --prog  . OBJS PROG_CLEAN_FILES
+	@$(PHP) $(TOOLS)/make-depend.php $(GAME_DEPENDS_MUSIC) --music music
 
 # -------- clean
 clean: clean_prog clean_music
@@ -93,7 +95,8 @@ clean: clean_prog clean_music
 	@$(RMF) *.bin
 	@$(RMF) *.map
 	@$(RMF) *.sym
-#	@$(RMF) $(OUTFILE).mzt
+	@$(RMF) bin/$(NAME).mzt
+	@$(RMF) bin/$(NAME).wav
 
 clean_prog:
 	@echo Cleaning programs ...

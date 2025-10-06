@@ -5,7 +5,7 @@
 
 #include "../src-common/common.h"
 #include "../src-common/hard.h"
-#include "../src-common/asm_macros.h"
+#include "../src-common/asm-macros.h"
 #include "../src-common/z80ana.h"
 #include "addr.h"
 #include "sound.h"
@@ -57,7 +57,7 @@ void LEAD_ECHO_DELAY(void) __z80ana_macro __naked
 // ---------------------------------------------------------------- 初期化
 // -------- sd6 テーブル
 static u8 const SD6_DATA_[] = {
-#include "music/sd6_data.h"
+#include "music/sd6-data.h"
 };
 
 // MARK: init()
