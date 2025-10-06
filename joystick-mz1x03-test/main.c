@@ -5,7 +5,7 @@
  */
 #include "../src-common/common.h"
 #include "../src-common/hard.h"
-#include "../src-common/display_code.h"
+#include "../src-common/display-code.h"
 
 #define INPUT_MASK_A 0x01   // A ボタン
 #define INPUT_MASK_B 0x02   // B ボタン

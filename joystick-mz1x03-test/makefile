@@ -1,7 +1,7 @@
 .PHONY:    all clean
 TOOLS   	:= ../tools
 CRT0 		:= crt0.asm
-OUTFILE 	:= JoystickMZ1X03Test
+NAME	 	:= joystick-mz1x03-test
 PROG_NAME 	:= 'MZ-1X03 TEST'
 PHP         := php
 CC      	:= zcc
@@ -16,17 +16,18 @@ LFLAGS      := +mz -mz80 -m\
 	-pragma-define:CLIB_EXIT_STACK_SIZE=0
 RMF			:= $(PHP) $(TOOLS)/rmf.php
 
-all: $(OUTFILE).mzt
+all: bin/$(NAME).mzt
 
 OBJS		:= main.o
 main.o: main.c
 
-$(OUTFILE).mzt: $(OBJS) $(CRT0)
+bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@echo Linking ... [$@]
-	@$(CC) $(LFLAGS) -o $(OUTFILE).bin $(OBJS)
-	@$(PHP) $(TOOLS)/map2emuzsym.php $(OUTFILE).map $(OUTFILE).emuz.sym
-	@$(PHP) $(TOOLS)/bss_remover.php $(OUTFILE).bin $(OUTFILE).map $(OUTFILE).code_data.bin -e2
-	@$(PHP) $(TOOLS)/make_mzt.php $(OUTFILE).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
+	@$(CC) $(LFLAGS) -o $(NAME).bin $(OBJS)
+	@$(PHP) $(TOOLS)/map2emuzsym.php $(NAME).map $(NAME).emuz.sym
+	@$(PHP) $(TOOLS)/bss-remover.php $(NAME).bin $(NAME).map $(NAME)-code-data.bin -e2
+	@$(PHP) $(TOOLS)/bin2mzt.php $(NAME)-code-data.bin $(PROG_NAME) $(ORG) $(ORG) $@
+	@$(PHP) $(TOOLS)/mzt2wav.php $@ bin/$(NAME).wav
 
 %.o: %.c
 	@echo Compiling ... [$<]
@@ -38,4 +39,5 @@ clean:
 	@$(RMF) *.bin
 	@$(RMF) *.map
 	@$(RMF) *.sym
-#	@$(RMF) $(OUTFILE).mzt
+	@$(RMF) bin/$(NAME).mzt
+	@$(RMF) bin/$(NAME).wav
