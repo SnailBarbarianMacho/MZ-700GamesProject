@@ -28,6 +28,3 @@ $(WAV): $(SRC)
 clean:
 	@echo cleaning...
 	$(RMF) $(OBJ) $(BIN) $(MAP) $(SUM) $(MZT) $(WAV)
-
-release:
-	@make
