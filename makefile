@@ -1,28 +1,33 @@
 .PHONY: all release clean
 
 all:
-	cd ram-check && make
-	cd SoundTest && make
-	cd SoundTest2 && make
-	cd SoundTest3 && make
-	cd SoundTest4 && make
-	cd JoystickMZ1X03Test && make
-	cd ST-2 && make
-	cd Baryon && make
-
-release:
-	@cd ram-check && make release
-	@cd SoundTest && make
+	@cd test && make
+	@cd memory-dirtinizer && make
+	@cd ram-check && make
+	@cd joystick-mz1x03-test && make
+	@cd sound-test1 && make
 	@cd SoundTest2 && make
 	@cd SoundTest3 && make
 	@cd SoundTest4 && make
-	@cd JoystickMZ1X03Test && make
+	@cd ST-2 && make
+
+release:
+	@cd test && make
+	@cd memory-dirtinizer && make
+	@cd ram-check && make
+	@cd joystick-mz1x03-test && make
+	@cd sound-test1 && make
+	@cd Sound-test2 && make
+	@cd Sound-test3 && make
+	@cd Sound-test4 && make
 	@cd ST-2 && make release
-	@cd Baryon && make release
 
 clean:
+	@cd test && make clean
+	@cd memory-dirtinizer && make clean
 	@cd ram-check && make clean
-	@cd SoundTest && make clean
+	@cd joystick-mz1x03-test && make clean
+	@cd sound-test1 && make clean
 	@cd SoundTest2 && make clean
 	@cd SoundTest3 && make clean
 	@cd SoundTest4 && make clean

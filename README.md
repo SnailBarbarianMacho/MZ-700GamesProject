@@ -1,5 +1,7 @@
 # MZ-700 Game Projects
 
+(Recently, the quality of machine translation has improved, so I decided not to write the English translation...)
+
 ![title](MZ-700-games-project.png)
 
 * ある日唐突に MZ-700 で動くゲームを作ってみたくなったので, 作りました！
@@ -16,22 +18,22 @@
 # Features
 
 * 複数のサブ プロジェクトが中に入ってます
-* **Test** <br>
-  コンパイラの動作テスト. makefile はありません. バッチ ファイルでビルドします
-* **Memory Dirtinizer** <br>
-  実機の電源投入時のように, メモリを「汚く」して, リセットします. バッチ ファイルでビルドします
+* **test** <br>
+  コンパイラの動作テスト
+* **memory-dirtinizer** <br>
+  実機の電源投入時のように, メモリを「汚く」して, リセットします
 * **ram-check** <br>
   RAM と VRAM をチェックします
-* **JoystickMZ1X03Test** <br>
+* **joystick-mz1x03-test** <br>
   シャープ純正ジョイスティック MZ-1X03 の動作テスト (デジタル, 検出機能付き)
-* **SoundTest** <br>
-  サウンド テスト (3音源, OR合成)
+* **sound-test1** <br>
+  サウンド テスト1 (3音源, OR合成)
   https://www.youtube.com/watch?v=Qs5GZ-hzjp4
-* **SoundTest2** <br>
+* **sound-test2** <br>
   サウンド テスト2 (3音源, OR合成, 波形誤差拡散)
-* **SoundTest3** <br>
+* **sound-test3** <br>
   サウンド テスト3 (6音源, OR合成)
-* **SoundTest3** <br>
+* **sound-test4** <br>
   サウンド テスト4 (4音源, PWM)
 * **ST-2** <br>
   習作 縦シューティングゲーム.<br>
@@ -71,9 +73,15 @@
 ```
 * 又は, 各サブ プロジェクト フォルダへ移動して<br>
 ```
->cd SoundTest
+>cd サブプロジェクトフォルダ
 >make
 ```
+* ゲームの場合は make だけだとデバッグ バージョンを作ってしまいます. 本番バージョンは次のようにします:
+```
+>cd ゲームサブプロジェクトフォルダ
+>make release
+```
+
 * それぞれ, make clean や meke release が用意されてます<br>
 
 # EmuZ-700 あんちょこ Cheat Sheet
@@ -89,9 +97,19 @@
   2. MZT または WAV ファイルをセットします [CMT]->[Play]
   3. エミュレータのモニター上で 'L[CR]' をタイプします
 
+# History
+
+* 2021.10.09 ST-2, sound-test1 公開
+* 2021.10.20 memory-dirtinizer 公開
+* 2022.05.21 sound-test2 公開
+* 2022.09.28 joystick-mz1x03-test 公開
+* 2024.09.14 sd6 公開
+* 2024.09.14 sd4 公開
+* 2025.09.08 ram-check 公開
+
 # Author
 
-* SnailBarbarianMacho
+* SnailBarbarianMacho (NWK)
 
 # License
 
