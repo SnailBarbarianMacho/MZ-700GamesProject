@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 /**
- * テキスト文字列をディスプレイ コードの配列に変換し
+ * テキスト文字列をディスプレイ コードの配列に変換します
  *
  * 使えるタグは,
  *   {sp}{lf}{lf2}
@@ -12,8 +12,8 @@ declare(strict_types = 1);
  *   {man↓}{man↑}{man→}{man←}
  *   {ufo}{snake}
  *   {nicochan1}{nicochan0}
- *   {col=fgColor,bgColor}
- *   {col=fgColor}          ※ bgColor=0 の場合
+ *   {col=fg_color,bg_color}
+ *   {col=fg_color}          ※ bg_color=0 の場合
  *   {moveRight=n}
  *   {moveDown=n}
  *
@@ -28,11 +28,11 @@ if (count($argv) != 3)
     fwrite(STDERR, 'Usage: php ' . $argv[0] . " in.txt out.h\n");
     exit(1);
 }
-$inTextFilename = $argv[1];
-$outFilename    = $argv[2];
+$in_text_filename = $argv[1];
+$out_filename     = $argv[2];
 
-if (file_exists($inTextFilename) === false) {
-    fwrite(STDERR, "file not found[$inTextFilename]\n");
+if (file_exists($in_text_filename) === false) {
+    fwrite(STDERR, "file not found[$in_text_filename]\n");
     exit(1);
 }
 
@@ -142,21 +142,21 @@ const TAB = [
 
 
 // -------------------------------- 解析
-$inText = file_get_contents($inTextFilename);
-$inText = str_replace(array("\r\n", "\r", "\n"), "\n", $inText);    // 改行の統一
-$inText = rtrim($inText); // 最後の改行コード等はカット
+$in_text = file_get_contents($in_text_filename);
+$in_text = str_replace(array("\r\n", "\r", "\n"), "\n", $in_text);    // 改行の統一
+$in_text = rtrim($in_text); // 最後の改行コード等はカット
 
 // 1 文字 1 文字読む`
 $arr = [];
 $len = 0;
 $tag = '';          // タグモード       '{..}' 文字列
-$nrLfs = 0;         // 改行モード       連続する改行数
-$bCaps = false;     // CAPS モード(false/true = AZカナ/azかな)
-$fgColor = -1;      // 文字の色. 初期値は「前の状態を継承」
-$bgColor = -1;      // 背景の色. 初期値は「前の状態を継承」
-$nrErrs = 0;        // エラー数
-for ($i = 0; $i < strlen($inText); $i++) {
-    $c = mb_substr($inText, $i, 1);
+$nr_lfs = 0;        // 改行モード       連続する改行数
+$b_caps = false;    // CAPS モード(false/true = AZカナ/azかな)
+$fg_color = -1;     // 文字の色. 初期値は「前の状態を継承」
+$bg_color = -1;     // 背景の色. 初期値は「前の状態を継承」
+$nr_errs = 0;       // エラー数
+for ($i = 0; $i < strlen($in_text); $i++) {
+    $c = mb_substr($in_text, $i, 1);
     if ($c === '') {
         continue;
     }
@@ -173,20 +173,20 @@ for ($i = 0; $i < strlen($inText); $i++) {
         }
         // タグ モード終了
         if (strpos($tag, '{col=') === 0) {
-            if (checkTagColor($tag, $fgColor, $bgColor, $bCaps, $arr, $len) === false) {
-                $nrErrs++;
+            if (checkTagColor($tag, $fg_color, $bg_color, $b_caps, $arr, $len) === false) {
+                $nr_errs++;
             }
             $tag = '';
             continue;
         } else if (strpos($tag, '{moveRight=') === 0) {
             if (checkTagMoveRight($tag, $arr, $len) === false) {
-                $nrErrs++;
+                $nr_errs++;
             }
             $tag = '';
             continue;
         } else if (strpos($tag, '{moveDown=') === 0) {
             if (checkTagMoveDown($tag, $arr, $len) === false) {
-                $nrErrs++;
+                $nr_errs++;
             }
             $tag = '';
             continue;
@@ -195,41 +195,41 @@ for ($i = 0; $i < strlen($inText); $i++) {
             $arr[] = TAB[$tag];
             $len++;
         } else {
-            $nrErrs++;
+            $nr_errs++;
             fwrite(STDERR, "ERROR: The $tag tag is not exist\n");
         }
         $tag = '';
     } else {
         if ($c === chr(0x0a)) {// LF
-            if ($nrLfs === 0) {// 改行モード開始
-                $nrLfs++;
+            if ($nr_lfs === 0) {// 改行モード開始
+                $nr_lfs++;
             } else {
                 $arr[] = 'DC_LF2';
-                $nrLfs = 0;
+                $nr_lfs = 0;
             }
             continue;
-        } else if ($nrLfs !== 0) {// 改行モード終了
+        } else if ($nr_lfs !== 0) {// 改行モード終了
             $arr[] = 'DC_LF';
-            $nrLfs = 0;
+            $nr_lfs = 0;
         }
         if ($c === '{') {// タグ モード開始
             $tag = $c;
             continue;
         } else {
             // CAPS モード
-            if ($bCaps) {
+            if ($b_caps) {
                 if (preg_match('/[A-Zァ-ン]/u', $c)) {
                     $arr[] = 'DC_CAPS';
-                    $bCaps = false;
+                    $b_caps = false;
                 }
             } else {
                 if (preg_match('/[a-zぁ-ん]/u', $c)) {
                     $arr[] = 'DC_CAPS';
-                    $bCaps = true;
+                    $b_caps = true;
                 }
             }
 
-            //echo var_export($bCaps, true)."[$c]\n";
+            //echo var_export($b_caps, true)."[$c]\n";
             if (isset(TAB[$c])) {
                 $arr[] = TAB[$c];
                 $len++;
@@ -238,13 +238,13 @@ for ($i = 0; $i < strlen($inText); $i++) {
                 }
             } else {
                 fwrite(STDERR, "ERROR: The character [$c] is not exist\n");
-                $nrErrs++;
+                $nr_errs++;
             }
             continue;
         }
     }
 }
-if ($nrErrs) {
+if ($nr_errs) {
     exit(1);
 }
 
@@ -253,10 +253,10 @@ optimizeAtb($arr, '0x40', 'DC_COL4');
 optimizeAtb($arr, '0x50', 'DC_COL5');
 optimizeAtb($arr, '0x60', 'DC_COL6');
 optimizeAtb($arr, '0x70', 'DC_COL7');
-outData($inText, $outFilename, $arr, $len);
+outData($in_text, $out_filename, $arr, $len);
 
 // -------------------------------- 引数を持つタグの処理関数
-function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, array &$arr, int &$len): bool
+function checkTagColor(string $tag, int &$fg_color, int &$bg_color, bool $b_caps, array &$arr, int &$len): bool
 {
     $matches = [];
     if (preg_match('/^\{col=([0-9]),([0-9])\}$/', $tag, $matches) &&
@@ -265,9 +265,9 @@ function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, a
         (0 <= $matches[2]) && ($matches[2] <= 7)
     ) {
         $arr[] = 'DC_ATB';
-        $fgColor = (int)$matches[1];
-        $bgColor = (int)$matches[2];
-        $atb = ($fgColor << 4) | ($bCaps ? 0x80 : 0x00) | $bgColor;
+        $fg_color = (int)$matches[1];
+        $bg_color = (int)$matches[2];
+        $atb = ($fg_color << 4) | ($b_caps ? 0x80 : 0x00) | $bg_color;
         $arr[] = sprintf('0x%02x', $atb);
         return true;
     }
@@ -276,9 +276,9 @@ function checkTagColor(string $tag, int &$fgColor, int &$bgColor, bool $bCaps, a
         (0 <= $matches[1]) && ($matches[1] <= 7)
     ) {
         $arr[] = 'DC_ATB';
-        $fgColor = (int)$matches[1];
-        $bgColor = 0;
-        $atb = ($fgColor << 4) | ($bCaps ? 0x80 : 0x00);
+        $fg_color = (int)$matches[1];
+        $bg_color = 0;
+        $atb = ($fg_color << 4) | ($b_caps ? 0x80 : 0x00);
         $arr[] = sprintf('0x%02x', $atb);
         return true;
     }
@@ -369,7 +369,7 @@ function optimizeAtb(array &$arr, string $value, string $out): void
 
 
 // -------------------------------- 出力
-function outData(string $inText, string $outFilename, array $arr, int $len): void
+function outData(string $in_text, string $out_filename, array $arr, int $len): void
 {
     // 安全のために 256 文字に抑えておく
     if (256 <= count($arr)) {
@@ -378,27 +378,28 @@ function outData(string $inText, string $outFilename, array $arr, int $len): voi
     }
 
     //print_r($arr);
-    $textArr = explode("\n", $inText);
-    $outStr  = '';
-    foreach ($textArr as $t) {
-        $outStr .= '// ' . $t . "\n";
+    $text_arr = explode("\n", $in_text);
+    $out_str  = '';
+    foreach ($text_arr as $t) {
+        $out_str .= '// ' . $t . "\n";
     }
-    $label = pathinfo($outFilename, PATHINFO_FILENAME);
-    $outStr .= "static u8 const text_" . $label . "[] = { \n    ";
+    $label = pathinfo($out_filename, PATHINFO_FILENAME);
+    $label = str_replace('-', '_', $label);
+    $out_str .= "static u8 const text_" . $label . "[] = { \n    ";
     foreach ($arr as $c) {
-        $outStr .= $c . ', ';
+        $out_str .= $c . ', ';
         if ($c === 'DC_LF' || $c === 'DC_LF2') {
-            $outStr .= "\n    ";
+            $out_str .= "\n    ";
         }
     }
-    $outStr .= "\n    0, };\n";
-    $outStr .= "#define TEXT_" . strtoupper($label) . "_LEN $len\n"; // 特殊コードを除いた表示文字の長さ
-    file_put_contents($outFilename, $outStr);
+    $out_str .= "\n    0, };\n";
+    $out_str .= "#define TEXT_" . strtoupper($label) . "_LEN $len\n"; // 特殊コードを除いた表示文字の長さ
+    file_put_contents($out_filename, $out_str);
 
-    //$macro = strtoupper(ltrim(strtolower(preg_replace('/[A-Z]/', '_\0', $outFilename)), '_')) . "_INCLUDED";// camelCase を SNAKE_CASE に
-    //$outStr  = "#ifndef $macro\n";
-    //$outStr .= "#define $macro\n";
-    //$outStr .= "extern u8 text" . $outFilename . "[];\n";
-    //$outStr .= "#endif // $macro\n";
-    //file_put_contents($outFilename . ".h", $outStr);
+    //$macro = strtoupper(ltrim(strtolower(preg_replace('/[A-Z]/', '_\0', $out_filename)), '_')) . "_INCLUDED";// camelCase を SNAKE_CASE に
+    //$out_str  = "#ifndef $macro\n";
+    //$out_str .= "#define $macro\n";
+    //$out_str .= "extern u8 text" . $out_filename . "[];\n";
+    //$out_str .= "#endif // $macro\n";
+    //file_put_contents($out_filename . ".h", $out_str);
 }

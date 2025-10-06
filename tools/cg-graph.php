@@ -19,7 +19,7 @@ declare(strict_types = 1);
  * @param $height         ビット イメージの高さ(pixel)
  * @param $fontData       フォントデータ配列
  * @param $algo           アルゴリズム. 'dist'(ユーグリット距離), 'cos0'(コサイン類似度 0), 'cos1'(コサイン類似度 1)
- * @param $pngBaseName    'hoge.png' ならば 'hoge' のみ. 'hoge_dist_inv0_atb0_score23.png' のような名前が付きます
+ * @param $pngBaseName    'hoge.png' ならば 'hoge' のみ. 'hoge-dist-inv0-atb0-score23.png' のような名前が付きます
  */
 function createAnDiffAndOutData(
     array $bitImgArr,
@@ -233,13 +233,13 @@ function saveImage($outData, $width, $height, $algo, $bBitImgInv, $bAtb, $score,
             }
         }
     }
-    imagepng($image, $pngBaseName.'_'.createName($algo, $bBitImgInv, $bAtb, $score).'.png');
+    imagepng($image, $pngBaseName.'-'.createName($algo, $bBitImgInv, $bAtb, $score).'.png');
     imagedestroy($image);
 }
 
 function createName($algo, $bBitImgInv, $bAtb, $score): string
 {
-    return $algo.'_inv'.$bBitImgInv.'_atb'.$bAtb.'_score'.$score;
+    return $algo.'-inv'.$bBitImgInv.'-atb'.$bAtb.'-score'.$score;
 }
 
 function bitCount($val)

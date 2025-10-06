@@ -140,7 +140,7 @@ declare(strict_types = 1);
  *          HL, DE, BC 破壊不可. 裏レジスタを使って A を算出して描画するとよいでしょう.
  *          例: ATB合成コード: 新しい属性の下位ニブルと,既存の属性の下位ニブルの合成. mask は使わない
  *
- * @author Snail Barbarian Macho (NWK) 2023.12.28
+ * @author Snail Barbarian Macho (NWK)
  */
 
 // --------------------------------
@@ -257,7 +257,8 @@ foreach ($extTab as $name => $value) {
         case 'AsmAtb':
             $out .= printTableAsm_($name, $name_upper, $data, $x, $y, $w, $h, $draw_cmds, false, true);
             break;
-        }
+    }
+    $name = str_replace('_', '-', $name);
     file_put_contents($pathInfo['dirname'].'/'.$name.'.h', $out);
 }
 

@@ -43,10 +43,10 @@ if (count($argv) != 3) {
 $in_midi_file = $argv[1];
 $out_c_file   = $argv[2];
 
-// midi ファイル名の末端が '_barX' ならば, X 小節単位に分割します
+// midi ファイル名の末端が '-barX' ならば, X 小節単位に分割します
 $nr_bars = 100000; // 1変数当たりの小節数(デフォルトは大きい値)
 $matches = [];
-if (preg_match('/_bar([0-9]+)$/', pathinfo($in_midi_file, PATHINFO_FILENAME), $matches) === 1) {
+if (preg_match('/-bar([0-9]+)$/', pathinfo($in_midi_file, PATHINFO_FILENAME), $matches) === 1) {
     $nr_bars = (int)$matches[1];
     if ($nr_bars < 1) {
         fwrite(STDERR, "Invalid value nr_bars\n");
@@ -649,7 +649,7 @@ function outMml1(array $mmlss): string
             if (str_starts_with($mml, 'mml')) {
                 $ret .= '#define ' . $var_name . ' ' . $mml . "\n";
             } else {
-                $ret .= 'static u8 const' . $var_name . '[] = { ' . $mml . "0 }; \n";
+                $ret .= 'static u8 const ' . $var_name . '[] = { ' . $mml . "0 }; \n";
             }
         }
     }
@@ -722,7 +722,7 @@ function outMmlN(array $mmlss, int $nr_bars): string
             if (str_starts_with($mml, 'mml')) {
                 $ret .= '#define ' . $var_name . ' ' . $mml . "\n";
             } else {
-                $ret .= 'static u8 const' . $var_name . "[] = {\n" . $mml . "    0 };\n";
+                $ret .= 'static u8 const ' . $var_name . "[] = {\n" . $mml . "    0 };\n";
             }
         }
     }

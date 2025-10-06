@@ -69,14 +69,12 @@ require_once('nwk-classes/utils/error.class.php');
  *   Z80ANA_NO_RETURN;                          ... __naked 関数の末端には, これか Z80ANA_FALL_THROUGH を書いてください (ダミー ディレクティブですが, コード可読性を上げます) *
  * }
  *
- * - 使用できるレジスタ:  IXH IXL IYH IYL HL DE BC AF PC SP IX IY XH XL YH YL A B C D E F H L I R
+ * - 使用できるレジスタ: IXH IXL IYH IYL HL DE BC AF PC SP IX IY XH XL YH YL A B C D E F H L I R
  * - if () 式で使えるフラグ: ※4
- *   z,    eq,    nz,    ne,    c,    lt,    nc,    ge,    p,    m,    v,    nv,    pe,    po,
- *   z_er, eq_er, nz_er, ne_er, c_er, lt_er, nc_er, ge_er, p_er, m_er, v_er, nv_er, pe_er, po_er,
- *   z_r,  eq_r,  nz_r,  ne_r,  c_r,  lt_r,  nc_r,  ge_r,
- *   z_rr, eq_rr, nz_rr, ne_rr, c_rr, lt_rr, nc_rr, ge_rr
- *   ★ _r, _rr で終わるフラグは, 相対ジャンプ
- *   ★ _er, _rr で終わるフラグは, else 文のジャンプが相対ジャンプ
+ *   - if も else も絶対ジャンプ: z,    eq,    nz,    ne,    c,    lt,    nc,    ge,   p, m, v, nv, pe, po
+ *   - if は相対, else は絶対:    z_jr, eq_jr, nz_jr, ne_jr, c_jr, lt_jr, nc_jr, ge_jr
+ *   - if は絶対, else は相対:    z_else_jr, eq_else_jr, nz_else_jr, ne_else_jr, c_else_jr, lt_else_jr, nc_else_jr, ge_else_jr, p_else_jr, m_else_jr, v_else_jr, nv_else_jr, pe_else_jr, po_else_jr
+ *   - if も else も相対ジャンプ: z_jr_else_jr, eq_jr_else_jr, nz_jr_else_jr, ne_jr_else_jr, c_jr_else_jr, lt_jr_else_jr, nc_jr_else_jr, ge_jr_else_jr
  * - 代入演算子: =(ld, in, out), +=(add, adc), -=(sub, sbc), &=(and), |=(or), ^=(xor), <<=(srl_n), >>=(sla_n)
  * - 単項演算子: ++(inc), --(dec)
  * - 疑似命令と引数一覧:

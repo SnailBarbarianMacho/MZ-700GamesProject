@@ -69,8 +69,8 @@ Class Parser
     private const EXPR1_ = '[\w\+\-\*\/\%\&\|\^\~\(\)\<\>\,\.\ \n]+';     // A-Za-z0-9_+-*%/()<>,.   くらい?
     private const SYMBOL_= '[A-Za-z_]\w*';
     private const REG_   = 'IXH|IXL|IYH|IYL|HL|DE|BC|AF|PC|SP|IX|IY|XH|XL|YH|YL|A|B|C|D|E|F|H|L|I|R';
-    private const FLAG_      = 'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|z_er|eq_er|nz_er|ne_er|c_er|lt_er|nc_er|ge_er|p_er|m_er|v_er|nv_er|pe_er|po_er';
-    private const FLAG_REL_  = 'z_r|eq_r|nz_r|ne_r|c_r|lt_r|nc_r|ge_r|z_rr|eq_rr|nz_rr|ne_rr|c_rr|lt_rr|nc_rr|ge_rr';
+    private const FLAG_      = 'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|z_else_jr|eq_else_jr|nz_else_jr|ne_else_jr|c_else_jr|lt_else_jr|nc_else_jr|ge_else_jr|p_else_jr|m_else_jr|v_else_jr|nv_else_jr|pe_else_jr|po_else_jr';
+    private const FLAG_REL_  = 'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|z_jr_else_jr|eq_jr_else_jr|nz_jr_else_jr|ne_jr_else_jr|c_jr_else_jr|lt_jr_else_jr|nc_jr_else_jr|ge_jr_else_jr';
     private const FLAG_NEG_TAB_ = array(
         ''   => 'false',
         'z'  => 'nz',
@@ -87,33 +87,36 @@ Class Parser
         'nv' => 'v',
         'pe' => 'po',
         'po' => 'pe',
-        'z_er'  => 'nz',
-        'eq_er' => 'nz',
-        'nz_er' => 'z',
-        'ne_er' => 'z',
-        'c_er'  => 'nc',
-        'lt_er' => 'nc',
-        'nc_er' => 'c',
-        'ge_er' => 'c',
-        'p_er'  => 'm',
-        'm_er'  => 'p',
-        'v_er'  => 'nv',
-        'nv_er' => 'v',
-        'pe_er' => 'po',
-        'po_er' => 'pe',
-        'z_r'  => 'nz',
-        'eq_r' => 'nz',
-        'nz_r' => 'z',
-        'ne_r' => 'z',
-        'c_r'  => 'nc',
-        'lt_r' => 'nc',
-        'nc_r' => 'c',
-        'ge_r' => 'c',
-        'z_rr'  => 'nz',
-        'eq_rr' => 'nz',
-        'nz_rr' => 'z',
-        'ne_rr' => 'z',
-        'c_rr'  => 'nc',
+        'z_else_jr'  => 'nz',
+        'eq_else_jr' => 'nz',
+        'nz_else_jr' => 'z',
+        'ne_else_jr' => 'z',
+        'c_else_jr'  => 'nc',
+        'lt_else_jr' => 'nc',
+        'nc_else_jr' => 'c',
+        'ge_else_jr' => 'c',
+        'p_else_jr'  => 'm',
+        'm_else_jr'  => 'p',
+        'v_else_jr'  => 'nv',
+        'nv_else_jr' => 'v',
+        'pe_else_jr' => 'po',
+        'po_else_jr' => 'pe',
+        'z_jr'  => 'nz',
+        'eq_jr' => 'nz',
+        'nz_jr' => 'z',
+        'ne_jr' => 'z',
+        'c_jr'  => 'nc',
+        'lt_jr' => 'nc',
+        'nc_jr' => 'c',
+        'ge_jr' => 'c',
+        'z_jr_else_jr'  => 'nz',
+        'eq_jr_else_jr' => 'nz',
+        'nz_jr_else_jr' => 'z',
+        'ne_jr_else_jr' => 'z',
+        'c_jr_else_jr'  => 'nc',
+        'lt_jr_else_jr' => 'nc',
+        'nc_jr_else_jr' => 'c',
+        'ge_jr_else_jr' => 'c',
     );
     public const REGS_G16_SPLIT8_TAB_ = [ // AF, SP, PC を除いた汎用16bitレジスタと 8bit に分解したテーブル
         'HL' => ['L', 'H'],
@@ -160,7 +163,7 @@ Class Parser
             if ($this->mode_ === 'macro') {
                 $this->errorLine_("マクロの末端には, Z80ANA_ENDM; を追加してくだい");
             } else if ($this->is_naked_) {
-                $this->errorLine_("__naked 関数の末端には, Z80ANA_ENDM; または Z80ANA_FALL_THROUGH; を追加してくだい");
+                $this->errorLine_("__naked 関数の末端には, Z80ANA_NO_RETURN; または Z80ANA_FALL_THROUGH; を追加してくだい");
             }
         }
 
@@ -429,10 +432,11 @@ Class Parser
         $opcode_if   = 'jp';
         $opcode_else = 'jp';
         $label1 = $this->genRegistLabel_();
-        if (str_ends_with($flag, '_r') || str_ends_with($flag, '_rr')) {
+        if (str_ends_with($flag, '_jr_else_jr') ||
+            (str_ends_with($flag, '_jr') && !str_ends_with($flag, '_else_jr'))) {
             $opcode_if = 'jr';
         }
-        if (str_ends_with($flag, '_rr') || str_ends_with($flag, '_er')) {
+        if (str_ends_with($flag, '_else_jr')) {
             $opcode_else = 'jr';
         }
 

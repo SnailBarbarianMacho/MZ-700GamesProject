@@ -2,7 +2,8 @@
 
 declare(strict_types = 1);
 /**
- * ビルド番号のインクリメント
+ * ビルド番号インクリメント
+ * - ビルド番号はアセンブラソース形式で提供します(例: defw 1234)
  * 使い方は, Usage: 行を参照してください
  *
  * @author Snail Barbarian Macho (NWK) 2023.07.01

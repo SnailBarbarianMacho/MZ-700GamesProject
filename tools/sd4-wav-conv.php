@@ -218,12 +218,15 @@ if (str_ends_with($filename_in, '.wav')) {
 // ---------------- 出力
 foreach($filenames_out as $filename_out) {
     if (str_ends_with($filename_out, '.wav')) {
-        $data2 = [];
-        foreach($data as $val) {
+        $data2 = str_repeat('  ', count($data));
+        foreach($data as $i => $val) {
             $val = (int)((float)$val * (1 << SAMPLE_BITS) / PRECISION) - 32768;
             $val = min($val, 32767);
             $val = max($val, -32768);
-            $data2[] = $val;
+            $val_l = $val & 0xff;
+            $val_h = ($val >> 8) & 0xff;
+            $data2[$i * 2    ] = pack('C', $val_l);
+            $data2[$i * 2 + 1] = pack('C', $val_h);
         }
         $wav->setData($data2);
         $wav->setSamplingFrequency(SAMPLEING_FREQ);

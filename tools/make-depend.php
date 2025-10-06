@@ -32,9 +32,10 @@ declare(strict_types = 1);
  *
  * - --text は各テキスト(.txt)からヘッダ(.h)を作る依存リストを作成
  *   例: -text game/text/
- *   game/text/branch_ahead.h: game/text/branch_ahead.txt
- *   game/text/game_over.h: game/text/game_over.txt
+ *   game/text/branch-ahead.h: game/text/branch-ahead.txt
+ *   game/text/game-over.h: game/text/game-over.txt
  *
+ * - ファイル名では, アンダースコアはすべてハイフンになります(kebab-case)
  * 使い方は, Usage: 行を参照してください
  *
  * @author Snail Barbarian Macho (NWK) 2021.07.05
@@ -181,6 +182,7 @@ if ($cg_dir !== '') {
             }
             $names = array_keys($ext_tab);
             foreach ($names as &$name) {
+                $name = str_replace('_', '-', $name);
                 $name = "$cg_dir$name.h";
             }
 
