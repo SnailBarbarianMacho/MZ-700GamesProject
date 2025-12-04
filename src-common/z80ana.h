@@ -1,16 +1,27 @@
 #ifndef Z80ANA_H_INCLUDED
 #define Z80ANA_H_INCLUDED
 
+#ifndef false
+#define false 0
+#endif
+#ifndef true
+#define true 1
+#endif
+
 #define __z88dk_fastcall
 #define __naked
 
 #define __z80ana
 #define __z80ana_macro
-#define Z80ANA_DEF_VARS volatile int A, B, C, D, E, F, H, L, IXH, IXL, IYH, IYL, AF, BC, DE, HL, PC, SP, I, R, IX, IY,\
+
+#define Z80ANA_DEF_VARS volatile int \
+    A, B, C, D, E, H, L, IXH, IXL, IYH, IYL, AF, BC, DE, HL, PC, SP, I, R, IX, IY,\
+    A_, B_, C_, D_, E_, H_, L_, AF_, BC_, DE_, HL_, \
     z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po,\
     z_jr, eq_jr, nz_jr, ne_jr, c_jr, lt_jr, nc_jr, ge_jr, \
     z_else_jr, eq_else_jr, nz_else_jr, ne_else_jr, c_else_jr, lt_else_jr, nc_else_jr, ge_else_jr, p_else_jr, m_else_jr, v_else_jr, nv_else_jr, pe_else_jr, po_else_jr,\
     z_jr_else_jr, eq_jr_else_jr, nz_jr_else_jr, ne_jr_else_jr, c_jr_else_jr, lt_jr_else_jr, nc_jr_else_jr, ge_jr_else_jr, \
+    true_jr,\
     *mem, *port, asmpc
 #define Z80ANA_DEF_DUMMY_VARS(...) volatile int __VA_ARGS__; // 任意の使用しない変数を定義
 #define Z80ANA_LOCAL(...)
@@ -27,6 +38,15 @@
 #define Z80ANA_ENDM
 #define Z80ANA_NO_RETURN
 #define Z80ANA_FALL_THROUGH
+#define Z80ANA_GLOBAL(...)
+
+// 以下は今のところ没のシフト/ローテート演算子
+// Python では >>>= が「符号なし右シフト」だが, z80ana では >>= が「符号なし右シフト」
+//#define s>>= >>=        // 符号付き右シフト(sra)
+//#define r>>= >>=        // 右ローテート(rrc)
+//#define r<<= >>=        // 左ローテート(rlc)
+//#define rc>>= >>=       // キャリー付右ローテート(rr)
+//#define rc<<= >>=       // キャリー付左ローテート(rl)
 
 void defb(int, ...);
 void defw(int, ...);

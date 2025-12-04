@@ -8,6 +8,7 @@
 
 // ---------------------------------------------------------------- MARK:オペコード
 // アルファベット順
+#define OPCODE_ADD_C    0x81
 #define OPCODE_ADD_HL   0x86
 #define OPCODE_ADD_N    0xc6
 #define OPCODE_AND_N    0xe6
@@ -42,6 +43,7 @@
 #define OPCODE_RET      0xc9
 #define OPCODE_SCF      0x37    // cf = 1
 #define OPCODE_SET_0_L  0xc5
+#define OPCODE_SUB_C    0x91
 #define OPCODE_SUB_HL   0x96
 #define OPCODE_SUB_N    0xd6
 #define OPCODE_XOR_HL   0xae
@@ -55,19 +57,6 @@ __asm
     // -------------------------------- MARK:空っぽ
     /** 何もしないコードです. 空の引数の代わりに. */
     macro   NO_OP
-    endm
-
-    // -------------------------------- MARK:8 bit inc/dec
-    /** 2つの8bit レジスタをインクリメントします */
-    macro   INC2    reg1, reg2
-        inc     reg1
-        inc     reg2
-    endm
-
-    /** 2つの8bit レジスタをデクリメントします */
-    macro   DEC2    reg1, reg2
-        dec     reg1
-        dec     reg2
     endm
 
     // -------------------------------- MARK:8 bit not
@@ -647,32 +636,6 @@ ADD16_U8T_100:
         ld      tmp, 0 + (val)          // 10+11+6=27
         add     tmp, SP
         ld      SP, tmp
-    endm
-
-
-
-    // -------------------------------- MARK:16 bit ロード
-
-    /** ld DE, (HL) 相当の挙動をします
-     * @param HL HL のうち, L が +1 されるので, 明示します
-     * @example
-     *   LDI16_INC8  D, E, (HL)   // DE = (HL)
-     */
-    macro   LDI16_INC8  reg_dh, reg_dl, reg_hl
-        ld      reg_dl, (HL)
-        inc     L
-        ld      reg_dh, (HL)
-    endm
-
-    /** ld DE, (HL) 相当の挙動をします
-     * @param HL HL のうち, HL が +1 されるので, 明示します
-     * @example
-     *   LDI16_INC16  D, E, (HL)   // DE = (HL)
-     */
-    macro   LDI16_INC16  reg_dh, reg_dl, reg_hl
-        ld      reg_dl, (HL)
-        inc     HL
-        ld      reg_dh, (HL)
     endm
 
 
