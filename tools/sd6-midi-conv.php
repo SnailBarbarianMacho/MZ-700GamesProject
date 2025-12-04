@@ -395,8 +395,11 @@ if (!$error->getNrErrors()) {
         }
         $str   = \nwk\sound\ScoreMergeUtils::genHistgramString($merged_notes, TRACK_TAB); // ヒストグラム文字列作成
         $bytes = setNoteString_($merged_notes); // 文字列作成
+        $in_filename = pathinfo($argv[1], PATHINFO_FILENAME);
+        $in_filename = str_replace(['.', '-'], '_', $in_filename);
+        $var_name = 'sd6_' . $in_filename . '_'; // 変数名
         $str  .= \nwk\sound\ScoreMergeUtils::genInfoString($max_repeat_times, $max_repeat_level, $bytes); // その他情報文字列作成
-        $str  .= \nwk\sound\ScoreMergeUtils::genFormattedSourceString($midi_reader, $merged_notes, DATA_BAR_TIME, TRACK_TAB, $score_nr); // 整形
+        $str  .= \nwk\sound\ScoreMergeUtils::genFormattedSourceString($var_name, $midi_reader, $merged_notes, DATA_BAR_TIME, TRACK_TAB, $score_nr); // 整形
         $str  .= "\n    SD6_L_END\n};\n";
         //echo("---- score[$score_nr]\n"); $midi_reader->debugScoreDump($r_score);
         $out_str .= $str;

@@ -31,7 +31,7 @@ __endasm;
 #if 1
 #include "music/chronos.h"
 #else
-static u8 const score0[] = {
+static u8 const sd6_chronos_0[] = {
 #if 0   // 無音
     SD6_L_REST(0x100), SD6_B_REST(0x100), SD6_C2_REST(0x100), SD6_D_REST(0x100),
     SD6_L_REST(0x100), SD6_B_REST(0x100), SD6_C2_REST(0x100), SD6_D_REST(0x100),
@@ -253,7 +253,7 @@ static u8 const score0[] = {
 void main(void)
 {
     sd6Init();
-    u8 c = sd6play(((u32)1 << 16) | (u16 const)score0);
+    u8 c = sd6play(((u32)1 << 16) | (u16 const)sd6_chronos_0);
 
     bankRomVramMmio();
     if (c & KEY9_F2_MASK) {

@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types = 1);
-require_once('nwk-classes/z80ana/z80ana.class.php');
+require_once('nwk-classes/z80ana/z80ana-parser.class.php');
 require_once('nwk-classes/utils/error.class.php');
 
 /**
@@ -42,20 +42,23 @@ require_once('nwk-classes/utils/error.class.php');
  *     push(HL, DE, BC);                        ... push, pop は引数は1以上可変長
  *     ld(A, mem[HL]); in(A, port[0x00]);       ... メモリやポートに対しては mem[], port[] が必要
  *   Z80ANA_ENDR()
- *     if (c) bit(2, A);                        ... if ～ else if ～ else も対応してます.
- *     if (c_r) { ldd(); } else { B = 1; }      ... if のフラグ名に '_r' を付けると相対ジャンプになります
- *     if (z) { if (c) { B = 1; } else { B = 2; }} else { B = 3; }
- *                                              ... if ～ else のネストは最適化されないので注意(手抜き) 左のコードは:
- *                                                       jp nz, L03
- *                                                       jp nc, L01
- *                                                       ld B, 1
- *                                                       jp L02     ... L04 にはジャンプしない
- *                                                  L01: ld B, 2
- *                                                  L02: jp L04
- *                                                  L03: ld B, 3
- *                                                  L04:
+ *     if (c) A = 1;                            ... if ～ else if ～ else も対応してます.
+ *     if (c_jr) A = 1; else A = 2;             ... if のフラグに '_jr' を付けると相対ジャンプになります
+ *     if (c_jr_else_jr) A = 1; else A = 2;     ... if のフラグに '_else_jr' を付けると, else 先のジャンプも相対ジャンプになります
+ *                                                  if - else がネストする場合もジャンプ命令は最適化されてます
+ *     if (z) jp foo; 　　　　     　　　       ... jp z, foo
+ *                                                  if 節が goto, jp(), jr() 単文ならば, 最適化します.
+ *                                                  else 節のジャンプ命令は無くなります
+ *     if (z_jr) jp foo;                        ... jr z, foo    (式) が相対ジャンプなら, jp は jr になります
+ *     if (z) jr foo;                           ... jr z, foo
+ *     if (m) jr foo;      // bad!              ... z80ana は通りますがコンパイル時にエラー
+ *     if (z) call foo;                         ... call/return も同じように最適化
+ *     if (z_jr) ret();    // bad!              ... ただし, (式) には相対ジャンプは使えません
+ *     do A++; while (c_jr);                    ... do - while. カッコ内は, コンディションコードの他, true, true_jr, false, B-- にも対応してます
+ *     do { if (c) break; continue; } while(c); ... break, continue に対応してます
+ *     while(c) A++;                            ... while. カッコ内は, コンディションコードの他, true にも対応してます
+ *                                                  ループ末端は jp 命令でループ先頭に戻ります (jr 命令はありません)
  *     {  }                                     ... 複文を, { ... } で囲むことができます. 囲んだ部分は出力コードでインデントが付きます
- *   Z80ANA_ENDM;                               ... マクロの末端には, これを書いてください (ダミー ディレクティブですが, コード可読性を上げます)
  * }
  *
  * // アセンブラ関数の定義
@@ -69,7 +72,8 @@ require_once('nwk-classes/utils/error.class.php');
  *   Z80ANA_NO_RETURN;                          ... __naked 関数の末端には, これか Z80ANA_FALL_THROUGH を書いてください (ダミー ディレクティブですが, コード可読性を上げます) *
  * }
  *
- * - 使用できるレジスタ: IXH IXL IYH IYL HL DE BC AF PC SP IX IY XH XL YH YL A B C D E F H L I R
+ * - 使用できるレジスタ: A B C D E H L I R IXH IXL IYH IYL AF BC DE HL PC SP IX IY XH XL YH YL
+ *                       A_ B_ C_ D_ E_ H_ L_ AF_ BC_ DE_ HL_ (裏レジスタ)
  * - if () 式で使えるフラグ: ※4
  *   - if も else も絶対ジャンプ: z,    eq,    nz,    ne,    c,    lt,    nc,    ge,   p, m, v, nv, pe, po
  *   - if は相対, else は絶対:    z_jr, eq_jr, nz_jr, ne_jr, c_jr, lt_jr, nc_jr, ge_jr
@@ -83,6 +87,7 @@ require_once('nwk-classes/utils/error.class.php');
  *   Z80ANA_DB(expr, ...) , Z80ANA_DW(expr, ...)
  *   Z80ANA_IF(expr), Z80ANA_ELIF(expr), Z80ANA_ELSE, Z80ANA_ENDIF
  *   Z80ANA_REPT(expr), Z80ANA_REPTI(var, expr), Z80ANA_ENDR
+ *   Z80ANA_GLOBAL(...)
  * - 命令(関数)と引数一覧:
  *   ld(a, b)※1, ldi(), ldir(), lddr()
  *   ex(a, b), exx()
@@ -119,7 +124,7 @@ require_once('nwk-classes/utils/error.class.php');
  * ※1 引数に 16bit レジスタが指定できます. 例:HL = BC; srl(HL);
  * ※2 n 回繰り返します(nが数値の場合は4迄)
  * ※3 未定義命令の op b, (IX+d), r
- * ※4 符号なし整数での比較. eq(==)は z, ne(!=)は nz, lt(<)は c, ge(>=)は nc と同じ
+ * ※4 符号なし整数でのシフト/比較. eq(==)は z, ne(!=)は nz, lt(<)は c, ge(>=)は nc と同じ
  *
  * - 小文字を含む関数は上記以外はエラーです.
  *   大文字の関数はマクロ呼び出しに展開されます
@@ -202,7 +207,7 @@ $out_str = detectFunctionCallback_($in_str, function(
                 $error->errorLine($line_nr, "マクロの場合は, 呼び出し規約修飾子に '__naked' を追加してください", $funcname);
             }
 
-            $contents = $parser->parse('macro', $has_naked, $contents, $line_nr, $funcname);
+            $contents = $parser->parse(nwk\z80ana\Parser::MODE_MACRO, $has_naked, $contents, $line_nr, $funcname);
 
             $labels   = $parser->getLabels();
             $labels_str = '';
@@ -235,7 +240,7 @@ $out_str = detectFunctionCallback_($in_str, function(
         } else if (str_contains($modifiers, '__z80ana')) {
             $line_nr = substr_count($in_str, "\n", 0, $contents_pos);
 
-            $contents = $parser->parse('func', $has_naked, $contents, $line_nr, $funcname);
+            $contents = $parser->parse(nwk\z80ana\Parser::MODE_FUNC, $has_naked, $contents, $line_nr, $funcname);
 
             $modifiers = str_replace('__z80ana', '', $modifiers);
 

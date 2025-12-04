@@ -346,6 +346,7 @@ class ScoreMergeUtils {
      * @param $track_tab サポートするトラックの形式テーブル. ScoreUtils::checkTrackTabs() を参照してください
      */
     public static function genFormattedSourceString(
+        string $var_name,
         \nwk\sound\MidiReader $midi_reader, array &$r_merged_notes, int $bar_time,
         array $track_tab, int $nr): string
     {
@@ -378,7 +379,7 @@ class ScoreMergeUtils {
             $spaces[$ch] = str_pad('', $max_str_len, ' ');
             $out .= str_pad($track_tab[$ch]['name'], $max_str_len, ' ');
         }
-        $out .= "\nstatic u8 const score" . $nr. "[] = {";
+        $out .= "\nstatic u8 const $var_name" . $nr. "[] = {";
 
         // -------- (5) 配列に適時改行を入れて結合.
         //foreach($spaces as $key => $space) { echo($key . "=>" . strlen($space). "\n"); } 空白文字数を調べる

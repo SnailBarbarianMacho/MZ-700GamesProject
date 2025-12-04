@@ -6,52 +6,14 @@
 declare(strict_types = 1);
 namespace nwk\z80ana;
 require_once(__DIR__ . '/../utils/error.class.php');
-
-
-// MARK: Param
-/** 命令のパラメータと種類 */
-Class Param
-{
-    public const TYPE_VAL   = 'val';
-    public const TYPE_VAL_C = 'val+c';
-    public const TYPE_PORT  = 'port';
-    public const TYPE_MEM   = 'mem';
-    public const TYPE_MEM_C = 'mem+c';
-    public const TYPE_REG   = 'reg';
-    public const TYPE_REG_C = 'reg+c';
-    public const TYPE_FLAG  = 'flag';
-
-    public string $value; // 値
-    public string $type;  // パラメータの型
-
-    public function __construct(string $value, string $type)
-    {
-        $this->value = $value;
-        $this->type  = $type;
-    }
-
-    public function isTypeMemRegVal(): bool {
-        return $this->type === Param::TYPE_MEM || $this->type === Param::TYPE_REG || $this->type === Param::TYPE_VAL;
-    }
-    public function isTypeMemRegValC(): bool {
-        return $this->type === Param::TYPE_MEM_C || $this->type === Param::TYPE_REG_C || $this->type === Param::TYPE_VAL_C;
-    }
-
-    /** TYPE_VAL の場合, Z80 ニーモニックのメモリ間接と判定しないように, 0 + を足します */
-    public function adjustVal(): void
-    {
-        if ($this->type === Param::TYPE_VAL) {
-            $this->value = '0 + '.$this->value;
-        }
-    }
-}
+require_once('z80ana-param.class.php');
 
 
 // MARK: Parser
 /** パーサー(構文解析) */
 Class Parser
 {
-    private string  $mode_;         // 'macro' or 'func'
+    private string  $mode_;         // モード(関数 or マクロ定義)
     private bool    $is_naked_;     // __naked が付いてるか
     private int     $line_nr_;      // ソースの行
     private string  $funcname_;     // 関数またはマクロ名
@@ -64,14 +26,81 @@ Class Parser
 
     private \nwk\utils\Error $error_;
 
-    private const EXPR0_ = '[\w\+\-\*\/\%\&\|\^\~\(\)\<\>\,\.\ \n\[\]]*';
-    private const EXPR_  = '[\w\+\-\*\/\%\&\|\^\~\(\)\<\>\,\.\ \n\[\]]+'; // A-Za-z0-9_+-*%/()<>,.[] くらい?
-    private const EXPR1_ = '[\w\+\-\*\/\%\&\|\^\~\(\)\<\>\,\.\ \n]+';     // A-Za-z0-9_+-*%/()<>,.   くらい?
-    private const SYMBOL_= '[A-Za-z_]\w*';
-    private const REG_   = 'IXH|IXL|IYH|IYL|HL|DE|BC|AF|PC|SP|IX|IY|XH|XL|YH|YL|A|B|C|D|E|F|H|L|I|R';
-    private const FLAG_      = 'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|z_else_jr|eq_else_jr|nz_else_jr|ne_else_jr|c_else_jr|lt_else_jr|nc_else_jr|ge_else_jr|p_else_jr|m_else_jr|v_else_jr|nv_else_jr|pe_else_jr|po_else_jr';
-    private const FLAG_REL_  = 'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|z_jr_else_jr|eq_jr_else_jr|nz_jr_else_jr|ne_jr_else_jr|c_jr_else_jr|lt_jr_else_jr|nc_jr_else_jr|ge_jr_else_jr';
-    private const FLAG_NEG_TAB_ = array(
+    // モードの値
+    public  const MODE_FUNC  = 'func';  // 関数モード
+    public  const MODE_MACRO = 'macro'; // マクロ定義モード
+
+    private const EXPR_CHAR_ = '\w\+\-\*\/\%\&\|\^\~\(\)\<\>\,\.\ \t';  // 式を構成する文字 A-Za-z0-9_+-*%/()<>,. くらい?
+    private const EXPR_LIST_ = '[' . Parser::EXPR_CHAR_ . '\n\[\]]*';   // 式リスト     (EXPR_CHAR_ に \n[] を追加. 0文字以上)
+    private const EXPR_MEM_  = '[' . Parser::EXPR_CHAR_ . '\n\[\]]+';   // メモリ式     (EXPR_CHAR_ に \n[] を追加. 1文字以上)
+    public  const EXPR_NMEM  = '[' . Parser::EXPR_CHAR_ . '\n]+';       // メモリ無し式 (EXPR_CHAR_ に \n   を追加. 1文字以上)
+    private const EXPR_NLB_  = '[' . Parser::EXPR_CHAR_ . ']+';         // 改行無し式   (EXPR_CHAR_.                1文字以上)
+    public  const SYMBOL    = '[A-Za-z_][A-Za-z0-9_]*';                // シンボル('fooBar2', 'foo_bar_2' など)
+    private const BACK_REG_  = 'A_|B_|C_|D_|E_|H_|L_|AF_|BC_|DE_|HL_';
+    public  const REG        = 'A|B|C|D|E|H|L|I|R|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|IX|IY|XH|XL|YH|YL|' . Parser::BACK_REG_;
+    public  const FLAG_IF           = // if (<式>) の式の内容
+        'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
+        'z_else_jr|eq_else_jr|nz_else_jr|ne_else_jr|c_else_jr|lt_else_jr|nc_else_jr|ge_else_jr|p_else_jr|m_else_jr|v_else_jr|nv_else_jr|pe_else_jr|po_else_jr|' .
+        'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
+        'z_jr_else_jr|eq_jr_else_jr|nz_jr_else_jr|ne_jr_else_jr|c_jr_else_jr|lt_jr_else_jr|nc_jr_else_jr|ge_jr_else_jr';
+    private const FLAG_IF1_         = // if (<式>) <文1> で, <文1> が「単文の goto/jp()/jr()/call()/ret()」の場合に使える <式> の内容
+        'z|nz|c|nc|p|m|v|nv|pe|po';
+    private const FLAG_DO_WHILE_    = // do <文> while(<式>) での式の内容
+        'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
+        'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
+        'true|true_jr|false|B--';
+    private const FLAG_WHILE_       = // while(<式>) <文> での式の内容
+        'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
+        'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
+        'true';
+    private const NOT_FLAG_         =  '(?!z,)(?!nz,)(?!c,)(?!nc,)(?!p,)(?!m,)(?!v,)(?!nv,)(?!pe,)(?!po,)(?!eq,)(?!ne,)(?!lt,)(?!ge,)';
+    private const FLAG_CONV_TAB_ = array( // フラグを一般的なcc形式に
+        'z'  => 'z',
+        'eq' => 'z',
+        'nz' => 'nz',
+        'ne' => 'nz',
+        'c'  => 'c',
+        'lt' => 'c',
+        'nc' => 'nc',
+        'ge' => 'nc',
+        'p'  => 'p',
+        'm'  => 'm',
+        'v'  => 'v',
+        'nv' => 'nv',
+        'pe' => 'pe',
+        'po' => 'po',
+        'z_else_jr'  => 'z',
+        'eq_else_jr' => 'z',
+        'nz_else_jr' => 'nz',
+        'ne_else_jr' => 'nz',
+        'c_else_jr'  => 'c',
+        'lt_else_jr' => 'c',
+        'nc_else_jr' => 'nc',
+        'ge_else_jr' => 'nc',
+        'p_else_jr'  => 'p',
+        'm_else_jr'  => 'm',
+        'v_else_jr'  => 'n',
+        'nv_else_jr' => 'nv',
+        'pe_else_jr' => 'pe',
+        'po_else_jr' => 'po',
+        'z_jr'  => 'z',
+        'eq_jr' => 'z',
+        'nz_jr' => 'nz',
+        'ne_jr' => 'nz',
+        'c_jr'  => 'c',
+        'lt_jr' => 'c',
+        'nc_jr' => 'nc',
+        'ge_jr' => 'nc',
+        'z_jr_else_jr'  => 'z',
+        'eq_jr_else_jr' => 'z',
+        'nz_jr_else_jr' => 'nz',
+        'ne_jr_else_jr' => 'nz',
+        'c_jr_else_jr'  => 'c',
+        'lt_jr_else_jr' => 'c',
+        'nc_jr_else_jr' => 'nc',
+        'ge_jr_else_jr' => 'nc',
+    );
+    private const FLAG_NEG_TAB_ = array( // フラグを反転
         ''   => 'false',
         'z'  => 'nz',
         'eq' => 'nz',
@@ -118,12 +147,48 @@ Class Parser
         'nc_jr_else_jr' => 'c',
         'ge_jr_else_jr' => 'c',
     );
+    private const DO_WHILE_OP_TAB_ = // do <文> while (<式>) の式からループ末のジャンプ命令を決めます
+        array(
+            'z'     => 'jp z,',  'eq'    => 'jp z,',
+            'nz'    => 'jp nz,', 'ne'    => 'jp nz,',
+            'c'     => 'jp c,',  'lt'    => 'jp c,',
+            'nc'    => 'jp nc,', 'ge'    => 'jp nc,',
+            'p'     => 'jp p,',  'm'     => 'jp m,',
+            'pe'    => 'jp pe,', 'po'    => 'jp po,',
+            'z_jr'  => 'jr z,',  'eq_jr' => 'jr z',
+            'nz_jr' => 'jr nz,', 'ne_jr' => 'jr nz',
+            'c_jr'  => 'jr c,',  'lt_jr' => 'jr c,',
+            'nc_jr' => 'jr nc,', 'ge_jr' => 'jr nc,',
+            'true'  => 'jp',
+            'true_jr' => 'jr',
+            'false' => '',
+            'B--'   => 'djnz B,',
+        );
+    private const WHILE_OP_TAB_ = // while (<式>) <文> の式からループ先頭のジャンプ命令を決めます
+        array(
+            'z'     => 'jp nz,', 'eq'    => 'jp nz,',
+            'nz'    => 'jp z,',  'ne'    => 'jp z,',
+            'c'     => 'jp nc,', 'lt'    => 'jp nc,',
+            'nc'    => 'jp c,',  'ge'    => 'jp c,',
+            'p'     => 'jp m,',  'm'     => 'jp p,',
+            'pe'    => 'jp po,', 'po'    => 'jp pe,',
+            'z_jr'  => 'jr nz,', 'eq_jr' => 'jr nz',
+            'nz_jr' => 'jr z,',  'ne_jr' => 'jr z',
+            'c_jr'  => 'jr nc,', 'lt_jr' => 'jr nc,',
+            'nc_jr' => 'jr c,',  'ge_jr' => 'jr c,',
+            'true'  => 'jp',
+        );
     public const REGS_G16_SPLIT8_TAB_ = [ // AF, SP, PC を除いた汎用16bitレジスタと 8bit に分解したテーブル
         'HL' => ['L', 'H'],
         'DE' => ['E', 'D'],
         'BC' => ['C', 'B'],
         'IX' => ['IXL', 'IXH'],
         'IY' => ['IYL', 'IYH'],
+        'HL_' => ['L', 'H'],    // 裏レジスタに分解する必要はないでしょう
+        'DE_' => ['E', 'D'],
+        'BC_' => ['C', 'B'],
+        'IX_' => ['IXL', 'IXH'],
+        'IY_' => ['IYL', 'IYH'],
     ];
 
     // MARK: __construct()
@@ -136,7 +201,7 @@ Class Parser
     // -------------------------------- パース
     // MARK: parse()
     /** パースして変換後の文字列を返します
-     * @param $mode      モード 'macro', 'func' のどちらか
+     * @param $mode      モード
      * @param $is_naked  __naked 関数か
      * @param $r_str     解析したい文字列
      * @param $line_nr   $str のある行(0～, エラー表示用)
@@ -146,7 +211,7 @@ Class Parser
     {
         $this->line_nr_   = $line_nr;
 
-        if ($mode == 'macro' && !preg_match('/^[A-Z_][A-Z_0-9]+$/', $funcname)) {
+        if ($mode == Parser::MODE_MACRO && !preg_match('/^[A-Z_][A-Z_0-9]+$/', $funcname)) {
             $this->errorLine_("マクロ名は, [A-Z_0-9] で書いてください", $funcname);
         }
 
@@ -157,24 +222,24 @@ Class Parser
         $this->initLabels_();
         $this->initIndent_();
 
-        $ret = $this->parseSentences_($r_str);
+        $out = $this->parseSentences_($r_str, null, null);
 
         if (!$this->is_ended_) {
-            if ($this->mode_ === 'macro') {
-                $this->errorLine_("マクロの末端には, Z80ANA_ENDM; を追加してくだい");
+            if ($this->mode_ === Parser::MODE_MACRO) {
+                $this->errorLine_("マクロ定義の末端には, Z80ANA_ENDM; を追加してくだい");
             } else if ($this->is_naked_) {
                 $this->errorLine_("__naked 関数の末端には, Z80ANA_NO_RETURN; または Z80ANA_FALL_THROUGH; を追加してくだい");
             }
         }
 
-        return $ret;
+        return $out;
     }
 
 
     // -------------------------------- パース サブ関数
     // MARK: parseSentences_()
     /** 複文の解析 */
-    private function parseSentences_(string &$r_str)
+    private function parseSentences_(string &$r_str, ?string $continue, ?string $break)
     {
         $offset = 0;            // $r_str の位置
         $len = strlen($r_str);
@@ -186,10 +251,10 @@ Class Parser
             $line_str = '';
             if ($old_line_nr !== $this->line_nr_) {
                 $old_line_nr = $this->line_nr_;
-                $line_str = "// line " . ($this->line_nr_ + 1) . "\n";
+                $line_str = $this->getIndentStr_() . "// line " . ($this->line_nr_ + 1) . "\n";
             }
 
-            $str = $this->parseSentence_($r_str, $offset);
+            $str = $this->parseSentence_($r_str, $offset, $continue, $break);
             if ($str !== '') {
                 $out .= $line_str;
             }
@@ -202,8 +267,14 @@ Class Parser
 
 
     // MARK: parseSentence_()
-    /** 単文の解析 */
-    private function parseSentence_(string &$r_str, int &$r_offset): string
+    /** 単文の解析
+     * @param $r_str    [in]ソース文字列
+     * @param $r_offset [in][out]ソース文字列の位置
+     * @param $continue continue 時のジャンプ先 (null可)
+     * @param $break    break 時のジャンプ先 (null可)
+     * @returns 解析出力
+     */
+    private function parseSentence_(string &$r_str, int &$r_offset, ?string $continue, ?string $break): string
     {
         // "\n", ' ', ';'
         if (preg_match('/([\s\;]+)/Ax', $r_str, $matches, 0, $r_offset)) {
@@ -222,7 +293,7 @@ Class Parser
 
         // { <文>* }
         if ($r_str[$r_offset] == '{') {
-            return $this->parseSubSentences_($r_str, $r_offset);
+            return $this->parseSubSentences_($r_str, $r_offset, $continue, $break);
         }
 
         // goto <式>;
@@ -235,9 +306,29 @@ Class Parser
             return $this->parseExtern_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
         }
 
-        // if (<式>) <文> else <文>
-        if (preg_match('/if\s*\(\s*(' . Parser::FLAG_ .  '|'. Parser::FLAG_REL_ . ')\s*\)/Ax', $r_str, $matches, 0, $r_offset)) {
-            return $this->parseIf_($r_str, $r_offset, $matches[0], $matches[1]);
+        // if (<式>) <文> else <文> ※式はフラグのみ
+        if (preg_match('/if \s* \( \s* (' . Parser::FLAG_IF . ') \s* \) /Ax', $r_str, $matches, 0, $r_offset)) {
+            return $this->parseIf_($r_str, $r_offset, $matches[0], $matches[1], $continue, $break);
+        }
+
+        // do <文> while (<式>); ※式はフラグ, 'true', 'B--'のみ
+        if (preg_match('/do [\w\s,]+ /Ax', $r_str, $matches, 0, $r_offset)) {
+            return $this->parseDoWhile_($r_str, $r_offset);
+        }
+
+        // while(<式>) <文> ※式はフラグ, 'true' のみ
+        if (preg_match('/while \s* \( \s* (' . Parser::FLAG_WHILE_ . ') \s* \)/Ax', $r_str, $matches, 0, $r_offset)) {
+            return $this->parseWhile_($r_str, $r_offset, $matches[0], $matches[1]);
+        }
+
+        // break;
+        if (preg_match('/break \s* ;/Ax', $r_str, $matches, 0, $r_offset)) {
+            return $this->parseBreak_($r_str, $r_offset, $matches[0], $break);
+        }
+
+        // continue;
+        if (preg_match('/continue \s* ;/Ax', $r_str, $matches, 0, $r_offset)) {
+            return $this->parseContinue_($r_str, $r_offset, $matches[0], $continue);
         }
 
         // return;  ※式なし
@@ -248,28 +339,28 @@ Class Parser
         }
 
         // シンボル名:
-        if (preg_match('/(' . Parser::SYMBOL_ . '\:)/Ax', $r_str, $matches, 0, $r_offset)) {
+        if (preg_match('/(' . Parser::SYMBOL . '\:)/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseLabel_($r_str, $r_offset, $matches[1]);
         }
 
         // <式> <代入演算子> <式>;
-        if (preg_match('/(' . Parser::EXPR_ . ') \= (' . Parser::EXPR_ . ')\;/Ax', $r_str, $matches, 0, $r_offset)) {
+        if (preg_match('/(' . Parser::EXPR_MEM_ . ') \= (' . Parser::EXPR_MEM_ . ')\;/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseAssignmentOp_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
         }
 
         // <単項演算子> <reg>;
-        if (preg_match('/(\+\+|\-\-) \s* (' . Parser::EXPR_ . ') \s*;/Ax', $r_str, $matches, 0, $r_offset)) {
+        if (preg_match('/(\+\+|\-\-) \s* (' . Parser::EXPR_MEM_ . ') \s*;/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseUnaryOp_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
         }
 
         // <reg> <単項演算子>;
-        if (preg_match('/(' . Parser::EXPR_ . ') (\+\+|\-\-) \s*\;/Ax', $r_str, $matches, 0, $r_offset)) {
+        if (preg_match('/(' . Parser::EXPR_MEM_ . ') (\+\+|\-\-) \s*\;/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseUnaryOp_($r_str, $r_offset, $matches[0], $matches[2], $matches[1]);
         }
 
-        // シンボル名(<式リスト>);
-        if (preg_match('/(\w+)\s*\((' . Parser::EXPR0_ . ')\)\s*;/Ax', $r_str, $matches, 0, $r_offset)) {
-            return $this->functionCall_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
+        // 関数呼び出し シンボル名(<式リスト>);
+        if (preg_match('/(\w+)\s*\((' . Parser::EXPR_LIST_ . ')\)\s*;/Ax', $r_str, $matches, 0, $r_offset)) {
+            return $this->parseFunctionCall_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
         }
 
         // 解析できなかった時は, ';' までスキップ
@@ -365,7 +456,7 @@ Class Parser
 
     // MARK: parseSubSentences_()
     /** { ... } で囲んだ複文 */
-    private function parseSubSentences_(string &$r_str, int &$r_offset): string
+    private function parseSubSentences_(string &$r_str, int &$r_offset, ?string $continue, ?string $break): string
     {
         //echo("subSentences1[$r_offset $this->line_nr_] $r_str[$r_offset]\n");
         // { ... } を検出
@@ -376,7 +467,7 @@ Class Parser
             return '';
         }
 
-        $out = $this->parseSentences_($str);
+        $out = $this->parseSentences_($str, $continue, $break);
         //echo("subSentences2[$r_offset $this->line_nr_]\n");
         return $out;
     }
@@ -404,7 +495,7 @@ Class Parser
         $err = false;
 
         foreach($params as $i => $param) {
-            $p = $this->checkExpr_($param);
+            $p = $this->createParamObject_($param);
             if ($p === null || $p->type !== Param::TYPE_VAL) {
                 $this->errorLine_("$opcode 引数 ". ($i + 1) . " のエラー", $param);
                 $err = true;
@@ -421,17 +512,17 @@ Class Parser
 
 
     // MARK: parseIf_()
-    /** if ( ... ) 文 else 文 */
-    private function parseIf_(string &$r_str, int &$r_offset, $match, $flag): string
+    /** if (flag) <文1> else <文2> */
+    private function parseIf_(string &$r_str, int &$r_offset, $match, $flag, ?string $continue, ?string $break): string
     {
         $r_offset  += strlen($match);
         $this->line_nr_ += substr_count($match, "\n");
 
-        // フラグとジャンプ命令の設定
+        // flag から, ジャンプ命令とラベルの設定
         $flag_neg = Parser::FLAG_NEG_TAB_[$flag];
         $opcode_if   = 'jp';
         $opcode_else = 'jp';
-        $label1 = $this->genRegistLabel_();
+
         if (str_ends_with($flag, '_jr_else_jr') ||
             (str_ends_with($flag, '_jr') && !str_ends_with($flag, '_else_jr'))) {
             $opcode_if = 'jr';
@@ -442,38 +533,196 @@ Class Parser
 
         if ($flag_neg !== 'false') { $flag_neg .= ','; }
 
-        $out = $this->getIndentStr_() . "$opcode_if $flag_neg $label1\n";
+        $label_else = '';
+        $label_endif = $this->genRegistLabel_();
+        $this->skipSpaces_($r_str, $r_offset);
+
+        // <文1> の処理
         $this->incIndent_();
+        $out_sentence1 = $this->parseSentence_($r_str, $r_offset, $continue, $break);
+        $this->decIndent_();
 
-        $this->skipSpaces_($r_str, $r_offset);
-        $out .= $this->parseSentence_($r_str, $r_offset);
+        // <文1> が「単文の jp/jr/call/ret 命令」になってる場合, 1命令に最適化されます.
+        // ※if (cc) break; 等も最適化されます
+        if (preg_match('/^([ \t]*)(jp|jr|call)([ \t]+)(' . Parser::EXPR_NLB_ . ')(\r?\n)$/Ax', $out_sentence1, $matches) &&
+            !preg_match('/^(' . Parser::FLAG_IF1_ . '),/', $matches[4])) { // フラグのない jp/jr/call 命令であること
+            $opcode_1 = $matches[2];   // <文1> の命令 (jp|jr|call)
+            $addr     = $matches[4];   // <文1> ジャンプ/コール先
+            if ($opcode_if === 'jr') {
+                if ($opcode_1 === 'call') {
+                    $this->errorLine_("if 節の 1命令 call 文では, if (式) に jr は使えません");
+                }
+                $opcode_1 = 'jr';
+            }
+            $out = $this->getIndentStr_() . $opcode_1 . ' ' . Parser::FLAG_CONV_TAB_[$flag] . ', ' . $matches[4] . "\n";
+            $opcode_else = '';  // 最適化したフラグ兼用
+        } else if (preg_match('/^([ \t]*)(ret)([ \t]*)(\r?\n)$/Ax', $out_sentence1, $matches)) {
+            if ($opcode_if === 'jr') {
+                $this->errorLine_("if 節の 1命令 ret 文では, if (式) に jr は使えません");
+            }
+            $out = $this->getIndentStr_() . 'ret ' . Parser::FLAG_CONV_TAB_[$flag] . "\n";
+            $opcode_else = '';  // 最適化したフラグ兼用
+        }
         $this->skipSpaces_($r_str, $r_offset);
 
-        // else を見つけた!
-        //$str = substr($r_str, $r_offset); echo("[[$str]]\n");
-        if (preg_match('/else/Ax', $r_str, $matches, 0, $r_offset)) {
+        if (!preg_match('/else/Ax', $r_str, $matches, 0, $r_offset)) { // if のみ
+            // if () <文1> 節の後のラベル. if が最適化された場合はラベル無し
+            if ($opcode_else !== '') {
+                $out = $this->getIndentStr_() . "$opcode_if $flag_neg $label_endif // if ($flag) {\n";  // if <!flag> goto endif;
+                $out .= $out_sentence1;                                                 // <文1>;
+                $out .= $this->getIndentStr_() . "$label_endif: // } endif \n";
+            }
+        } else { // else <文2> 処理
             $r_offset  += strlen('else');
 
-            $label2 = $this->genRegistLabel_();
-            $out .= $this->getIndentStr_() . "$opcode_else $label2\n";
-            $out .= "$label1:\n";
+            if ($opcode_else !== '') { // if 節が最適化された場合は, else 前の jp/jr は不要
+                $label_else = $this->genRegistLabel_();
+                $out = $this->getIndentStr_() . "$opcode_if $flag_neg $label_else // if ($flag) {\n";   // if <!flag> goto else;
+                $out .= $out_sentence1;                                                 // <文1>;
+                $out .= $this->getIndentStr_() . "$opcode_else $label_endif\n";         // goto endif;
+                $out .= $this->getIndentStr_() . "$label_else: // } else {\n";
+            }
 
+            // <文2> の処理
             $this->skipSpaces_($r_str, $r_offset);
-            $out .= $this->parseSentence_($r_str, $r_offset);
+            $this->incIndent_();
+            $out .= $this->parseSentence_($r_str, $r_offset, $continue, $break);
+            $this->decIndent_();
             $this->skipSpaces_($r_str, $r_offset);
 
-            $out .= "$label2:\n";
-        } else {
-            $out .= "$label1:\n";
+            // else <文2> 節の後のラベル. if が最適化された場合はラベル無し
+            if ($opcode_else !== '') {
+                $out .= "$label_endif: // } endif\n";
+            }
         }
-        $this->decIndent_();
+        // 後処理の最適化
+        //    xxxxx:\n  jp label_endif
+        // となってるコードを探し, xxxxx にジャンプしてるコードを label_endif に書き換えます
+        if (preg_match_all('/\n[ \t]*(' . Parser::SYMBOL . '):\n[ \t]*(jp|jr)[ \t]*' . $label_endif . '/', $out, $matches)) {
+            if ($matches) {
+                //echo("else:$label_else endif:$label_endif\n");
+                for ($i = 0; $i < count($matches[0]); $i++) {
+                    $label_org = $matches[1][$i]; // 元のジャンプ先
+                    //echo("最適化[". $matches[0][$i] . "] $label_org -> $label_endif\n");
+                    $out = preg_replace('/('. $label_org . ')([^:])/', $label_endif . ' // optimized from ' . $label_org . '$2' , $out, -1, $count);
+                    if ($count !== 0) {
+                        echo("note: ネストする if - else 節の多重ジャンプが最適化されました: $label_org -> $label_endif, $count 箇所\n");
+                    }
+                }
+            }
+        }
 
         return $out;
     }
 
+    // MARK: parseDoWhile_()
+    /** do <文> while (<式>); */
+    private function parseDoWhile_(string &$r_str, int &$r_offset): string
+    {
+        $r_offset += strlen('do');
+
+        $label_loop_top = $this->genRegistLabel_(); // continue のジャンプ先
+        $label_loop_end = $this->genRegistLabel_(); // break のジャンプ先
+
+        // <文>の処理
+        $this->skipSpaces_($r_str, $r_offset);
+        $this->incIndent_();
+        $out_sentence = $this->parseSentence_($r_str, $r_offset, $label_loop_top, $label_loop_end);
+        $this->decIndent_();
+        $this->skipSpaces_($r_str, $r_offset);
+
+        // while() の処理
+        if (!preg_match('/while \s* \( \s* (' . Parser::FLAG_DO_WHILE_ . ') \s* \) \s* ;/Ax', $r_str, $matches, 0, $r_offset)) {
+            $this->errorLine_("do に対する while 句が無いか, あってもカッコの中が間違ってます");
+            return '';
+        }
+
+        $flag = $matches[1];
+        $loop_end_inst = '';    // while (false) の場合, ループ末端のジャンプ命令は省く
+        $loop_end_op = Parser::DO_WHILE_OP_TAB_[$flag];
+        if ($loop_end_op !== '') {
+            $loop_end_inst = $loop_end_op . ' ' . $label_loop_top;
+        }
+
+        $out = $this->getIndentStr_() . $label_loop_top . ": // do {\n" .
+            $out_sentence .
+            $this->getIndentStr_() . $loop_end_inst . " // } while ($flag)\n" .
+                $this->getIndentStr_() . $label_loop_end . ": // loop end\n";
+
+            $r_offset += strlen($matches[0]);
+
+        return $out;
+    }
+
+
+    /** while(<式>) <文> ※式はフラグ, 'true' のみ */
+    private function parseWhile_(string &$r_str, int &$r_offset, string $match, string $flag): string
+    {
+        $r_offset += strlen($match);
+
+        $label_loop_top = $this->genRegistLabel_(); // continue のジャンプ先
+        $label_loop_end = $this->genRegistLabel_(); // break のジャンプ先
+
+        $this->skipSpaces_($r_str, $r_offset);
+        $this->incIndent_();
+        $out_sentence = $this->parseSentence_($r_str, $r_offset, $label_loop_top, $label_loop_end);
+        $this->decIndent_();
+        $this->skipSpaces_($r_str, $r_offset);
+
+        $loop_top_op = '';
+        if ($flag !== 'true') {
+            $loop_top_op = Parser::WHILE_OP_TAB_[$flag] . ' ' . $label_loop_end;
+        }
+
+        $out = $label_loop_top . ": // while ($flag) {\n" .
+            $loop_top_op .
+            $out_sentence .
+            $this->getIndentStr_() . 'jp ' . $label_loop_top . " // }\n" .
+            $label_loop_end . ": // loop end\n";
+
+        return $out;
+    }
+
+
+    // MARK: parseBreak_()
+    private function parseBreak_(string &$r_str, int &$r_offset, string $match, ?string $break): string
+    {
+        $out = '';
+
+        if (gettype($break) !== 'string') {
+            $this->errorLine_("ループの外では break できません", '');
+        } else {
+            $out = $this->getIndentStr_() . "jp $break // break\n";
+        }
+
+        $r_offset += strlen($match);
+        $this->skipSpaces_($r_str, $r_offset);
+
+        return $out;
+    }
+
+
+    // MARK: parseContinue_()
+    private function parseContinue_(string &$r_str, int &$r_offset, string $match, ?string $continue): string
+    {
+        $out = '';
+
+        if (gettype($continue) !== 'string') {
+            $this->errorLine_("ループの外では continue できません", '');
+        } else {
+            $out = $this->getIndentStr_() . "jp $continue // continue\n";
+        }
+
+        $r_offset += strlen($match);
+        $this->skipSpaces_($r_str, $r_offset);
+
+        return $out;
+    }
+
+
     // MARK: parseReturn_()
     /** return;※<式なし>; */
-    private function parseReturn_(string &$r_str, int &$r_offset, $match): string
+    private function parseReturn_(string &$r_str, int &$r_offset, string $match): string
     {
         $r_offset  += strlen($match);
         $this->line_nr_ += substr_count($match, "\n");
@@ -514,8 +763,8 @@ Class Parser
 
         // 型によって命令が変わるので, 右辺値, 左辺値の型を調べる
         $b_err = false;
-        $l_param = $this->checkExpr_($l_value);
-        $r_param = $this->checkExpr_($r_value);
+        $l_param = $this->createParamObject_($l_value);
+        $r_param = $this->createParamObject_($r_value);
         if ($l_param === null) {
             $this->errorLine_("左辺値の異常", $match);
             $b_err = true;
@@ -599,19 +848,26 @@ Class Parser
 
     // MARK: functionCall_()
     /** 関数呼び出し, またはマクロ呼び出し */
-    private function functionCall_(string &$r_str, int &$r_offset, string $match, string $funcname, string $expr): string
+    private function parseFunctionCall_(string &$r_str, int &$r_offset, string $match, string $funcname, string $expr): string
     {
         //echo("func1[$r_offset $this->line_nr_][$funcname($expr)]\n");
 
         if (preg_match('/^[A-Z_][A-Z_0-9]*$/', $funcname)) {
-            // 全て大文字ならばマクロとみなす
-            $expr = str_replace("\n", ' ', $expr);// マクロ呼び出しは1行で書かないといけないので改行を削除します
-            $ret = $funcname . ' ' . $expr;
+            // 全て大文字ならばマクロの展開とみなす(例 ABC() )
+            $expr = str_replace("\n", ' ', $expr);// マクロ呼び出しは1行で書かないといけないので改行を削除
+            $params = $this->explodeByComma_($expr);
+            // ヘタに加工するとマクロ展開がおかしくなるので, パラメータはそのまま渡す
+            $ret = $funcname . ' ';
+            foreach($params as $i => $param) {
+                $ret .= $this->stripBackReg_($param);
+                //echo("{$ret} [{$param}]\n");
+                if ($i !== count($params) - 1) { $ret .= ", "; }
+            }
         } else if (preg_match('/^[a-z_][a-z_0-9]*$/', $funcname) &&
             method_exists($this, $funcname . '_')) {
-            // 全て小文字ならば関数のようだ
+            // 全て小文字のアセンブラの命令ならば(例: ldir() ), 同名の関数 (例: ldir_()) を呼び出し
             $ret = $this->{$funcname . '_'}($expr, $this->line_nr_);
-        } else {
+        } else { // それ以外
             $this->errorLine_("この関数はありません. マクロとして呼び出す場合は, 大文字を使います", $funcname);
             $ret = '';
         }
@@ -703,8 +959,8 @@ Class Parser
     private function endmDirective_(string &$r_str, int $offset): void
     {
         //echo('noReturnDirective(): [' . substr($r_str, $offset) . "]\n");
-        if ($this->mode_ !== 'macro') {
-            $this->errorLine_("Z80ANA_ENDM は, マクロ用です");
+        if ($this->mode_ !== Parser::MODE_MACRO) {
+            $this->errorLine_("Z80ANA_ENDM は, マクロ用定義用です");
         } else {
             // $offset から後の文字列が全て空白文字かセミコロンでなければエラー
             $str = substr($r_str, $offset);
@@ -719,7 +975,7 @@ Class Parser
     private function noReturnDirective_(string &$r_str, int $offset): void
     {
         //echo('noReturnDirective(): [' . substr($r_str, $offset) . "]\n");
-        if ($this->mode_ !== 'func') {
+        if ($this->mode_ !== Parser::MODE_FUNC) {
             $this->errorLine_("Z80ANA_NO_RETURN は, 関数用です");
         } else if (!$this->is_naked_) {
             $this->errorLine_("Z80ANA_NO_RETURN は, __naked でない関数にはつけてはいけなせん");
@@ -736,7 +992,7 @@ Class Parser
     // MARK: FALL_THROUGH
     private function fallThroughDirective_(string &$r_str, int $offset): void
     {
-        if ($this->mode_ !== 'func') {
+        if ($this->mode_ !== Parser::MODE_FUNC) {
             $this->errorLine_("Z80ANA_FALL_THROUGH は, 関数用です");
         } else if (!$this->is_naked_) {
             $this->errorLine_("Z80ANA_FALL_THROUGH は, __naked でない関数にはつけてはいけなせん");
@@ -896,7 +1152,7 @@ Class Parser
             switch ($expr[$i]) {
                 case ',':
                     if ($lv === 0) {
-                        $out[] = substr($expr, $j, $i - $j);
+                        $ret[] = trim(substr($expr, $j, $i - $j));
                         $j = $i + 1;
                     }
                     break;
@@ -912,12 +1168,12 @@ Class Parser
         }
 
         if ($j < $i) {
-            $out[] = substr($expr, $j);
+            $ret[] = trim(substr($expr, $j));
         }
 
-        //echo("[$expr] --> "); print_r($out);
+        //echo("[$expr] --> "); print_r($ret);
         //return explode(',', $expr);
-        return $out;
+        return $ret;
     }
 
 
@@ -935,87 +1191,49 @@ Class Parser
 
 
     // MARK: str2int_()
-    /** 文字列から整数へ. 10/16進数対応 */
-    private function str2int_($str): int
+    /** 文字列から整数へ. 10/16進数対応. 失敗したら false */
+    private function str2int_($str): int | bool
     {
         if (str_starts_with($str, '0x')) {
-            return hexdec(substr($str, 2));
+            $str = substr($str, 2);
+            if (ctype_xdigit($str)) { return hexdec($str); }
+        } else {
+            if (ctype_digit($str)) { return (int)$str;}
         }
-        return (int)$str;
+
+        return false;
     }
 
 
     // ---------------- 式
-    // MARK: checkExpr_()
-    /** 式のチェックと改変
+    // MARK: createParamObject_()
+    /** 式から, パラメータ オブジェクトを生成します
      * <expr> := mem[<expr1>]
      *         | mem[<expr1>] + c
      *         | port[<expr1>]
-     *         | <reg> + c
      *         | <reg>
+     *         | <reg> + c
+     *         | reg_<reg>
+     *         | reg_<reg> + c
      *         | 値
      *         | 値 + c
      *         | <expr1>
-     * <expr1> := 面倒なので, Parser::EXPR1_ で指定した文字種
+     * <expr1> := 面倒なので, Parser::EXPR_NMEM で指定した文字種
+     * モードによって挙動が異なります
      * @return エラーなら null
      */
-    private function checkExpr_(string $expr): Param|null
+    private function createParamObject_(string $expr): Param|null
     {
-        // 改行コードを取る, 両端の空白文字を取る
-        $expr = str_replace("\n", ' ', $expr);
-        $expr = trim($expr);
-        $type = Param::TYPE_VAL;
-
-        if (preg_match('/^mem\s*\[(' . Parser::EXPR1_ . ')\]$/x', $expr, $match)) {
-            $type = Param::TYPE_MEM;
-            $out = "($match[1])";
-        } else if (preg_match('/^port\s*\[(' . Parser::EXPR1_ . ')\]$/x', $expr, $match)) {
-            $type = Param::TYPE_PORT;
-            $out = "($match[1])";
-        } else if (preg_match('/^(?:' . Parser::REG_ . ')$/x', $expr)) {
-            $type = Param::TYPE_REG;
-            $out = $expr;
-        } else if (preg_match('/^(:?reg_\w*)$/x', $expr)) { // マクロ モードならば reg_ で始まる名でもレジスタ扱い
-            if ($this->mode_ === 'macro') {
-                $type = Param::TYPE_REG;
-                $out = $expr;
+        $param = new Param($expr, $this->mode_);
+        if ($param->type === Param::TYPE_OTHER) {
+            if ($this->mode_ === Parser::MODE_MACRO) {
+                $this->errorLine_("未知の式です. reg_ で始まる引数名は, マクロ定義/呼び出し用です", $expr);
             } else {
-                $this->errorLine_("この名前はマクロモードでしか使えません", $expr);
-                return null;
+                $this->errorLine_("未知の式です", $expr);
             }
-        } else if (preg_match('/^(?:' . Parser::FLAG_ . ')$/x', $expr)) {
-            $type = Param::TYPE_FLAG;
-            $out = $expr;
-        } else if (preg_match('/^mem\s*\[(' . Parser::EXPR1_ . ')\]\s*\+\s*c$/x', $expr, $match)) {
-            $type = Param::TYPE_MEM_C;
-            $out = "($match[1])";
-        } else if (preg_match('/^(' . Parser::REG_ . ')\s*\+\s*c$/x', $expr, $match)) {
-            $type = Param::TYPE_REG_C;
-            $out = $match[1];
-        } else if (preg_match('/^(reg_\w*)\s*\+\s*c$/x', $expr, $match)) { // マクロ モードならば reg_ で始まる名でもレジスタ扱い
-            if ($this->mode_ === 'macro') {
-                $type = Param::TYPE_REG_C;
-                $out = $expr;
-                //echo($expr . " " . $type . "\n");
-            } else {
-                $this->errorLine_("この名前はマクロモードでしか使えません", $expr);
-                return null;
-            }
-        } else if (preg_match('/^(' . Parser::EXPR1_ . ')\+\s*c$/x', $expr, $match)) {
-            $type = Param::TYPE_VAL_C;
-            $out = $match[1];
-        } else if (preg_match('/^' . Parser::SYMBOL_ . '$/x', $expr)) {
-            $type = Param::TYPE_VAL;
-            $out = $expr;
-        } else if (preg_match('/^' . Parser::EXPR1_ . '$/x', $expr)) {
-            $type = Param::TYPE_VAL;
-            //$out = "0 + ($expr)";
-            $out = $expr;
-        } else {
-            $this->errorLine_("未知の式です", $expr);
             return null;
         }
-        return new Param($out, $type);
+        return $param;
     }
 
 
@@ -1034,6 +1252,16 @@ Class Parser
         $this->error_->errorLine($this->line_nr_, $msg, $src);
     }
 
+    // MARK: stripBackReg_()
+    /** 裏レジスタ表記を通常表記に変換して返します. それ以外は何もしません */
+    private function stripBackReg_(string $value): string
+    {
+        if (preg_match('/^(?:' . Parser::BACK_REG_ . ')$/x', $value)) {
+            //echo("stripBackReg_: [$value] --> " . trim($value, '_') . "\n");
+            return trim($value, '_'); // 最後の '_' を削る
+        }
+        return $value;
+    }
 
     // MARK: command dispatches
     // -------------------------------- z80anaDirective->疑似命令ディスパッチ
@@ -1046,6 +1274,7 @@ Class Parser
     private function Z80ANA_REPT_(string $expr): string { $this->incIndent_(); return $this->checkParam11_('rept', $expr); }
     private function Z80ANA_REPTC_(string $expr): string { $this->incIndent_(); return $this->checkParam22_('reptc', $expr); }
     private function Z80ANA_REPTI_(string $expr): string { $this->incIndent_(); return $this->checkParamNN_('repti', $expr); }
+    private function Z80ANA_GLOBAL_(string $expr): string { return $this->checkParamNN_S_('global', $expr); }
 
     // -------------------------------- 関数->命令ディスパッチ
     private function ld_(string $expr): string { return $this->checkParam22_RM_RMV_('ld', $expr); }
@@ -1207,7 +1436,7 @@ Class Parser
 
         $ret = [];
         foreach($params as $i => $param) {
-            $p = $this->checkExpr_($param);
+            $p = $this->createParamObject_($param);
             if ($p === null) {
                 $this->errorLine_("$opcode 引数 ". ($i + 1) . " のエラー", $param);
             } else {
@@ -1234,7 +1463,7 @@ Class Parser
     /** 命令は引数無しですが, 関数は 1 つの引数 ('A') を持ちます. 例: rra(A) -> rra  */
     private function checkParam01_A_(string $opcode, string $expr): string
     {
-        if ($expr !== 'A') {
+        if ($expr !== 'A' && $expr !== 'A_') {
             $this->errorLine_("$opcode で使用できる引数は, A のみです", $expr);
         }
         return $opcode;
@@ -1253,13 +1482,13 @@ Class Parser
 
 
     // MARK: checkParam02_AV_()
-    /** 命令は引数無しですが, 関数は 2 つの引数 ('A', 値) を持ちます. 例: rrca(a, n) -> rrca  */
+    /** 命令は引数無しですが, 関数は 2 つの引数 ('A', 値) を持ちます. 例: rrca(a, n) -> rrca を n 個 */
     private function checkParam02_AV_(string $opcode, string $expr): string
     {
         $p = $this->checkParamSub_($opcode, $expr, 2);
         if ($p === null) { return ''; }
 
-        if ($p[0]->value !== 'A') {
+        if ($p[0]->value !== 'A' && $p[0]->value !== 'A_') {
             $this->errorLine_("$opcode の第1引数で使用できるのは, A のみです", $expr);
             return '';
         }
@@ -1268,22 +1497,21 @@ Class Parser
             return '';
         }
 
-        // 値が数値ならば直接展開(4まで), そうでなければ rept
+        // 値が数値ならば直接展開(8以上はエラー), そうでなければ rept
         $out = '';
         //echo($p[1]->value . "\n");
-        if (preg_match('/^0\ \+\ \(((:?0x[0-9a-fA-F]+)|(:?[0-9]+))\)$/x', $p[1]->value, $matches)) {
-            //print_r($matches);
-            if (4 < $matches[1]) {
+        $n = $this->str2int_($p[1]->value);
+        if ($n !== false) { // 数値
+            if (8 < $n) {
                 $this->errorLine_("$opcode の第2引数値が大きすぎます", $expr);
             } else {
-                $n = $this->str2int_($matches[1]);
                 for ($i = 0; $i < $n; $i++) {
                     if ($i != 0) { $out .= $this->getIndentStr_(); }
                     $out .= $opcode;
                     if ($i != $n - 1) { $out .= "\n"; }
                 }
             }
-        } else {
+        } else { // 数値以外
             $out .= "rept " . $p[1]->value . "\n";
             $this->incIndent_();
             $out .= $this->getIndentStr_() . "$opcode\n";
@@ -1304,7 +1532,7 @@ Class Parser
             return '';
         }
 
-        return "$opcode " . $params[0];
+        return "$opcode " . $this->stripBackReg_($params[0]);
     }
 
 
@@ -1321,7 +1549,7 @@ Class Parser
         }
 
         if ($p[0]->type !== Param::TYPE_REG || array_key_exists($p[0]->value, Parser::REGS_G16_SPLIT8_TAB_) === false) {
-            return "$opcode " . $p[0]->value;
+            return "$opcode " . $this->stripBackReg_($p[0]->value);
         }
         // 例外:次の命令は, レジスタが16bitの時(HL,DE,BC,IX,IY)は, 複数の命令に分解されます:
         // sla(HL) -> sla L, rl H
@@ -1335,7 +1563,7 @@ Class Parser
         $out = '';
         switch ($opcode) {
             default:
-                $out = "$opcode " . $p[0]->value;
+                $out = "$opcode " . $this->stripBackReg_($p[0]->value);
                 break;
             case 'sla':
             case 'sll':
@@ -1372,8 +1600,9 @@ Class Parser
         if ($p === null) { return ''; }
         if (($p[0]->type !== Param::TYPE_VAL && $p[0]->type !== Param::TYPE_REG) ||
             ($p[0]->type === Param::TYPE_REG &&
-                ($p[0]->value !== 'HL' && $p[0]->value !== 'IX' && $p[0]->value !== 'IY'))) {
-            $this->errorLine_("$opcode の引数は, 値|HL|IX|IY のみです", $expr);
+                ($p[0]->value !== 'HL' && $p[0]->value !== 'HL_' &&
+                $p[0]->value !== 'IX' && $p[0]->value !== 'IY'))) {
+            $this->errorLine_("$opcode の引数は, 値 HL|IX|IY のみです", $expr);
             return '';
         }
 
@@ -1383,7 +1612,7 @@ Class Parser
             $p[0]->value = '(' . $p[0]->value . ')';
         }
 
-        return "$opcode " . $p[0]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value);
     }
 
 
@@ -1433,30 +1662,30 @@ Class Parser
             $this->errorLine_("$opcode の第2引数で使用できるのは, 値 のみです", $expr);
         }
 
-        // 値が数値ならば直接展開(4まで), そうでなければ rept
+        // 値が数値ならば直接展開(8以上はエラー), そうでなければ rept
         $out = '';
         //echo($p[1]->value . "\n");
-        if (preg_match('/^0\ \+\ \(((:?0x[0-9a-fA-F]+)|(:?[0-9]+))\)$/x', $p[1]->value, $matches)) {
-            //print_r($matches);
-            if (4 < $matches[1]) {
+        $n = $this->str2int_($p[1]->value);
+        if ($n !== false) { // 数値
+            if (8 < $n) {
                 $this->errorLine_("$opcode の第2引数値が大きすぎます", $expr);
             } else {
-                $n = $this->str2int_($matches[1]);
                 for ($i = 0; $i < $n; $i++) {
                     if ($i != 0) { $out .= $this->getIndentStr_(); }
                     $out .= "$opcode " . $p[0]->value;
                     if ($i != $n - 1) { $out .= "\n"; }
                 }
             }
-        } else {
+        } else { // 数値以外
             $out .= "rept " . $p[1]->value . "\n";
             $this->incIndent_();
-            $out .= $this->getIndentStr_() . "$opcode " . $p[0]->value . "\n";
+            $out .= $this->getIndentStr_() . "$opcode " . $this->stripBackReg_($p[0]->value) . "\n";
             $this->decIndent_();
             $out .= $this->getIndentStr_() . "endr";
         }
         return $out;
     }
+
 
     // MARK: checkParam22_()
     /** 命令, 関数共に 2つの引数 (タイプはなんでもいい) を持ちます  */
@@ -1468,8 +1697,9 @@ Class Parser
             return '';
         }
 
-        return "$opcode " . $expr;
+        return "$opcode " . $this->stripBackReg_($expr);
     }
+
 
     // MARK: checkParam22_RM_RMV_()
     /** 命令, 関数共に 2つの引数 (レジスタ|メモリ, レジスタ|メモリ|値) を持ちます */
@@ -1485,7 +1715,7 @@ Class Parser
         }
         $p[1]->adjustVal();
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
     }
 
 
@@ -1503,7 +1733,7 @@ Class Parser
             $this->errorLine_("$opcode の第2引数で使用できるのは, ポート のみです", $p[1]->value);
         }
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $p[1]->value;
     }
 
 
@@ -1520,10 +1750,9 @@ Class Parser
         if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_VAL) {
             $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|値 のみです", $p[1]->value);
         }
-
         $p[1]->adjustVal();
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $p[1]->value;
     }
 
     // MARK: checkParam22_A_RM_()
@@ -1533,16 +1762,15 @@ Class Parser
         $p = $this->checkParamSub_($opcode, $expr, 2);
         if ($p === null) { return ''; }
 
-        if ($p[0]->value !== 'A') {
+        if ($p[0]->value !== 'A' && $p[0]->value !== 'A_') {
             $this->errorLine_("$opcode の第1引数で使用できるのは, 'A' のみです", $p[0]->value);
         }
         if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_MEM && $p[1]->type !== Param::TYPE_VAL) {
             $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|メモリ|値 のみです", $p[1]->value);
         }
-
         $p[1]->adjustVal();
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
     }
 
 
@@ -1559,10 +1787,9 @@ Class Parser
         if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_MEM && $p[1]->type !== Param::TYPE_VAL) {
             $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|メモリ|値 のみです", $p[1]->value);
         }
-
         $p[1]->adjustVal();
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
     }
 
 
@@ -1580,7 +1807,7 @@ Class Parser
             $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|メモリ のみです", $p[1]->value);
         }
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $p[0]->value . ', ' .   $this->stripBackReg_($p[1]->value);
     }
 
 
@@ -1598,7 +1825,7 @@ Class Parser
             $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ のみです", $p[1]->value);
         }
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
     }
 
 
@@ -1609,7 +1836,7 @@ Class Parser
         $p = $this->checkParamSub_($opcode, $expr, 2);
         if ($p === null) { return ''; }
 
-        if ($p[0]->value !== 'A') {
+        if ($p[0]->value !== 'A' && $p[0]->value !== 'A_') {
             $this->errorLine_("$opcode の第1引数で使用できるのは, 'A' のみです", $p[0]->value);
         }
         if ($p[1]->type !== Param::TYPE_MEM ) {
@@ -1627,7 +1854,7 @@ Class Parser
         $p = $this->checkParamSub_($opcode, $expr, 2);
         if ($p === null) { return ''; }
 
-        if ($p[0]->value !== 'B') {
+        if ($p[0]->value !== 'B' && $p[0]->value !== 'B_') {
             $this->errorLine_("$opcode の第1引数で使用できるのは, 'B' のみです", $p[0]->value);
         }
         if ($p[1]->type !== Param::TYPE_VAL) {
@@ -1636,7 +1863,7 @@ Class Parser
 
         $p[1]->adjustVal();
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $p[1]->value;
     }
 
 
@@ -1674,7 +1901,7 @@ Class Parser
             $this->errorLine_("$opcode の第3引数で使用できるのは, レジスタ のみです", $p[1]->value);
         }
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
+        return "$opcode " . $p[0]->value . ', ' .  $this->stripBackReg_($p[1]->value);
     }
 
 
@@ -1697,8 +1924,9 @@ Class Parser
 
         $p[0]->adjustVal();
 
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value . ', ' .  $p[2]->value;
+        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value . ', ' .  $this->stripBackReg_($p[2]->value);
     }
+
 
     // MARK: checkParam1N_R_()
     /** 命令は引数1. 関数は1～n個の引数 (全てレジスタ) を持ちます  */
@@ -1709,13 +1937,13 @@ Class Parser
         $out = '';
 
         foreach($params as $i => $param) {
-            $p = $this->checkExpr_($param);
+            $p = $this->createParamObject_($param);
             if ($p === null || $p->type !== Param::TYPE_REG) {
                 $this->errorLine_("$opcode で使用できる引数は, レジスタ のみです", $p->value);
                 $b_err = true;
             } else {
                 if ($i !== 0) { $out .= $this->getIndentStr_(); }
-                $out .= "$opcode " . $p->value;
+                $out .= "$opcode " . $this->stripBackReg_($p->value);
                 if ($i !== count($params) - 1) { $out .= "\n"; }
             }
         }
@@ -1732,8 +1960,12 @@ Class Parser
             $this->errorLine_("$opcode の引数は 2 個以上です", $expr);
             return '';
         }
-
-        return "$opcode " . $expr;
+        $out = $opcode . ' ';
+        foreach($params as $i => $param) {
+            $out .= $this->stripBackReg_($param);
+            if ($i !== count($params) - 1) { $out .= ", "; }
+        }
+        return $out;
     }
 
 
@@ -1746,8 +1978,8 @@ Class Parser
         $out = $opcode . ' ';
 
         foreach($params as $i => $param) {
-            $p = $this->checkExpr_($param);
-            if ($p === null || !preg_match('/^' . Parser::SYMBOL_ . '$/x', $p->value)) {
+            $p = $this->createParamObject_($param);
+            if ($p === null || !preg_match('/^' . Parser::SYMBOL . '$/x', $p->value)) {
                 $this->errorLine_("$opcode で使用できる引数は, シンボル値 のみです", $p->value);
                 $b_err = true;
             } else {
@@ -1768,7 +2000,7 @@ Class Parser
         $out = $opcode . ' ';
 
         foreach($params as $i => $param) {
-            $p = $this->checkExpr_($param);
+            $p = $this->createParamObject_($param);
             if ($p === null || $p->type !== Param::TYPE_VAL) {
                 $this->errorLine_("$opcode で使用できる引数は, 値 のみです", $p->value ?? '');
                 $b_err = true;

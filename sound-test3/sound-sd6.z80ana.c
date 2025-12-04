@@ -136,7 +136,7 @@ void SD6PLAY_NOTE_LEAD(
 
         // ---- 音長モード別の波長/音長設定
         A = reg_tmp_l; A += A; if (nc) {
-            A += A; reg_slc = A; if (nc_r) {
+            A += A; reg_slc = A; if (nc_jr) {
                 // ---- リピート
                 cp(A, SD6_EXCEPT_LEN); if (nc) {        // A = 音長
                     cp(A, SD6_EXCEPT_LEN + 4 * 7); if (c) {
@@ -160,8 +160,8 @@ void SD6PLAY_NOTE_LEAD(
             }
 
             // ---- リピート終了
-            cp(A, SD6_EXCEPT_LEN); if (z_r) {
-addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) { // リピート終了
+            cp(A, SD6_EXCEPT_LEN); if (z_jr) {
+addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_jr) { // リピート終了
                     L--; L--; L--; mem[addr_rep_1 + 1] = HL;
                     SP--;
                     goto sd6playNoteLead_pop;
@@ -188,7 +188,7 @@ addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) { // リピート終了
                 goto sd6playNoteLead_initEnd;           // スラー無
             }
         }
-        A += A; reg_slc = A; if (nc_r) {
+        A += A; reg_slc = A; if (nc_jr) {
             // ---- エンベロープ(音量)速度設定
             cp(A, SD6_EXCEPT_LEN); if (nc) {            // A = 音長
                 cp(A, SD6_EXCEPT_LEN + 4 * 4); if (c) {
@@ -215,7 +215,7 @@ addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) { // リピート終了
 
         cp(A, SD6_EXCEPT_LEN); if (nc) {                // A = 音長
             // ---- スライド無
-            if (z_r) {
+            if (z_jr) {
                 A = OPCODE_JR/*スライド無*/; mem[addr_slide_0] = A;
                 SP--;
                 goto sd6playNoteLead_pop;
@@ -233,10 +233,10 @@ addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) { // リピート終了
         }
 
         // ---- ■ スライド有 (スラー:波長カウンタ リセットや音量の設定無し)
-addr_slide_0: if (z_r) {                                // 自己書換 jr/ld A,n = スライド無/有
+addr_slide_0: if (z_jr) {                               // 自己書換 jr/ld A,n = スライド無/有
             A = reg_tmp_h; mem[sd6playNoteLead_modWlEnd_1 + 1] = A; // 自己書換 波長end
             // 現在の波長と比較してスライド方向を決める
-            A = mem[addr_wl_1 + 1]; cp(A, reg_tmp_h); A = OPCODE_INC_A; if (nc_r) { A++; /* DEC A */}
+            A = mem[addr_wl_1 + 1]; cp(A, reg_tmp_h); A = OPCODE_INC_A; if (nc_jr) { A++; /* DEC A */}
             mem[sd6playNoteLead_modWlAdd_0] = A;        // 自己書換 A++/A--
             HL = sd6playNoteLead_modWl;
             goto sd6playNoteLead_initEndSlur;           // スラー有
@@ -278,7 +278,7 @@ sd6playNoteLead_modWl:
 sd6playNoteLead_modVol:
     A = reg_slc; addr_mod_vol_speed_1: A &= 0x00/*音量変更速度*/; if (z) {
         sd6playNoteLead_modVolVal_1: A = 0x00/*音量*/; sd6playNoteLead_modVolEnd_1: cp(A, 0x00/*音量end*/);
-        if (nz_r) { sd6playNoteLead_modVolInc_0: A++/*音量加減*/; mem[sd6playNoteLead_modVolVal_1 + 1] = A; }
+        if (nz_jr) { sd6playNoteLead_modVolInc_0: A++/*音量加減*/; mem[sd6playNoteLead_modVolVal_1 + 1] = A; }
         mem[addr_vol_1 + 1] = A;                        // 自己書換 音量
     }
 
@@ -321,7 +321,7 @@ void SD6PLAY_NOTE_BASE(
 
         // ---- 音長モード別の波長/音長設定
         A = reg_tmp_l; A += A; if (nc) {
-            A += A; reg_slc = A; if (nc_r) {
+            A += A; reg_slc = A; if (nc_jr) {
                 // ---- 休符
                 SP--;
                 xor(A, A); mem[addr_wl_1  + 1] = A;     // 自己書換 波長 = 0(最長)
@@ -343,7 +343,7 @@ void SD6PLAY_NOTE_BASE(
             A += A; reg_slc = A;                        // 音長 cf:0/1 = ◣■
             A = reg_tmp_h; mem[addr_wl_1 + 1] = A;      // 自己書換 波長
             reg_tmp_h = ADDR_SD6_TAB / 256; reg_tmp_l = A; A = mem[reg_tmp_hl]; // 音量 = 波長->パルス幅変換テーブル
-            if (nc_r) {
+            if (nc_jr) {
                 // ---- ◣
                 mem[       sd6playNoteBase_modVol    + 1] = A;  // 自己書換 音量
                 mem[       addr_vol_1                + 1] = A;  // 自己書換 音量
@@ -369,7 +369,7 @@ sd6playNoteBase_modStart:
     A = reg_slc; A &= BASE_VOL_SPEED_R; if (z) {
 sd6playNoteBase_modVol: A = 0x00;                       // 音量
 sd6playNoteBase_modVolEnd: cp(A, 0x00);                 // 音量end
-        if (nz_r) {
+        if (nz_jr) {
 sd6playNoteBase_modVolInc: A ++;                        // 音量加減
             mem[sd6playNoteBase_modVol + 1] = A;
         }
@@ -418,7 +418,7 @@ void SD6PLAY_NOTE_CHORD2(
         SP--; pop(AF);                                  // A = 音長
         // ---- 音長モード別の波長/音長設定
         A += A; if (nc) {
-            A += A; reg_slc = A; if (nc_r) {
+            A += A; reg_slc = A; if (nc_jr) {
                 // ---- 休符
                 xor(A, A); mem[addr_wl0_1 + 1] = A;     // 自己書換 波長0 = 0(最長)
                 mem[           addr_wl1_1 + 1] = A;     // 自己書換 波長1 = 0(最長)
@@ -455,7 +455,7 @@ void SD6PLAY_NOTE_CHORD2(
             reg_tmp_h = ADDR_SD6_TAB / 256; reg_tmp_l = A; A = mem[reg_tmp_hl]; // 音量 = 波長->パルス幅変換テーブル
             reg_vol01 = A;                              //          音量0/1兼用
 
-            if (nc_r) {
+            if (nc_jr) {
                 // ---- ◣
                 mem[sd6playNoteChord2_modVol_1 + 1] = A;// 自己書換 音量変更0/1兼用
 
@@ -488,7 +488,7 @@ sd6playNoteChord2_modStart_0: jr(sd6playNoteChord2_modEnd/*ジャンプ先*/);
         // ---- 音量変更◢◣0/1兼用
 sd6playNoteChord2_modVol_1: A = 0x00;                   // 音量
 sd6playNoteChord2_modVolEnd_1: cp(A, 0x00);             // 音量end
-        if (nz_r) {
+        if (nz_jr) {
 sd6playNoteChord2_modVolInc_0: A++;                     // 音量加減
             mem[sd6playNoteChord2_modVol_1 + 1] = A;
         }
@@ -544,7 +544,7 @@ addr_wl_1: reg_wl = 0x00;                               // 波長を設定した
     } else {
         // 音量処理 vol < 2 ならば, 波長カウンタの値に依らず cf が立たない
         A = reg_wl;
-addr_vol_1: cp(A, 0x02/*音量*/); if (c_r) { reg_pulse = PULSE_H; }
+addr_vol_1: cp(A, 0x02/*音量*/); if (c_jr) { reg_pulse = PULSE_H; }
     }
     // 計 最短 4+12+7+4+12 = 39(T-states)
 
@@ -568,7 +568,7 @@ void SD6PLAY_BEEPER_WAVE_R(int reg_wl, int reg_pulse, int reg_vol, int addr_wl_1
 addr_wl_1: reg_wl = 0x00;/* 波長を設定したらその場は音量処理は不要 */
     } else {
         // 音量処理. vol < 2 ならば, 波長カウンタの値に依らず cf が立たない
-        A = reg_wl; cp(A, reg_vol); if (c_r) { reg_pulse = PULSE_H; }
+        A = reg_wl; cp(A, reg_vol); if (c_jr) { reg_pulse = PULSE_H; }
     }
     // 計 最短 4+12+4+4+12 = 36(T-states)
 
@@ -595,7 +595,7 @@ addr_wl_1: reg_wl = 0x00; jr(sd6play_beeperWaveBrEnd);/* 波長を設定した�
     }
 sd6play_beeperWaveBr: {
         // 音量処理. vol < 2 ならば, 波長カウンタの値に依らず cf が立たない
-        A = reg_wl; cp(A, reg_vol); if (c_r) { reg_pulse = PULSE_H; }
+        A = reg_wl; cp(A, reg_vol); if (c_jr) { reg_pulse = PULSE_H; }
     }
 sd6play_beeperWaveBrEnd:
     // 計 最短 13+4+4+12 = 33(T-states)
@@ -616,7 +616,7 @@ void SD6PLAY_BEEPER_DRUM(int reg_wav, int reg_pulse, int addr_drum_nr_1) __z80an
     Z80ANA_DEF_VARS;
 
 addr_drum_nr_1: bit(0/*ドラム波形テーブル ビット位置*/, mem[reg_wav]); // 自己書換
-    if (nz_r) { reg_pulse = PULSE_H; }// 12+7+7 or 12+12
+    if (nz_jr) { reg_pulse = PULSE_H; }// 12+7+7 or 12+12
     // 計 最短 12+12 = 24(T-states)
 
     Z80ANA_ENDM;
@@ -652,7 +652,7 @@ sd6play_waitUntilKeyOff1:
     A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK; jr_nz(sd6play_waitUntilKeyOff1);
 
     // ---- E == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
-    E--; if (nz_r) {                                    // E = キャンセル可能フラグ
+    E--; if (nz_jr) {                                   // E = キャンセル可能フラグ
         A = 0xfa; mem[MMIO_8255_PORTA] = A;
     }
 
@@ -718,7 +718,7 @@ sd6play_beeperLoop:
         exx();
 
     // Lead(echo): beeper0 の設定を, 数ループ遅延して beeper1 へコピー
-    A = IXH; A &= 3; LEAD_ECHO_DELAY(); if (z_r) {      // 指定ループ遅延してからコピー
+    A = IXH; A &= 3; LEAD_ECHO_DELAY(); if (z_jr) {     // 指定ループ遅延してからコピー
 
 #if BEEPER1_SYNC                                        // Beeper1 同期
 sd6play_beeper1_sync: jr(sd6play_beeper1_syncEnd); {
