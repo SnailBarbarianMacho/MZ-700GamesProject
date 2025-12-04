@@ -88,7 +88,7 @@
 
 //----------------------------------------------------------------♩
 //  Lead                    Base                    Chord0/1                          Drum             
-static u8 const score0[] = {
+static u8 const sd4_chronos_0[] = {
     // -------- 小節2(t=0)
     SD4_L_FL(8, SD4_CS4),   SD4_B_FL(8, SD4_AS3),   SD4_C2_FL(24, SD4_CS3, SD4_AS2),  SD4_D_1(16),     
     SD4_L_FL(8, SD4_AS3),   SD4_B_FL(8, SD4_FS3),                                                      

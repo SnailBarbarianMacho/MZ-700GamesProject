@@ -190,12 +190,12 @@ void SD4PLAY_NOTE_LEAD(
         pop(reg_wlchwl);                                // 10   注意! reg_hwl=音長, reg_wlc=波長
 
         // ---- 音長モード別の波長/音長設定
-        A = reg_hwl; A += A; if (nc_r) {                // 4+4+7/12
-            A += A; reg_slc = A; if (c_r) {             // 4+8+7
+        A = reg_hwl; A += A; if (nc_jr) {               // 4+4+7/12
+            A += A; reg_slc = A; if (c_jr) {            // 4+8+7
 
                 // ---- リピート終了
-                cp(A, SD4_EXCEPT_LEN); if (z_r) {
-addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) {   // リピート終了
+                cp(A, SD4_EXCEPT_LEN); if (z_jr) {
+addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_jr) {  // リピート終了
                         L--; L--; L--; mem[addr_rep_1 + 1] = HL;
                         SP--;
                         goto sd4playNoteLead_pop0;
@@ -244,9 +244,9 @@ addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) {   // リピート終了
                 goto sd4playNoteLead_initEndSlur;       // スラー有
             }
         }
-        A += A; reg_slc = A; if (c_r) {                 // 4+8+7/12
+        A += A; reg_slc = A; if (c_jr) {                // 4+8+7/12
             cp(A, SD4_EXCEPT_LEN); if (nc) {            // 7    A = 音長
-                if (z_r) {                              // 12
+                if (z_jr) {                             // 12
 
                     // ---- スライド無
                     A = OPCODE_JR/*スライド無*/; mem[addr_slide_0 + 0] = A;
@@ -266,12 +266,12 @@ addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) {   // リピート終了
             }
 
             A = mem[VRAM_TEXT]; ex(AF, AF); mem[MMIO_8253_CT0] = A; ex(AF, AF);// /VBLK=L (ブランク中) になるまで待ち, 音を鳴らす
-            addr_slide_0: if (z_r) {                    // 7 自己書換
+            addr_slide_0: if (z_jr) {                   // 7 自己書換
 
                 // ---- ■ スライド有 (スラー:波長カウンタ リセットや音量の設定無し)
                 A = reg_wlc; mem[addr_mod_wl_end_1 + 1] = A;   // 4+13 自己書換 波長end
                 // 現在の波長と比較してスライド方向を決める
-                A = mem[addr_wl_1 + 1]; cp(A, reg_wlc); A = OPCODE_INC_A; if (nc_r) { A++; /* DEC A */} // 13+4+7+12
+                A = mem[addr_wl_1 + 1]; cp(A, reg_wlc); A = OPCODE_INC_A; if (nc_jr) { A++; /* DEC A */} // 13+4+7+12
                 mem[addr_mod_wl_inc_0 + 0] = A;         // 13  自己書換 A++/A--
                 reg_wlchwl = addr_mod_wl; mem[addr_mod_start_1 + 1] = reg_wlchwl;  // 10+16 自己書換 波長音量変更ジャンプ先
                 A = mem[addr_wl_1 + 1]; A >>= 1; reg_hwl = A; // 13+8+4 半波長
@@ -288,7 +288,7 @@ addr_rep_1:     HL = 0x0000; dec(mem[HL]); if (z_r) {   // リピート終了
             }
         }
 
-        cp(A, SD4_EXCEPT_LEN); if (nc_r) {              // 7+7 A = 音長
+        cp(A, SD4_EXCEPT_LEN); if (nc_jr) {              // 7+7 A = 音長
             cp(A, SD4_EXCEPT_LEN + 4 * 4); if (c) {     // 7+10
 
                 // ---- エンベロープ(音量)速度設定      // A = 204, 208, 212, 216
@@ -361,9 +361,9 @@ addr_mod_start_1: jp(addr_mod_end/*ジャンプ先*/); // 10
 
     // ---- 音量変更◢◣
 addr_mod_vol:
-    A = reg_slc; addr_mod_vol_speed_1: A &= 0x00/*音量変更速度*/; if (z_r) {            // 8+7+7
+    A = reg_slc; addr_mod_vol_speed_1: A &= 0x00/*音量変更速度*/; if (z_jr) {           // 8+7+7
         A = reg_vol; addr_mod_vol_end_1: cp(A, 0x00/*音量end*/);                        // 4+7
-        if (nz_r) { addr_mod_vol_inc_0: reg_vol++/*音量加減*/; }                        // 7+4
+        if (nz_jr) { addr_mod_vol_inc_0: reg_vol++/*音量加減*/; }                       // 7+4
     }
     goto addr_mod_end;                                  // 10
 
@@ -408,12 +408,12 @@ void SD4PLAY_NOTE_BASE(
     extern sd4playNoteBase_fl, sd4playNoteBase_initEnd;
 
     // -------- 音符処理: 音長カウンタが 0 になったら, 次の音譜を読みます
-    reg_slc--; if (z_r) {                               // 8+7
+    reg_slc--; if (z_jr) {                              // 8+7
         pop(reg_wlwl);                                  // 10   注意! reg_hwl=音長, reg_wlc=波長
 
         // ---- 音長モード別の波長/音長設定
-        A = reg_hwl; A += A; if (nc_r) {                // 4+4+7/12
-            A += A; reg_slc = A; if (c_r) {             // 4+8+4
+        A = reg_hwl; A += A; if (nc_jr) {               // 4+4+7/12
+            A += A; reg_slc = A; if (c_jr) {            // 4+8+4
 
                 // ---- ◢
                 A = reg_wlc; mem[addr_wl_1 + 1] = A;    // 4+13 自己書換 波長
@@ -435,7 +435,7 @@ void SD4PLAY_NOTE_BASE(
             A = reg_wlc; mem[addr_wl_1 + 1] = A;        // 4+13 自己書換 波長
             reg_vol = BASE_VOL_MAX;                     // 音量
 
-            if (c_r) {                                  // 12
+            if (c_jr) {                                 // 12
 
                 // ---- ■
                 A >>= 1;     reg_hwl = A;               // 半波長
@@ -480,7 +480,7 @@ void SD4PLAY_MOD_BASE(
     A = reg_slc; A &= 0x01;
     addr_mod_start_0: jr_nz(sd4playModBase_end)/*音量変更有無*/;// 8+7+7    自己書換
     A = reg_vol; addr_mod_vol_end_1: cp(A, 0x00/*音量end*/);    // 4+7      自己書換
-    if (nz_r) { addr_mod_vol_inc_0: reg_vol++/*音量加減*/; }    // 7+4      自己書換
+    if (nz_jr) { addr_mod_vol_inc_0: reg_vol++/*音量加減*/; }   // 7+4      自己書換
     // ワースト ケース=44, ベスト ケース=27
 
     // ---- 何もしない
@@ -524,8 +524,8 @@ void SD4PLAY_NOTE_CHORD2(
         SP--; pop(AF);                                  // 6+10 A = 音長
 
         // ---- 音長モード別の波長/音長設定
-        A += A; if (nc_r) {                             // 4+7/12
-            A += A; reg_slc = A; if (c_r) {             // 4+8+7
+        A += A; if (nc_jr) {                            // 4+7/12
+            A += A; reg_slc = A; if (c_jr) {            // 4+8+7
 
                 // ---- ◢
                 // chord2 処理時間のワーストケースは 205(◢).
@@ -605,14 +605,14 @@ void SD4PLAY_MOD_CHORD2(
 
     // ---- 波長変更(アルペジオ)◢■◣
     A = reg_slc; A &= 2; addr_mod_wl0_1: A = 0x00/*波長0*/;             // 8+7+7 cf=0   自己書換
-    if (z_r) {           addr_mod_wl1_1: A = 0x00/*波長1*/;}            // 7+7          自己書換
+    if (z_jr) {          addr_mod_wl1_1: A = 0x00/*波長1*/;}            // 7+7          自己書換
     mem[addr_beep_wl_1 + 1] = A; rra(A); reg_hwl = A;                   // 13+4+4 rra時cf=0
 
     // ---- 音量変更◢◣
     A = reg_slc; A &= 1;
     addr_mod_vol_start_0: jr_nz(sd4playModChord_end)/*音量変更有無*/;   // 8+7+7 自己書換
     A = reg_vol; addr_mod_vol_end_1: cp(A, 0x00/*音量end*/);            // 4+7   自己書換
-    if (nz_r) { addr_mod_vol_inc_0: reg_vol++/*音量加減*/; }            // 7+4   自己書換
+    if (nz_jr) { addr_mod_vol_inc_0: reg_vol++/*音量加減*/; }           // 7+4   自己書換
     // ワースト ケース=108, ベスト ケース=39
 
 sd4playModChord_end:
@@ -639,7 +639,7 @@ void SD4PLAY_NOTE_DRUM(int reg_sl, int reg_tmp,
         SP--; pop(AF);                                  // 6+10
         reg_tmp = A; A &= 0xfc; reg_sl = A;             // 4+7+8 音長
         A ^= reg_tmp;                                   // 4     reg_tmp と A を xor すると, ドラム番号(0-3)だけ残る
-        if (nz_r) {                                     // 7     ドラム 0 は無音
+        if (nz_jr) {                                    // 7     ドラム 0 は無音
             A += (ADDR_SD4_DRUM / 256 - 1); mem[addr_drum_nr_1 + 1] = A;// 7+13 自己書換 ドラム番号1～3
             A = mem[VRAM_TEXT]; ex(AF, AF); mem[MMIO_8253_CT0] = A; ex(AF, AF);// /VBLK=L (ブランク中) になるまで待ち, 音を鳴らす
             A = OPCODE_RES_0_L; mem[addr_drum_ct_1  + 1] = A;       // 7+13 自己書換 ドラム カウンタ調整
@@ -650,9 +650,9 @@ void SD4PLAY_NOTE_DRUM(int reg_sl, int reg_tmp,
         goto sd4PlayModDrum_end;
     }
 
-sd4PlayModDrum_ct_1: A = 0x00/* ドラム カウンタ */; A |= A; if (nz_r) { // 7+4+7
+sd4PlayModDrum_ct_1: A = 0x00/* ドラム カウンタ */; A |= A; if (nz_jr) { // 7+4+7
         A--; mem[sd4PlayModDrum_ct_1 + 1] = A;          // 4+13 自己書換 ドラムカウンタ
-        if (nz_r) {
+        if (nz_jr) {
             A = OPCODE_SET_0_L; mem[addr_drum_ct_1  + 1] = A;   // 7+7+13+10 自己書換 ドラム カウンタ調整
         } else {
             xor(A, A);          mem[addr_drum_add_0 + 0] = A;   // 12+7+13 自己書換 ドラム音を鳴らす
@@ -683,7 +683,7 @@ void SD4PLAY_BEEPER_WAVE_R(int reg_wlc, int reg_hwl, int reg_vol, int addr_wl_1)
     } else {
         // 音量処理
         A = reg_wlc; cp(A, reg_hwl);                    // 4+4
-        if (c_r) { ex(AF, AF); A += reg_vol; ex(AF, AF); }// 7+4+4+4
+        if (c_jr) { ex(AF, AF); A += reg_vol; ex(AF, AF); }// 7+4+4+4
     }
     // ワースト ケース=41
 
@@ -711,7 +711,7 @@ void SD4PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_hwl, int reg_vol, int addr_wl_1)
     sd4play_beeperWaveBr: {
         // 音量処理. vol < 2 ならば, 波長カウンタの値に依らず cf が立たない
         A = reg_wl; cp(A, reg_hwl);                     // 4+4
-        if (c_r) { ex(AF, AF); A += reg_vol; ex(AF, AF); }// 7+4+4+4
+        if (c_jr) { ex(AF, AF); A += reg_vol; ex(AF, AF); }// 7+4+4+4
     }
     sd4play_beeperWaveBrEnd:
     // ワースト ケース=40
@@ -740,7 +740,7 @@ void SD4PLAY_BEEPER_WAVE_B(int reg_wl, int reg_hwl, int addr_vol_1, int addr_wl_
     sd4play_beeperWaveBr: {
         // 音量処理. vol < 2 ならば, 波長カウンタの値に依らず cf が立たない
         A = reg_wl; cp(A, reg_hwl);                     // 4+4
-        if (c_r) { ex(AF, AF); addr_vol_1:A += 0x00; ex(AF, AF); }// 7+4+7+4
+        if (c_jr) { ex(AF, AF); addr_vol_1:A += 0x00; ex(AF, AF); }// 7+4+7+4
     }
     sd4play_beeperWaveBrEnd:
     // ワースト ケース=43
@@ -808,7 +808,7 @@ sd4play_waitUntilKeyOff1:
     A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK; jr_nz(sd4play_waitUntilKeyOff1);
 
     // ---- E == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
-    E--; if (nz_r) {                                    // E = キャンセル可能フラグ
+    E--; if (nz_jr) {                                   // E = キャンセル可能フラグ
         A = 0xfa; mem[MMIO_8255_PORTA] = A;
     }
 
