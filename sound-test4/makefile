@@ -8,7 +8,7 @@
 #                 |              |                    |
 #        music/chronos.h   music/drum[1-3].h   music/drum[1-3].wav
 #                 |              |
-#                 |        sound-sd4.z80ana.c
+#                 |        sound-sd4.llm.c
 #                 |              |
 #               main.c     sound-sd4.c
 #                 |              |
@@ -63,9 +63,9 @@ bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@$(PHP) $(TOOLS)/bin2mzt.php $(NAME).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
 	@$(PHP) $(TOOLS)/mzt2wav.php $@ bin/$(NAME).wav
 
-%.c: %.z80ana.c
+%.c: %.llm.c
 	@echo Converting ... [$<]
-	@$(PHP) $(TOOLS)/z80ana.php $< $@
+	@$(PHP) $(TOOLS)/llm80.php $< $@
 
 %.o: %.c
 	@echo Compiling ... [$<]

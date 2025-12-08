@@ -9,7 +9,7 @@
 #                 |              |
 #        music/chronos.h   music/sd6-data.h
 #                 |              |
-#                 |        sound-sd6.z80ana.c
+#                 |        sound-sd6.llm.c
 #                 |              |
 #               main.c     sound-sd6.c
 #                 |              |
@@ -71,9 +71,9 @@ bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@$(PHP) $(TOOLS)/bin2mzt.php $(NAME).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
 	@$(PHP) $(TOOLS)/mzt2wav.php $@ bin/$(NAME).wav
 
-%.c: %.z80ana.c
+%.c: %.llm.c
 	@echo Converting ... [$<]
-	@$(PHP) $(TOOLS)/z80ana.php $< $@
+	@$(PHP) $(TOOLS)/llm80.php $< $@
 
 %.o: %.c
 	@echo Compiling ... [$<]

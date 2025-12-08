@@ -1,5 +1,5 @@
-#ifndef Z80ANA_H_INCLUDED
-#define Z80ANA_H_INCLUDED
+#ifndef LLM_H_INCLUDED
+#define LLM_H_INCLUDED
 
 #ifndef false
 #define false 0
@@ -11,10 +11,10 @@
 #define __z88dk_fastcall
 #define __naked
 
-#define __z80ana
-#define __z80ana_macro
+#define __llm
+#define __llm_macro
 
-#define Z80ANA_DEF_VARS volatile int \
+#define LLM_DEF_VARS volatile int \
     A, B, C, D, E, H, L, IXH, IXL, IYH, IYL, AF, BC, DE, HL, PC, SP, I, R, IX, IY,\
     A_, B_, C_, D_, E_, H_, L_, AF_, BC_, DE_, HL_, \
     z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po,\
@@ -23,25 +23,25 @@
     z_jr_else_jr, eq_jr_else_jr, nz_jr_else_jr, ne_jr_else_jr, c_jr_else_jr, lt_jr_else_jr, nc_jr_else_jr, ge_jr_else_jr, \
     true_jr,\
     *mem, *port, asmpc
-#define Z80ANA_DEF_DUMMY_VARS(...) volatile int __VA_ARGS__; // 任意の使用しない変数を定義
-#define Z80ANA_LOCAL(...)
-#define Z80ANA_IF(expr)
-#define Z80ANA_ELIF(expr)
-#define Z80ANA_ELSE
-#define Z80ANA_ENDIF
-#define Z80ANA_REPT(expr)
-#define Z80ANA_REPTC(var, expr)
-#define Z80ANA_REPTI(var, expr, ...)
-#define Z80ANA_ENDR
-#define Z80ANA_DB(...)
-#define Z80ANA_DW(...)
-#define Z80ANA_ENDM
-#define Z80ANA_NO_RETURN
-#define Z80ANA_FALL_THROUGH
-#define Z80ANA_GLOBAL(...)
+#define LLM_DEF_DUMMY_VARS(...) volatile int __VA_ARGS__; // 任意の使用しない変数を定義
+#define LLM_LOCAL(...)
+#define LLM_IF(expr)
+#define LLM_ELIF(expr)
+#define LLM_ELSE
+#define LLM_ENDIF
+#define LLM_REPT(expr)
+#define LLM_REPTC(var, expr)
+#define LLM_REPTI(var, expr, ...)
+#define LLM_ENDR
+#define LLM_DB(...)
+#define LLM_DW(...)
+#define LLM_ENDM
+#define LLM_NO_RETURN
+#define LLM_FALL_THROUGH
+#define LLM_GLOBAL(...)
 
 // 以下は今のところ没のシフト/ローテート演算子
-// Python では >>>= が「符号なし右シフト」だが, z80ana では >>= が「符号なし右シフト」
+// Python では >>>= が「符号なし右シフト」だが, llm では >>= が「符号なし右シフト」
 //#define s>>= >>=        // 符号付き右シフト(sra)
 //#define r>>= >>=        // 右ローテート(rrc)
 //#define r<<= >>=        // 左ローテート(rlc)
@@ -195,4 +195,4 @@ void outd(void);
 void otir(void);
 void otdr(void);
 
-#endif // Z80ANA_H_INCLUDED
+#endif // LLM_H_INCLUDED
