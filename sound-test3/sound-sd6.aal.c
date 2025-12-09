@@ -6,7 +6,7 @@
 #include "../src-common/common.h"
 #include "../src-common/hard.h"
 #include "../src-common/asm-macros.h"
-#include "../src-common/llm80.h"
+#include "../src-common/aal80.h"
 #include "addr.h"
 #include "sound.h"
 
@@ -29,15 +29,15 @@
 #define CHORD2_VOL_SPEED_R  7       // 1, 3, 7, 15, ...  Chord2 のエンベロープ音量変化速度
 
 // Lead(Echo)の遅延. 次の3つから選択します
-void LEAD_ECHO_DELAY(void) __llm_macro __naked
+void LEAD_ECHO_DELAY(void) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 
     //cp(A, 3);     // 遅延小
     //cp(A, 2);     // 遅延中
     A--;          // 遅延大
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 // Lead にて特別な命令に使われる音長. この音長の音符は使えません(4の倍数, makefile で定義). 曲にあわせて設定してください
@@ -64,9 +64,9 @@ static u8 const SD6_DATA_[] = {
 /**
  * サウンド初期化
  */
-void sd6Init(void) __llm
+void sd6Init(void) __aal
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 extern _SD6_DATA_;
 extern sd6Init_dataLoop;
 
@@ -117,9 +117,9 @@ void SD6PLAY_NOTE_LEAD(
     int addr_vol_1, int addr_wl_1, int addr_slide_0, int addr_mod_vol_speed_1,
     int addr_beeper1_sync_0,
     int addr_end
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern
         sd6playNoteLead_pop,
         sd6playNoteLead_rep_2,
@@ -285,7 +285,7 @@ sd6playNoteLead_modVol:
     // ---- 何もしない
 sd6playNoteLead_modEnd:
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -303,9 +303,9 @@ void SD6PLAY_NOTE_BASE(
     int reg_wlc, int reg_slc,
     int reg_tmp_h, int reg_tmp_l, int reg_tmp_hl,
     int addr_vol_1, int addr_wl_1
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern
         sd6playNoteBase_fl, sd6playNoteBase_initEnd,
         sd6playNoteBase_modStart,
@@ -379,7 +379,7 @@ sd6playNoteBase_modVolInc: A ++;                        // 音量加減
     // ---- 何もしない
 sd6playNoteBase_modEnd:
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -401,9 +401,9 @@ void SD6PLAY_NOTE_CHORD2(
     int reg_wlc0, int reg_wlc1, int reg_wlc10, int reg_slc,
     int reg_tmp_h, int reg_tmp_l, int reg_tmp_hl,
     int reg_vol01, int addr_wl0_1, int addr_wl1_1
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern
         //sd6playNoteChord2_fl0, sd6playNoteChord2_fl1,
         sd6playNoteChord2_initEnd,
@@ -498,7 +498,7 @@ sd6playNoteChord2_modVolInc_0: A++;                     // 音量加減
     // ---- 何もしない
 sd6playNoteChord2_modEnd:
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -509,9 +509,9 @@ sd6playNoteChord2_modEnd:
  * @param addr_drum_on      アドレス: 自己書換 ドラム処理フラグ
  * @param addr_drum_nr_1    アドレス: 自己書換 ドラム番号
  */
-void SD6PLAY_NOTE_DRUM(int reg_sl, int reg_tmp, int addr_drum_nr_1) __llm_macro __naked
+void SD6PLAY_NOTE_DRUM(int reg_sl, int reg_tmp, int addr_drum_nr_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 
     A = 0x46;                                           // ドラム OFF
     reg_sl--; if (z) {                                  // z になる割合は 1/8～1/256
@@ -522,7 +522,7 @@ void SD6PLAY_NOTE_DRUM(int reg_sl, int reg_tmp, int addr_drum_nr_1) __llm_macro 
     }
     mem[addr_drum_nr_1 + 1] = A;                        // 自己書換 bit(n, mem[HL])の一部
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -534,9 +534,9 @@ void SD6PLAY_NOTE_DRUM(int reg_sl, int reg_tmp, int addr_drum_nr_1) __llm_macro 
  * @param addr_vol_1    アドレス: 音量をセットする(8255パルス幅を決める)
  * @param addr_wl_1     アドレス: 波長をセットする
  */
-void SD6PLAY_BEEPER_WAVE(int reg_wl, int reg_pulse, int addr_vol, int addr_wl_1) __llm_macro __naked
+void SD6PLAY_BEEPER_WAVE(int reg_wl, int reg_pulse, int addr_vol, int addr_wl_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 
     // 波長処理
     reg_wl--; if (z) {
@@ -548,7 +548,7 @@ addr_vol_1: cp(A, 0x02/*音量*/); if (c_jr) { reg_pulse = PULSE_H; }
     }
     // 計 最短 4+12+7+4+12 = 39(T-states)
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -559,9 +559,9 @@ addr_vol_1: cp(A, 0x02/*音量*/); if (c_jr) { reg_pulse = PULSE_H; }
  * @param reg_vol       レジスタ: 音量(8255パルス幅)
  * @param addr_wl_1     アドレス: 波長をセットする
  */
-void SD6PLAY_BEEPER_WAVE_R(int reg_wl, int reg_pulse, int reg_vol, int addr_wl_1) __llm_macro __naked
+void SD6PLAY_BEEPER_WAVE_R(int reg_wl, int reg_pulse, int reg_vol, int addr_wl_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 
     // 波長処理
     reg_wl--; if (z) {
@@ -572,7 +572,7 @@ addr_wl_1: reg_wl = 0x00;/* 波長を設定したらその場は音量処理は�
     }
     // 計 最短 4+12+4+4+12 = 36(T-states)
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -583,10 +583,10 @@ addr_wl_1: reg_wl = 0x00;/* 波長を設定したらその場は音量処理は�
  * @param reg_vol       レジスタ: 音量(8255パルス幅)
  * @param addr_wl_1     アドレス: 波長をセットする
  */
-void SD6PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_pulse, int reg_vol, int addr_wl_1) __llm_macro __naked
+void SD6PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_pulse, int reg_vol, int addr_wl_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
-    LLM_LOCAL(sd6play_beeperWaveBr, sd6play_beeperWaveBrEnd);
+    AAL_DEF_VARS;
+    AAL_LOCAL(sd6play_beeperWaveBr, sd6play_beeperWaveBrEnd);
     extern sd6play_beeperWaveBr, sd6play_beeperWaveBrEnd;
 
     // 波長処理
@@ -600,7 +600,7 @@ sd6play_beeperWaveBr: {
 sd6play_beeperWaveBrEnd:
     // 計 最短 13+4+4+12 = 33(T-states)
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -611,22 +611,22 @@ sd6play_beeperWaveBrEnd:
  * @param addr_drum_on      アドレス: ドラム処理を飛ばす命令
  * @param addr_drum_nr_1    アドレス: ドラム波形テーブルのビット命令
  */
-void SD6PLAY_BEEPER_DRUM(int reg_wav, int reg_pulse, int addr_drum_nr_1) __llm_macro __naked
+void SD6PLAY_BEEPER_DRUM(int reg_wav, int reg_pulse, int addr_drum_nr_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 
 addr_drum_nr_1: bit(0/*ドラム波形テーブル ビット位置*/, mem[reg_wav]); // 自己書換
     if (nz_jr) { reg_pulse = PULSE_H; }// 12+7+7 or 12+12
     // 計 最短 12+12 = 24(T-states)
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
 // MARK: play()
-u8 sd6play(u32 param) __llm __z88dk_fastcall
+u8 sd6play(u32 param) __aal __z88dk_fastcall
 {                                                       // HL = data, E = cancellable
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 extern sd6play_waitUntilKeyOff1;
 extern sd6play_waitUntilKeyOff2;
 extern sd6Play_rep_1;

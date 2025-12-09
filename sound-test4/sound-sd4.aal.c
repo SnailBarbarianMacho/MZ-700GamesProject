@@ -6,7 +6,7 @@
 #include "../src-common/common.h"
 #include "../src-common/hard.h"
 #include "../src-common/asm-macros.h"
-#include "../src-common/llm80.h"
+#include "../src-common/aal80.h"
 #include "addr.h"
 #include "sound.h"
 
@@ -31,15 +31,15 @@
 #define TEMPO               0       // [0, 128]          128にすると1.5倍速になります.
 #define CHORD_VOL_SPEED_R   7       // 0, 1, 3, 7, 15, ...  Chord のエンベロープ音量変化速度
 // Lead(Echo)の遅延. 次の3つから選択します
-void LEAD_ECHO_DELAY(void) __llm_macro __naked
+void LEAD_ECHO_DELAY(void) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 
     //cp(A, 3);     // 遅延小
     //cp(A, 2);     // 遅延中
     A--;          // 遅延大
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 // Lead/Chord/Base の音量比率を設定します. 最大 63 未満になるようにしてください
@@ -111,9 +111,9 @@ static u8 const SD4_DATA_[] = {
 
 
 // MARK: init()
-void sd4Init(void) __llm
+void sd4Init(void) __aal
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 extern _SD4_DATA_;
 extern sd4Init_dataLoop;
 
@@ -175,9 +175,9 @@ void SD4PLAY_NOTE_LEAD(
     int addr_wl_1,
     int addr_mod_end,
     int addr_end
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern
         sd4playNoteLead_pop0, sd4playNoteLead_pop,
         sd4playNoteLead_rep_2,
@@ -326,7 +326,7 @@ sd4playNoteLead_initEndSlur:
     }
     // ワースト ケース=262 (◣)
     // その他=228 (◢), 231 (■ スライド有)
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -354,9 +354,9 @@ void SD4PLAY_MOD_LEAD(
     int addr_mod_wl,  int addr_mod_wl_speed_1,  int addr_mod_wl_end_1,  int addr_mod_wl_inc_0,
     int addr_wl_1,
     int addr_mod_end
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 addr_mod_start_1: jp(addr_mod_end/*ジャンプ先*/); // 10
 
     // ---- 音量変更◢◣
@@ -379,7 +379,7 @@ addr_mod_wl:
     // ---- 何もしない
 addr_mod_end:
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -402,9 +402,9 @@ void SD4PLAY_NOTE_BASE(
     int inc_vol, int dec_vol,
     int addr_mod_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0,
     int addr_wl_1
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern sd4playNoteBase_fl, sd4playNoteBase_initEnd;
 
     // -------- 音符処理: 音長カウンタが 0 になったら, 次の音譜を読みます
@@ -456,7 +456,7 @@ sd4playNoteBase_initEnd:
         A = mem[VRAM_TEXT]; ex(AF, AF); mem[MMIO_8253_CT0] = A; ex(AF, AF);// /VBLK=L (ブランク中) になるまで待ち, 音を鳴らす
     }
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -471,9 +471,9 @@ sd4playNoteBase_initEnd:
 void SD4PLAY_MOD_BASE(
     int reg_vol, int reg_slc,
     int addr_mod_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern sd4playModBase_end;
 
     // ---- 音量変更◢◣
@@ -486,7 +486,7 @@ void SD4PLAY_MOD_BASE(
     // ---- 何もしない
 sd4playModBase_end:
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -514,9 +514,9 @@ void SD4PLAY_NOTE_CHORD2(
     int addr_mod_wl_start_0,  int addr_mod_wl0_1,     int addr_mod_wl1_1,
     int addr_mod_vol_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0,
     int addr_beep_wl_1
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern sd4playNoteChord2_initDw, sd4playNoteChord2_initEnd;
 
     // -------- 音符処理: 音長カウンタが 0 になったら, 次の音譜を読みます
@@ -572,7 +572,7 @@ sd4playNoteChord2_initEnd:
         A = mem[VRAM_TEXT]; ex(AF, AF); mem[MMIO_8253_CT0] = A; ex(AF, AF);// /VBLK=L (ブランク中) になるまで待ち, 音を鳴らす
     }
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -595,9 +595,9 @@ void SD4PLAY_MOD_CHORD2(
     int addr_mod_wl_start_0,  int addr_mod_wl0_1,     int addr_mod_wl1_1,
     int addr_mod_vol_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0,
     int addr_beep_wl_1
-) __llm_macro __naked
+) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern sd4playModChord_end;
 
     // ---- 無音ならば処理は不要
@@ -617,7 +617,7 @@ void SD4PLAY_MOD_CHORD2(
 
 sd4playModChord_end:
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -630,9 +630,9 @@ sd4playModChord_end:
  * @param addr_drum_add_0   アドレス: 自己書換 ドラム音を鳴らす
  */
 void SD4PLAY_NOTE_DRUM(int reg_sl, int reg_tmp,
-    int addr_drum_ct_1, int addr_drum_nr_1, int addr_drum_add_0) __llm_macro __naked
+    int addr_drum_ct_1, int addr_drum_nr_1, int addr_drum_add_0) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     extern sd4PlayModDrum_ct_1, sd4PlayModDrum_end;
 
     reg_sl--; if (z) {                                  // 8+10
@@ -661,7 +661,7 @@ sd4PlayModDrum_ct_1: A = 0x00/* ドラム カウンタ */; A |= A; if (nz_jr) { 
     }
 sd4PlayModDrum_end:
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -673,9 +673,9 @@ sd4PlayModDrum_end:
  * @param reg_vol       レジスタ: 音量 (例:L)
  * @param addr_wl_1     アドレス(自己書換): 波長をセットする
  */
-void SD4PLAY_BEEPER_WAVE_R(int reg_wlc, int reg_hwl, int reg_vol, int addr_wl_1) __llm_macro __naked
+void SD4PLAY_BEEPER_WAVE_R(int reg_wlc, int reg_hwl, int reg_vol, int addr_wl_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 
     // 波長処理
     reg_wlc--; if (z) {                                 // 4+10
@@ -687,7 +687,7 @@ void SD4PLAY_BEEPER_WAVE_R(int reg_wlc, int reg_hwl, int reg_vol, int addr_wl_1)
     }
     // ワースト ケース=41
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -698,10 +698,10 @@ void SD4PLAY_BEEPER_WAVE_R(int reg_wlc, int reg_hwl, int reg_vol, int addr_wl_1)
  * @param reg_vol       レジスタ: 音量 (例:H)
  * @param addr_wl_1     アドレス(自己書換): 波長をセットする
  */
-void SD4PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_hwl, int reg_vol, int addr_wl_1) __llm_macro __naked
+void SD4PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_hwl, int reg_vol, int addr_wl_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
-    LLM_LOCAL(sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd);
+    AAL_DEF_VARS;
+    AAL_LOCAL(sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd);
     extern sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd;
 
     // 波長処理
@@ -716,7 +716,7 @@ void SD4PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_hwl, int reg_vol, int addr_wl_1)
     sd4play_beeperWaveBrEnd:
     // ワースト ケース=40
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -727,10 +727,10 @@ void SD4PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_hwl, int reg_vol, int addr_wl_1)
  * @param addr_vol_1    アドレス(自己書換): 音量
  * @param addr_wl_1     アドレス(自己書換): 波長
  */
-void SD4PLAY_BEEPER_WAVE_B(int reg_wl, int reg_hwl, int addr_vol_1, int addr_wl_1) __llm_macro __naked
+void SD4PLAY_BEEPER_WAVE_B(int reg_wl, int reg_hwl, int addr_vol_1, int addr_wl_1) __aal_macro __naked
 {
-    LLM_DEF_VARS;
-    LLM_LOCAL(sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd);
+    AAL_DEF_VARS;
+    AAL_LOCAL(sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd);
     extern sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd;
 
     // 波長処理
@@ -745,7 +745,7 @@ void SD4PLAY_BEEPER_WAVE_B(int reg_wl, int reg_hwl, int addr_vol_1, int addr_wl_
     sd4play_beeperWaveBrEnd:
     // ワースト ケース=43
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
@@ -761,23 +761,23 @@ void SD4PLAY_BEEPER_WAVE_B(int reg_wl, int reg_hwl, int addr_vol_1, int addr_wl_
  */
 void SD4PLAY_BEEPER_DRUM(
     int reg_wav_h, int reg_wav_l, int reg_wav_hl, int reg_ct,
-    int addr_drum_ct_1, int addr_drum_nr_1, int addr_drum_add_0) __llm_macro __naked
+    int addr_drum_ct_1, int addr_drum_nr_1, int addr_drum_add_0) __aal_macro __naked
 {
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
     reg_wav_l = reg_ct; addr_drum_ct_1: set(0, reg_wav_l);              // 4+8  自己書換
     addr_drum_nr_1: reg_wav_h = (ADDR_SD4_DRUM - 1) / 256 + 1/*ドラム番号*/; // 7    自己書換
     ex(AF, AF); addr_drum_add_0:nop()/*ドラム音の合成*/;                // 4+4  自己書換
     // AF レジスタは裏のまま
     // ワーストケース=27
 
-    LLM_ENDM;
+    AAL_ENDM;
 }
 
 
 // MARK: play()
-u8 sd4play(u32 param) __llm __z88dk_fastcall
+u8 sd4play(u32 param) __aal __z88dk_fastcall
 {                                                       // HL = data, E = cancellable
-    LLM_DEF_VARS;
+    AAL_DEF_VARS;
 extern sd4play_waitUntilKeyOff1;
 extern sd4play_waitUntilKeyOff2;
 extern sd4play_vblk0, sd4play_vblk1;
