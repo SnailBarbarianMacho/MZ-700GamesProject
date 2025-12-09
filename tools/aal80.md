@@ -1,5 +1,5 @@
-# Z80 代数アセンブリ言語フィルタ llm80
-- [Z80 代数アセンブリ言語フィルタ llm80](#z80-代数アセンブリ言語フィルタ-llm80)
+# Z80 代数アセンブリ言語フィルタ aal80
+- [Z80 代数アセンブリ言語フィルタ aal80](#z80-代数アセンブリ言語フィルタ-aal80)
   - [特徴](#特徴)
   - [前提となる知識](#前提となる知識)
 - [ソースファイル \& コマンドライン](#ソースファイル--コマンドライン)
@@ -27,7 +27,7 @@
 - [疑似命令](#疑似命令)
 
 ## 特徴
-- 可読性が高い代数ニーモニック (以下 **LLM**) です
+- ソースの可読性が高い代数アセンブリ言語 (Algebraic Assembly Language 以下 **AAL**) です
 - C と関数単位で混在できます
 - VS Code の Microsoft C 文法チェッカをパスします
 - 1行に複数命令を書けます
@@ -44,14 +44,14 @@
 # ソースファイル & コマンドライン
 
 ### ソース ファイル
-- LLM のソースは, C ソースのインライン アセンブリ言語として扱います
-- 拡張子は **.llm.c** を推奨します
-- ヘッダには LLM ソースは書きません. 従来のインライン アセンブラを使用してください
+- AAL のソースは, C ソースのインライン アセンブリ言語として扱います
+- 拡張子は **.aal.c** を推奨します
+- ヘッダには AAL ソースは書きません. 従来のインライン アセンブラを使用してください
 
 ### コマンド ライン
-- llm80 でコンバートして, インラインアセンブラ込みの C ソースとして出力します
+- aal80 でコンバートして, インラインアセンブラ込みの C ソースとして出力します
 ```
-php llm80.php foo.llm.c foo.c
+php aal80.php foo.aal.c foo.c
 ```
 - SDCC の旧インライン アセンブラ形式 (__asm ～ __endasm;) で出力します<br>
   そのうち一般的な書式 (asm("～"))にするかも
@@ -59,59 +59,58 @@ php llm80.php foo.llm.c foo.c
 # ソースの書き方
 - 関数単位で C と混在できます
 - ヘッダにはコードは書きません
-- 最初に llm80.h を include します
+- 最初に aal80.h を include します
 ```
-#include "llm80.h"
+#include "aal80.h"
 ```
 - そのあとは2通りの書き方があります(混在できます)
 
 ### C の関数
 - 関数単位で書きます. 関数内で C とインライン アセンブラを混在するような書き方はできません
 - 関数定義の前後に, 必要に応じて「引数未使用警告」「戻値未設定警告」を抑止する pragma を入れておきます
-- 関数定義に「__llm」修飾子を追加します
-- 関数内最初に「LLM_DEF_VARS」を記述します
+- 関数定義に「__aal」修飾子を追加します
+- 関数内最初に「AAL_DEF_VARS」を記述します
 ```
 pragma save
 #pragma disable_warning 85          // 引数未使用警告抑止
 #pragma disable_warning 59          // 戻値未設定警告抑止
-char add1(const char x) __llm __z88dk_fastcall
+char add1(const char x) __aal __z88dk_fastcall
 {
-  LLM_DEF_VARS;                     // L = 引数 (SDCC 呼び出し規約 version 0 の __z88dk_fastcall)
+  AAL_DEF_VARS;                     // L = 引数 (SDCC 呼び出し規約 version 0 の __z88dk_fastcall)
   L++;                              // L = 戻値 (SDCC 呼び出し規約 version 0)
   // ret 命令は SDCC が自動で追加します
 }
 #pragma restore
 ```
 
-- naked 関数の場合は最後に必ず「LLM_NO_RETURN」か「LLM_FALL_THROUGH」を記述しないとエラーになります (naked 関数であることを強調するため)
+- naked 関数の場合は最後に必ず「AAL_NO_RETURN」か「AAL_FALL_THROUGH」を記述しないとエラーになります (naked 関数であることを強調するため)
 ```c
-void foo(void) __llm __naked
+void foo(void) __aal __naked
 {
-  LLM_DEF_VARS;   // 先頭に必ず LLM_DEF_VARS を付ける
-  /* あなたのコード */
+  AAL_DEF_VARS;   // 先頭に必ず AAL_DEF_VARS を付ける
   jp(bar);
-  LLM_NO_RETURN;  // naked 関数なら末尾に必ずこれか LLM_FALL_THROUGH を付ける
+  AAL_NO_RETURN;  // naked 関数なら末尾に必ずこれか AAL_FALL_THROUGH を付ける
 }
 ```
 
 ### マクロ定義
 - 関数のように書きます
 - 関数名は必ず UPPER_SNAKE_CASE でなければなりません (でないとエラー)
-- 関数定義に「__llm_macro」修飾子を追加します
+- 関数定義に「__aal_macro」修飾子を追加します
 - 関数引数がある場合は, すべて int 型にしてください (パーサの手抜きのため)
 - 引数の名前に 'reg_' プレフィックスつけると, レジスタとみなされます
-- 最初に「LLM_DEF_VARS」を記述します
-- 最後に必ず「LLM_ENDM」を記述しないとエラーになります (マクロの末端であることを強調するため)
+- 最初に「AAL_DEF_VARS」を記述します
+- 最後に必ず「AAL_ENDM」を記述しないとエラーになります (マクロの末端であることを強調するため)
 ```c
-char FOO(int reg_x, int val) __llm_macro
+char FOO(int reg_x, int val) __aal_macro
 {
-  LLM_DEF_VARS; // 先頭に必ず LLM_DEF_VARS を付ける
+  AAL_DEF_VARS; // 先頭に必ず AAL_DEF_VARS を付ける
   reg_x = val;  // reg_ プレフィックスがあるので, reg_x はレジスタでエラーにならない
-  LLM_ENDM;     // 末尾に必ず LLM_ENDM を付ける
+  AAL_ENDM;     // 末尾に必ず AAL_ENDM を付ける
 }
 ```
 
-- マクロの呼び出しは C 関数のように書きます
+- マクロの呼び出しは C 関数のように書きます. もちろんマクロからも呼び出せます:
 ```
   FOO(A, 123);
 ```
@@ -161,7 +160,7 @@ char FOO(int reg_x, int val) __llm_macro
     ex(HL, DE); ex(mem[SP], HL);
     exx();
 
-    // NG
+    // BAD エラー
     ex(DE, HL); ex(HL, mem[SP]);
 ```
 - **スタック** は, レジスタをまとめて PUSH/POP できます
@@ -190,12 +189,11 @@ char FOO(int reg_x, int val) __llm_macro
 ```
 
 ### 論理演算
-- cpl と not は同じ意味です
 ```c
     and(A, B); A &= B;
     or(A, B);  A |= B;
     xor(A, B); A ^= B;
-    cpl(A); not(A);
+    cpl(A); not(A);   // この 2 つは同じ命令です
 ```
 
 ### ビット操作
@@ -226,7 +224,7 @@ char FOO(int reg_x, int val) __llm_macro
   **z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po** が使えます<br>
   eq は z, ne は nz, lt は c, ge は nc と同じ意味です
 ```c
-  goto addr; jp(addr);    // この 2 つは同じ意味
+  goto addr; jp(addr);    // この 2 つは同じ命令
   jp(HL);
   jp_lt(addr);
 ```
@@ -248,7 +246,7 @@ char FOO(int reg_x, int val) __llm_macro
 - **リターン:**
   ret_*cc* の *cc* (コンディション コード) は, jp_*cc* と同じです
 ```c
-  return; ret();          // この 2 つは同じ意味
+  return; ret();          // この 2 つは同じ命令
   ret_m();
   reti(); retn();
 ```
@@ -314,13 +312,13 @@ char FOO(int reg_x, int val) __llm_macro
 
 # 疑似命令
 ```c
-    LLM_DEF_VARS;
-    LLM_LOCAL(expr, ...);
-    LLM_DB(expr, ...);
-    LLM_DW(expr, ...);
-    LLM_IF(expr); ... LLM_ELIF(expr); ... LLM_ELSE; ... LLM_ENDIF;
-    LLM_REPT(expr); LLM_REPTI(var, expr); LLM_ENDR;
-    LLM_GLOBAL(...);
+    AAL_DEF_VARS;
+    AAL_LOCAL(expr, ...);
+    AAL_DB(expr, ...);
+    AAL_DW(expr, ...);
+    AAL_IF(expr); ... AAL_ELIF(expr); ... AAL_ELSE; ... AAL_ENDIF;
+    AAL_REPT(expr); AAL_REPTI(var, expr); AAL_ENDR;
+    AAL_GLOBAL(...);
 ```
 - extern 宣言は C のをそのまま使います
 ```c

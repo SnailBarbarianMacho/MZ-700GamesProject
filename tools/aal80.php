@@ -1,11 +1,11 @@
 <?php
 
 declare(strict_types = 1);
-require_once('nwk-classes/llm/llm80-parser.class.php');
+require_once('nwk-classes/aal/aal80-parser.class.php');
 require_once('nwk-classes/utils/error.class.php');
 
 /**
- * Z80 代数アセンブリ言語フィルタ
+ * Z80 代数アセンブリ言語 (Algebraic Assembly Language) フィルタ
  *
  * - z88dk ソースのインライン アセンブラを代数表記で書けます
  * - 利点:
@@ -15,16 +15,16 @@ require_once('nwk-classes/utils/error.class.php');
  *   - z88dk の代替命令(add BD, DE等が勝手に展開される)を通さない
  * - ソースはこんな感じで書きます:
  *
- * #include "../src-common/llm80.h"        ... C Intelli Sense を騙すためのコードが入ってます. 削除されます
+ * #include "../src-common/aal80.h"        ... C Intelli Sense を騙すためのコードが入ってます. 削除されます
  *                                              ... 関数は小文字, マクロは大文字, レジスタは大文字, フラグは小文字
  *
  * // マクロ定義
- * int BAZ(int val, int reg_x) __llm_macro __naked {
- *                                              ... 関数名は大文字にしてください. 型(int)はダミー. 呼び出し規約修飾子に __llm_macro, __naked が必要
+ * int BAZ(int val, int reg_x) __aal_macro __naked {
+ *                                              ... 関数名は大文字にしてください. 型(int)はダミー. 呼び出し規約修飾子に __aal_macro, __naked が必要
  *                                              ... レジスタ名を引数にする場合は reg_[\w]* であること
  * #define M1(x, y) x+y                         ... C マクロはそのまま出力されます (複数行に渡るマクロもOK)
- *   LLM_DEF_VARS;                           ... 最初におまじないで入れておいてください
- *   LLM_IF(val == 1)                        ... マクロ if
+ *   AAL_DEF_VARS;                           ... 最初におまじないで入れておいてください
+ *   AAL_IF(val == 1)                        ... マクロ if
  *     extern label1, label2;                   ... extern
  *     goto   label1;                           ... jp の代わりに掛けます
  *     A = 1; A += (2); A >>= 1;                ... 代入演算子
@@ -32,16 +32,16 @@ require_once('nwk-classes/utils/error.class.php');
  *     HL += DE + c;                            ... 式の末端に '+c' があると, adc, sbc 命令になります
  *     A = mem[12*34]; mem[IX+1] = A;           ... メモリ アクセスには mem[] を使います
  *     A = port[M1(1, 0)]; port[1] = A;         ... ポート アクセスには port[] を使います
- *   LLM_ELSE()
+ *   AAL_ELSE()
  *     ++A; A--; ~A; -A;                        ... 単項演算子
- *   LLM_ENDIF()
- *   LLM_REPT(2)                             ... リピート(リピート時はラベルがローカルになりません. 手抜き)
+ *   AAL_ENDIF()
+ *   AAL_REPT(2)                             ... リピート(リピート時はラベルがローカルになりません. 手抜き)
  *     nop();                                   ... 全命令は関数の形に書きます
  *     and(A, 1); daa(A); rld(A, mem[HL]);      ... 通常のニーモニックで省略されるレジスタ A は, 省略できません
  *     ldi(); otir();                           ... ブロック転送は, 引数なし(手抜き)
  *     push(HL, DE, BC);                        ... push, pop は引数は1以上可変長
  *     ld(A, mem[HL]); in(A, port[0x00]);       ... メモリやポートに対しては mem[], port[] が必要
- *   LLM_ENDR()
+ *   AAL_ENDR()
  *     if (c) A = 1;                            ... if ～ else if ～ else も対応してます.
  *     if (c_jr) A = 1; else A = 2;             ... if のフラグに '_jr' を付けると相対ジャンプになります
  *     if (c_jr_else_jr) A = 1; else A = 2;     ... if のフラグに '_else_jr' を付けると, else 先のジャンプも相対ジャンプになります
@@ -51,7 +51,7 @@ require_once('nwk-classes/utils/error.class.php');
  *                                                  else 節のジャンプ命令は無くなります
  *     if (z_jr) jp foo;                        ... jr z, foo    (式) が相対ジャンプなら, jp は jr になります
  *     if (z) jr foo;                           ... jr z, foo
- *     if (m) jr foo;      // bad!              ... llm は通りますがコンパイル時にエラー
+ *     if (m) jr foo;      // bad!              ... aal は通りますがコンパイル時にエラー
  *     if (z) call foo;                         ... call/return も同じように最適化
  *     if (z_jr) ret();    // bad!              ... ただし, (式) には相対ジャンプは使えません
  *     do A++; while (c_jr);                    ... do - while. カッコ内は, コンディションコードの他, true, true_jr, false, B-- にも対応してます
@@ -62,14 +62,14 @@ require_once('nwk-classes/utils/error.class.php');
  * }
  *
  * // アセンブラ関数の定義
- * static int foo(int arg1, int*arg2) __llm __z88dk_fastcall __naked
+ * static int foo(int arg1, int*arg2) __aal __z88dk_fastcall __naked
  * {
- *                                              ... 呼び出し規約修飾子に __llm を付けます. __z88dk_fastcall や __naked はオプション
- *   LLM_DEF_VARS
+ *                                              ... 呼び出し規約修飾子に __aal を付けます. __z88dk_fastcall や __naked はオプション
+ *   AAL_DEF_VARS
  *   BAZ(1, HL);                                ... マクロの呼び出し.
  *                                                  ※引数がカッコから始まると z88dk のマクロアセンブラが引数の数がおかしいと言います
  *   ...
- *   LLM_NO_RETURN;                          ... __naked 関数の末端には, これか LLM_FALL_THROUGH を書いてください (ダミー ディレクティブですが, コード可読性を上げます) *
+ *   AAL_NO_RETURN;                          ... __naked 関数の末端には, これか AAL_FALL_THROUGH を書いてください (ダミー ディレクティブですが, コード可読性を上げます) *
  * }
  *
  * - 使用できるレジスタ: A B C D E H L I R IXH IXL IYH IYL AF BC DE HL PC SP IX IY XH XL YH YL
@@ -82,12 +82,12 @@ require_once('nwk-classes/utils/error.class.php');
  * - 代入演算子: =(ld, in, out), +=(add, adc), -=(sub, sbc), &=(and), |=(or), ^=(xor), <<=(srl_n), >>=(sla_n)
  * - 単項演算子: ++(inc), --(dec)
  * - 疑似命令と引数一覧:
- *   LLM_DECL_VARS
- *   LLM_LOCAL(expr, ...)
- *   LLM_DB(expr, ...) , LLM_DW(expr, ...)
- *   LLM_IF(expr), LLM_ELIF(expr), LLM_ELSE, LLM_ENDIF
- *   LLM_REPT(expr), LLM_REPTI(var, expr), LLM_ENDR
- *   LLM_GLOBAL(...)
+ *   AAL_DECL_VARS
+ *   AAL_LOCAL(expr, ...)
+ *   AAL_DB(expr, ...) , AAL_DW(expr, ...)
+ *   AAL_IF(expr), AAL_ELIF(expr), AAL_ELSE, AAL_ENDIF
+ *   AAL_REPT(expr), AAL_REPTI(var, expr), AAL_ENDR
+ *   AAL_GLOBAL(...)
  * - 命令(関数)と引数一覧:
  *   ld(a, b)※1, ldi(), ldir(), lddr()
  *   ex(a, b), exx()
@@ -133,7 +133,7 @@ require_once('nwk-classes/utils/error.class.php');
  * - 既知のバグ:
  *   - 関数検出が投げやりなので, 関数定義の前後には空白行を入れてください
  * - 使い方は, Usage: 行を参照してください
- *   例: php llm80.php foo.llm.c foo.c
+ *   例: php aal80.php foo.aal.c foo.c
  *
  * @author Snail Barbarian Macho (NWK) 2024.06.06
  */
@@ -185,15 +185,15 @@ $in_str = preg_replace_callback('/\/\/ [\s\S]*?\n/x', function($matches) {
     return preg_replace("/[^\n]/", "", $matches[0]);// 改行を除いて削除
 }, $in_str);
 
-// llm80.h を含む行を削除
-$in_str = preg_replace('/\#include \ + \"[\ \S]*llm80\.h\"/x', "", $in_str);
+// aal80.h を含む行を削除
+$in_str = preg_replace('/\#include \ + \"[\ \S]*aal80\.h\"/x', "", $in_str);
 
 // エスケープ処理
 $in_str = escape_($in_str);
 
-$parser = new nwk\llm\Parser($error);
+$parser = new nwk\aal\Parser($error);
 
-// ---------------- 修飾子 __llm または __llm_macro を含む関数
+// ---------------- 修飾子 __aal または __aal_macro を含む関数
 // MARK: 処理中心
 $out_str = detectFunctionCallback_($in_str, function(
     $match, $match_pos, $ret_type, $funcname,  $args, $modifiers, $contents, $contents_pos) use (&$in_str, $parser, $error) {
@@ -201,13 +201,13 @@ $out_str = detectFunctionCallback_($in_str, function(
         //echo("[$ret_type $funcname($args) $modifiers {$contents}]\n");
         $has_naked = str_contains($modifiers, '__naked');
 
-        if (str_contains($modifiers, '__llm_macro')) {
+        if (str_contains($modifiers, '__aal_macro')) {
             $line_nr  = substr_count($in_str, "\n", 0, $contents_pos);
             if (!$has_naked) {
                 $error->errorLine($line_nr, "マクロの場合は, 呼び出し規約修飾子に '__naked' を追加してください", $funcname);
             }
 
-            $contents = $parser->parse(nwk\llm\Parser::MODE_MACRO, $has_naked, $contents, $line_nr, $funcname);
+            $contents = $parser->parse(nwk\aal\Parser::MODE_MACRO, $has_naked, $contents, $line_nr, $funcname);
 
             $labels   = $parser->getLabels();
             $labels_str = '';
@@ -224,7 +224,7 @@ $out_str = detectFunctionCallback_($in_str, function(
                 if ($i !== 0) { $macro_args .= ', ';}
                 $macro_args .= end($terms);
             }
-            $modifiers = str_replace('__llm_macro', '', $modifiers);
+            $modifiers = str_replace('__aal_macro', '', $modifiers);
 
             return $ret_type . "$funcname($args)$modifiers" .
                 "{\n" .
@@ -237,12 +237,12 @@ $out_str = detectFunctionCallback_($in_str, function(
                 "}\n";
             $line_nr = substr_count($in_str, "\n", 0, $match_pos);
             return "// line " . $line_nr + 1 . "\n" . $match;
-        } else if (str_contains($modifiers, '__llm')) {
+        } else if (str_contains($modifiers, '__aal')) {
             $line_nr = substr_count($in_str, "\n", 0, $contents_pos);
 
-            $contents = $parser->parse(nwk\llm\Parser::MODE_FUNC, $has_naked, $contents, $line_nr, $funcname);
+            $contents = $parser->parse(nwk\aal\Parser::MODE_FUNC, $has_naked, $contents, $line_nr, $funcname);
 
-            $modifiers = str_replace('__llm', '', $modifiers);
+            $modifiers = str_replace('__aal', '', $modifiers);
 
             return $ret_type . "$funcname($args)$modifiers" .
                 "{\n" .
@@ -253,7 +253,7 @@ $out_str = detectFunctionCallback_($in_str, function(
             $line_nr = substr_count($in_str, "\n", 0, $match_pos);
             return "// line " . $line_nr + 1 . "\n" . $match;
         } else {
-            // __llm や llm_macro を含まないなら, 行番号も含まずそのまま出力
+            // __aal や aal_macro を含まないなら, 行番号も含まずそのまま出力
             return $match;
         }
     });

@@ -1,12 +1,12 @@
 <?php
-/** Z80 代数アセンブリ言語フィルタ - パーサー(構文解析)
+/** Z80 代数アセンブリ言語 (Algebraic Assembly Language) フィルタ - パーサー(構文解析)
  * @author Snail Barbarian Macho (NWK) 2024.06.06
  */
 
 declare(strict_types = 1);
-namespace nwk\llm;
+namespace nwk\aal;
 require_once(__DIR__ . '/../utils/error.class.php');
-require_once('llm80-param.class.php');
+require_once('aal80-param.class.php');
 
 
 // MARK: Parser
@@ -17,7 +17,7 @@ Class Parser
     private bool    $is_naked_;     // __naked が付いてるか
     private int     $line_nr_;      // ソースの行
     private string  $funcname_;     // 関数またはマクロ名
-    private bool    $is_ended_;     // 末端に LLM_ENDM, LLM_NO_RETURN, LLM_FALL_THROUGH を指定したかのフラグ
+    private bool    $is_ended_;     // 末端に AAL_ENDM, AAL_NO_RETURN, AAL_FALL_THROUGH を指定したかのフラグ
 
     private int     $label_ct_;
     private array   $labels_;
@@ -226,9 +226,9 @@ Class Parser
 
         if (!$this->is_ended_) {
             if ($this->mode_ === Parser::MODE_MACRO) {
-                $this->errorLine_("マクロ定義の末端には, LLM_ENDM; を追加してくだい");
+                $this->errorLine_("マクロ定義の末端には, AAL_ENDM; を追加してくだい");
             } else if ($this->is_naked_) {
-                $this->errorLine_("__naked 関数の末端には, LLM_NO_RETURN; または LLM_FALL_THROUGH; を追加してくだい");
+                $this->errorLine_("__naked 関数の末端には, AAL_NO_RETURN; または AAL_FALL_THROUGH; を追加してくだい");
             }
         }
 
@@ -281,8 +281,8 @@ Class Parser
             return $this->parseWhitespaces_($r_str, $r_offset, $matches[1]);
         }
 
-        // 'LLM_' で始まる指示語
-        if (preg_match('/(LLM_[A-Z_]+)/Ax', $r_str, $matches, 0, $r_offset)) {
+        // 'AAL_' で始まる指示語
+        if (preg_match('/(AAL_[A-Z_]+)/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseZ80anaDirective_($r_str, $r_offset, $matches[1]);
         }
 
@@ -390,7 +390,7 @@ Class Parser
 
 
     // MARK: parseZ80anaDirective_()
-    /** 'LLM_' で始まる指示語. インデントなし */
+    /** 'AAL_' で始まる指示語. インデントなし */
     private function parseZ80anaDirective_(string &$r_str, int &$r_offset, string $directive): string
     {
         // echo("directive1[$r_offset $this->line_nr_][$directive]\n");
@@ -398,27 +398,27 @@ Class Parser
         $offset_old = $r_offset;
         $r_offset += strlen($directive);
         switch ($directive) {
-            case 'LLM_ELSE':
+            case 'AAL_ELSE':
                 $this->decIndent_();
                 $ret = "else\n";
                 $this->incIndent_();
                 return $ret;
-            case 'LLM_ENDIF':
+            case 'AAL_ENDIF':
                 $this->decIndent_();
                 return "endif\n";
-            case 'LLM_ENDR':
+            case 'AAL_ENDR':
                 $this->decIndent_();
                 return "endr\n";
-            case 'LLM_DEF_VARS':
+            case 'AAL_DEF_VARS':
                 $this->defVarsDirective_($r_str, $offset_old);
                 return '';
-            case 'LLM_ENDM':
+            case 'AAL_ENDM':
                 $this->endmDirective_($r_str, $r_offset);
                 return '';
-            case 'LLM_NO_RETURN':
+            case 'AAL_NO_RETURN':
                 $this->noReturnDirective_($r_str, $r_offset);
                 return '';
-            case 'LLM_FALL_THROUGH':
+            case 'AAL_FALL_THROUGH':
                 $this->fallThroughDirective_($r_str, $r_offset);
                 return '';
         }
@@ -429,7 +429,7 @@ Class Parser
         if (method_exists($this, $f)) {
             return $this->{$f}($args) . "\n";
         } else {
-            $this->errorLine_("この LLM ディレクティブは存在しません", $directive);
+            $this->errorLine_("この AAL ディレクティブは存在しません", $directive);
             return '';
         }
     }
@@ -951,7 +951,7 @@ Class Parser
     {
         // $offset より前の文字列が全て空白文字でなければエラー
         if ($offset !== 0 && ctype_space(substr($r_str, 0, $offset)) === false) {
-            $this->errorLine_("LLM_DEF_VARS は関数かマクロの先頭に書いてください");
+            $this->errorLine_("AAL_DEF_VARS は関数かマクロの先頭に書いてください");
         }
     }
 
@@ -960,12 +960,12 @@ Class Parser
     {
         //echo('noReturnDirective(): [' . substr($r_str, $offset) . "]\n");
         if ($this->mode_ !== Parser::MODE_MACRO) {
-            $this->errorLine_("LLM_ENDM は, マクロ用定義用です");
+            $this->errorLine_("AAL_ENDM は, マクロ用定義用です");
         } else {
             // $offset から後の文字列が全て空白文字かセミコロンでなければエラー
             $str = substr($r_str, $offset);
             if (preg_match('/^\s*;\s*$/', $str) === false) {
-                $this->errorLine_("LLM_ENDM は, マクロの一番最後に記述してください");
+                $this->errorLine_("AAL_ENDM は, マクロの一番最後に記述してください");
             }
             $this->is_ended_ = true;
         }
@@ -976,14 +976,14 @@ Class Parser
     {
         //echo('noReturnDirective(): [' . substr($r_str, $offset) . "]\n");
         if ($this->mode_ !== Parser::MODE_FUNC) {
-            $this->errorLine_("LLM_NO_RETURN は, 関数用です");
+            $this->errorLine_("AAL_NO_RETURN は, 関数用です");
         } else if (!$this->is_naked_) {
-            $this->errorLine_("LLM_NO_RETURN は, __naked でない関数にはつけてはいけなせん");
+            $this->errorLine_("AAL_NO_RETURN は, __naked でない関数にはつけてはいけなせん");
         } else {
             // $offset から後の文字列が全て空白文字かセミコロンでなければエラー
             $str = substr($r_str, $offset);
             if (preg_match('/^\s*;\s*$/', $str) === false) {
-                $this->errorLine_("LLM_NO_RETURN は, 関数の一番最後に記述してください");
+                $this->errorLine_("AAL_NO_RETURN は, 関数の一番最後に記述してください");
             }
             $this->is_ended_ = true;
         }
@@ -993,14 +993,14 @@ Class Parser
     private function fallThroughDirective_(string &$r_str, int $offset): void
     {
         if ($this->mode_ !== Parser::MODE_FUNC) {
-            $this->errorLine_("LLM_FALL_THROUGH は, 関数用です");
+            $this->errorLine_("AAL_FALL_THROUGH は, 関数用です");
         } else if (!$this->is_naked_) {
-            $this->errorLine_("LLM_FALL_THROUGH は, __naked でない関数にはつけてはいけなせん");
+            $this->errorLine_("AAL_FALL_THROUGH は, __naked でない関数にはつけてはいけなせん");
         } else {
             // $offset から後の文字列が全て空白文字かセミコロンでなければエラー
             $str = substr($r_str, $offset);
             if (preg_match('/^\s*;\s*$/', $str) === false) {
-                $this->errorLine_("LLM_FALL_THROUGH は, 関数の一番最後に記述してください");
+                $this->errorLine_("AAL_FALL_THROUGH は, 関数の一番最後に記述してください");
             }
             $this->is_ended_ = true;
         }
@@ -1264,17 +1264,17 @@ Class Parser
     }
 
     // MARK: command dispatches
-    // -------------------------------- llmDirective->疑似命令ディスパッチ
-    private function LLM_DEF_DUMMY_VARS_(string $expr): string { return ''; }
-    private function LLM_LOCAL_(string $expr): string { return $this->checkParamNN_S_('local', $expr); }
-    private function LLM_DB_(string $expr): string { return $this->checkParamNN_V_('db', $expr); }
-    private function LLM_DW_(string $expr): string { return $this->checkParamNN_V_('dw', $expr); }
-    private function LLM_IF_(string $expr): string { $this->incIndent_(); return $this->checkParam11_('if', $expr); }
-    private function LLM_ELIF_(string $expr): string { return $this->checkParam11_('elif', $expr); }
-    private function LLM_REPT_(string $expr): string { $this->incIndent_(); return $this->checkParam11_('rept', $expr); }
-    private function LLM_REPTC_(string $expr): string { $this->incIndent_(); return $this->checkParam22_('reptc', $expr); }
-    private function LLM_REPTI_(string $expr): string { $this->incIndent_(); return $this->checkParamNN_('repti', $expr); }
-    private function LLM_GLOBAL_(string $expr): string { return $this->checkParamNN_S_('global', $expr); }
+    // -------------------------------- aalDirective->疑似命令ディスパッチ
+    private function AAL_DEF_DUMMY_VARS_(string $expr): string { return ''; }
+    private function AAL_LOCAL_(string $expr): string { return $this->checkParamNN_S_('local', $expr); }
+    private function AAL_DB_(string $expr): string { return $this->checkParamNN_V_('db', $expr); }
+    private function AAL_DW_(string $expr): string { return $this->checkParamNN_V_('dw', $expr); }
+    private function AAL_IF_(string $expr): string { $this->incIndent_(); return $this->checkParam11_('if', $expr); }
+    private function AAL_ELIF_(string $expr): string { return $this->checkParam11_('elif', $expr); }
+    private function AAL_REPT_(string $expr): string { $this->incIndent_(); return $this->checkParam11_('rept', $expr); }
+    private function AAL_REPTC_(string $expr): string { $this->incIndent_(); return $this->checkParam22_('reptc', $expr); }
+    private function AAL_REPTI_(string $expr): string { $this->incIndent_(); return $this->checkParamNN_('repti', $expr); }
+    private function AAL_GLOBAL_(string $expr): string { return $this->checkParamNN_S_('global', $expr); }
 
     // -------------------------------- 関数->命令ディスパッチ
     private function ld_(string $expr): string { return $this->checkParam22_RM_RMV_('ld', $expr); }

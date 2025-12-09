@@ -1,12 +1,12 @@
 <?php
-/** Z80 代数アセンブリ言語フィルタ - 命令のパラメータと種類
+/** Z80 代数アセンブリ言語フィルタ (Algebraic Assembly Language) - 命令のパラメータと種類
  * @author Snail Barbarian Macho (NWK) 2024.06.06
  */
 
 declare(strict_types = 1);
-namespace nwk\llm;
+namespace nwk\aal;
 require_once(__DIR__ . '/../utils/error.class.php');
-require_once('llm80-parser.class.php');
+require_once('aal80-parser.class.php');
 
 // MARK: Param
 /** 命令のパラメータの種類と値 */

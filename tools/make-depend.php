@@ -5,13 +5,13 @@ declare(strict_types = 1);
 #require_once 'nwk-classes/utils/error.class.php';
 
 /**
- * - --prog は ソース(.llm.c, .c)からオブジェクト(.o)を作る依存リストと,
+ * - --prog は ソース(.aal.c, .c)からオブジェクト(.o)を作る依存リストと,
  *   オブジェクトのリストと,
  *   clean 時の削除リストを作成
  *   例: game/src/ OBJS CLEAN_FILES
- *   game/system/a.c: game/system/a.llm.c game/system/sys.h
- *   game/system/b.c: game/system/b.llm.c game/system/sys.h game/cg/c.txt game/text/t.txt
- *   game/system/c.c: game/system/c.llm.c game/system/sys.h
+ *   game/system/a.c: game/system/a.aal.c game/system/sys.h
+ *   game/system/b.c: game/system/b.aal.c game/system/sys.h game/cg/c.txt game/text/t.txt
+ *   game/system/c.c: game/system/c.aal.c game/system/sys.h
  *   game/system/a.o:  game/system/a.c.
  *   game/system/b.o:  game/system/b.c
  *   game/system/c.o:  game/system/c.c
@@ -99,30 +99,30 @@ if ($prog_dir !== '') {
     // $prog_dir の中を再帰的にサーチして c ソースを探します
     $it = createRecursiveDirectoryIterator_($prog_dir);
     $c_sources = [];
-    $llm_c_filenames = [];
+    $aal_c_filenames = [];
     foreach ($it as $pathname => $info) {
         if (pathinfo($pathname, PATHINFO_EXTENSION) == 'c') {
             $pathname = adjustPathname_($pathname);
             $c_sources[] = $pathname;
-            if (str_ends_with($pathname, '.llm.c')) {
-                $llm_c_filenames[] = pathinfo($pathname, PATHINFO_FILENAME);
+            if (str_ends_with($pathname, '.aal.c')) {
+                $aal_c_filenames[] = pathinfo($pathname, PATHINFO_FILENAME);
             }
         }
     }
-    //var_export($llm_c_filenames);
+    //var_export($aal_c_filenames);
     //var_export($c_sources);
 
     // ファイルを開いて, #include 文をサーチ
     // 見つかればリストに追加します.
     // そのファイルも再帰的に #include 文をサーチします
     // ファイルは絶対パスで管理し, 重複ファイルもチェックします
-    // *.c と同名の *.llm.c があれば, 後者用の依存リストを追加します
+    // *.c と同名の *.aal.c があれば, 後者用の依存リストを追加します
     $o_pathnames = [];
     $o_clean_pathnames = [];
     foreach ($c_sources as $c_source) {
 
-        if (str_ends_with($c_source, '.llm.c')) {
-            $c_source2 = substr($c_source, 0, -6) . '.c';   // .llm を抜いたファイル
+        if (str_ends_with($c_source, '.aal.c')) {
+            $c_source2 = substr($c_source, 0, -6) . '.c';   // .aal を抜いたファイル
             $o_clean_pathnames[] = $c_source2;
             $pathname_list  = [];
             //echo("===>cソース:$c_source\n");
@@ -138,7 +138,7 @@ if ($prog_dir !== '') {
         }
 
         $filename = pathinfo($c_source, PATHINFO_FILENAME);
-        if (in_array($filename . '.llm', $llm_c_filenames, true)) {
+        if (in_array($filename . '.aal', $aal_c_filenames, true)) {
             continue;
         }
         $pathname_list  = [];
