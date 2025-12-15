@@ -8,7 +8,7 @@ require_once('nwk-classes/utils/utils.class.php');
 /**
  * WAV, BMP 波形データ, テキスト波形データ のいずれかを読み込み,
  *   6bit, 7.85Hz にリサンプリングし (WAVファイルのみ),
- *   offset#256 サンプルを採用して (WAVファイルのみ),
+ *   指定場所から256 (offset#256) サンプルを採用して (WAVファイルのみ),
  * - WAV, BMP 波形データ, テキスト波形データ, C ソース で出力(同時出力もOK)
  * - 例:
  *   - WAV → C ソース

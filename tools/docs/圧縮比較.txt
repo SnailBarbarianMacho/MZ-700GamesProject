@@ -1,0 +1,7 @@
+単位 bytes
+もっとも圧縮した値に*マーク
+
+2020.09.06計測     圧縮前 salvador    zx0    exo
+BARYON game0.bin    24576    14139* 14140  14204
+BARYON storage.pak   8561     7547*  7555   7649
+BARYON init.bin      3149     1981   1981   1935*

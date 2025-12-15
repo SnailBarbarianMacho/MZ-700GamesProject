@@ -48,7 +48,7 @@ Class Parser
     private const FLAG_DO_WHILE_    = // do <文> while(<式>) での式の内容
         'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
         'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
-        'true|true_jr|false|B--';
+        'true|true_jr|false|B--|--B';
     private const FLAG_WHILE_       = // while(<式>) <文> での式の内容
         'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
         'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
@@ -163,6 +163,7 @@ Class Parser
             'true_jr' => 'jr',
             'false' => '',
             'B--'   => 'djnz B,',
+            '--B'   => 'djnz B,',
         );
     private const WHILE_OP_TAB_ = // while (<式>) <文> の式からループ先頭のジャンプ命令を決めます
         array(
@@ -311,7 +312,7 @@ Class Parser
             return $this->parseIf_($r_str, $r_offset, $matches[0], $matches[1], $continue, $break);
         }
 
-        // do <文> while (<式>); ※式はフラグ, 'true', 'B--'のみ
+        // do <文> while (<式>); ※式はフラグ, 'true', 'true_jr', 'false', 'B--', '--B' のみ
         if (preg_match('/do [\w\s,]+ /Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseDoWhile_($r_str, $r_offset);
         }
@@ -748,11 +749,11 @@ Class Parser
         // 演算子の確定. $l_value の右端から1～2文字借りてみて, 有効な演算子ならば, $l_value は借りた文字を失う
         $op = $l_value[-1] . '=';
         if ($op === '+=' || $op === '-=' | $op === '&=' | $op === '|=' | $op === '^=') {
-            $l_value = substr($l_value, 0, -1);
+            $l_value = trim(substr($l_value, 0, -1));
         } else if (2 <= strlen($l_value)) {
             $op = $l_value[-2] . $op;
             if ($op === '<<=' || $op === '>>=') {
-                $l_value = substr($l_value, 0, -2);
+                $l_value = trim(substr($l_value, 0, -2));
             } else {
                 $op = '=';
             }
@@ -763,6 +764,8 @@ Class Parser
 
         // 型によって命令が変わるので, 右辺値, 左辺値の型を調べる
         $b_err = false;
+        $l_value = $this->stripBackReg_($l_value);
+        $r_value = $this->stripBackReg_($r_value);
         $l_param = $this->createParamObject_($l_value);
         $r_param = $this->createParamObject_($r_value);
         if ($l_param === null) {
@@ -831,6 +834,7 @@ Class Parser
 
         // $op によって命令を決める
         $ret = '';
+        $expr = $this->stripBackReg_($expr);
         switch ($op) {
             case '++': $ret = $this->inc_($expr, $this->line_nr_); break;
             case '--': $ret = $this->dec_($expr, $this->line_nr_); break;
