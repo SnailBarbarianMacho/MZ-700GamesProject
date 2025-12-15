@@ -778,7 +778,6 @@ void SD4PLAY_BEEPER_DRUM(
 u8 sd4play(u32 param) __aal __z88dk_fastcall
 {                                                       // HL = data, E = cancellable
     AAL_DEF_VARS;
-extern sd4play_waitUntilKeyOff1;
 extern sd4play_waitUntilKeyOff2;
 extern sd4play_vblk0, sd4play_vblk1;
 extern sd4play_setVols, sd4play_loop, sd4play_beeperLoop;
@@ -804,8 +803,9 @@ extern tmp;
 
     // ---- F2, F4 キーが離れるまで待ちます
     A = 0xf9; mem[MMIO_8255_PORTA] = A;                 // A = key strobe 9
-sd4play_waitUntilKeyOff1:
-    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK; jr_nz(sd4play_waitUntilKeyOff1);
+    do {
+        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
+    } while (nz_jr);
 
     // ---- E == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
     E--; if (nz_jr) {                                   // E = キャンセル可能フラグ
@@ -924,7 +924,9 @@ sd4play_end:
     L = 0x00;
     // F2, F4 キーが離れるまで待ちます
 sd4play_waitUntilKeyOff2:
-    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK ; jr_nz(sd4play_waitUntilKeyOff2);
+    do {
+        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
+    } while (nz_jr);
 
     // 8253 を元の設定に戻します
     A = MMIO_8253_CT0_MODE3; mem[MMIO_8253_CTRL] = A;

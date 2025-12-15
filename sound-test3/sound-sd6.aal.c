@@ -627,7 +627,6 @@ addr_drum_nr_1: bit(0/*ドラム波形テーブル ビット位置*/, mem[reg_wa
 u8 sd6play(u32 param) __aal __z88dk_fastcall
 {                                                       // HL = data, E = cancellable
     AAL_DEF_VARS;
-extern sd6play_waitUntilKeyOff1;
 extern sd6play_waitUntilKeyOff2;
 extern sd6Play_rep_1;
 extern sd6play_setVols, sd6play_loop, sd6play_beeperLoop;
@@ -648,8 +647,9 @@ extern tmp;
 
     // ---- F2, F4 キーが離れるまで待ちます
     A = 0xf9; mem[MMIO_8255_PORTA] = A;                 // A = key strobe 9
-sd6play_waitUntilKeyOff1:
-    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK; jr_nz(sd6play_waitUntilKeyOff1);
+    do {
+        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
+    } while (nz_jr);
 
     // ---- E == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
     E--; if (nz_jr) {                                   // E = キャンセル可能フラグ
@@ -739,7 +739,9 @@ sd6play_end:
     L = 0x00;
     // F2, F4 キーが離れるまで待ちます
 sd6play_waitUntilKeyOff2:
-    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK ; jr_nz(sd6play_waitUntilKeyOff2);
+    do {
+        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
+    } while (nz_jr);
 
     // 8253 を元の設定に戻します
     A = MMIO_8253_CT0_MODE3; mem[MMIO_8253_CTRL] = A;
