@@ -79,7 +79,7 @@ vpath %.txt $(GAME_DIR)/text
 # ---- ソール, リソースのパターン ルール
 #
 #  Cソース                         音楽
-#  *.z80ana.c   キャラグラ        music/*.dms
+#  *.aal.c   キャラグラ        music/*.dms
 #    |        cg/*.cgedit.txt       :          テキスト
 #   *.c       cg/*.cgedit.json  music/*.mid     text/*.txt
 #    |(00)       |(01)              |(02)         |(03)
@@ -105,9 +105,9 @@ vpath %.txt $(GAME_DIR)/text
 all: $(OUTFILE_MZT)
 # -------------------------------- ソール, リソースのパターン ルール
 # -------- (00) ソースからオブジェクト ファイルへ
-%.c: %.z80ana.c
+%.c: %.aal.c
 	@echo ---- Converting ... [$<]
-	@$(PHP) $(TOOLS)/z80ana.php $< $@
+	@$(PHP) $(TOOLS)/aal80.php $< $@
 
 %.o: %.c
 	@echo ---- Compiling ... [$<]

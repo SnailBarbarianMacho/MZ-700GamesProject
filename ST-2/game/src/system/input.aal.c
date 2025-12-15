@@ -5,7 +5,7 @@
 
 #include "../../../../src-common/common.h"
 #include "../../../../src-common/hard.h"
-#include "../../../../src-common/z80ana.h"
+#include "../../../../src-common/aal80.h"
 #include "../../../../src-common/asm-macros.h"
 #include "assert.h"
 #include "input.h"
@@ -270,9 +270,9 @@ extern int _input_old_;
 extern int _input_trg_;
 
 /** ジョイスティックとキーの入力をマージして, トリガ検出 */
-static void inputMain2_(void) __z80ana
+static void inputMain2_(void) __aal
 {
-    Z80ANA_DEF_VARS;
+    AAL_DEF_VARS;
 
     // -------- if (input_joy != INPUT_MASK_NC) { input_ |= input_joy_; }
     A = mem[_input_joy_]; A &= (~INPUT_MASK_NC) & 0xff; B = A;
@@ -347,9 +347,9 @@ void inputMain(void) __z88dk_fastcall
 #pragma save
 #pragma disable_warning 85          // 引数未使用警告抑止
 
-void inputSetMZ1X03Enabled(bool const enabled) __z80ana __z88dk_fastcall
+void inputSetMZ1X03Enabled(bool const enabled) __aal __z88dk_fastcall
 {
-    Z80ANA_DEF_VARS;                                    // L = enabled
+    AAL_DEF_VARS;                                    // L = enabled
     extern  inputMZ1X03_enabled;
     extern  _input_joy_mode_;
     extern  _input_joy_;
@@ -380,9 +380,9 @@ void inputSetMZ1X03Enabled(bool const enabled) __z80ana __z88dk_fastcall
 #pragma save
 #pragma disable_warning 59          // 戻値未設定警告抑止
 
-bool inputIsMZ1X03Enabled(void) __z80ana
+bool inputIsMZ1X03Enabled(void) __aal
 {
-    Z80ANA_DEF_VARS;
+    AAL_DEF_VARS;
     extern  inputMZ1X03_enabled;
 
     // return mem[inputMZ1X03_enabled] == OPCODE_JP
@@ -396,7 +396,7 @@ bool inputIsMZ1X03Enabled(void) __z80ana
 #pragma save
 #pragma disable_warning 85          // 引数未使用警告抑止
 
-void inputMZ1X03ButtonVSyncAxis1(u8 const mz1x03_sensitivity) __z80ana __z88dk_fastcall
+void inputMZ1X03ButtonVSyncAxis1(u8 const mz1x03_sensitivity) __aal __z88dk_fastcall
 {
     // MZ-1X03 の軸の読み方 (数字は T-states)
     //          __<-----------14316------------>______
@@ -426,7 +426,7 @@ void inputMZ1X03ButtonVSyncAxis1(u8 const mz1x03_sensitivity) __z80ana __z88dk_f
     // - (7) (4 - s) 行の転送 (= 7296 - s * 1824 T-states) だけ待つ
     // - (8) 軸を読み取り, b とする
     // - (9) a, b の値から左右を判定する
-    Z80ANA_DEF_VARS;                                    // L = mz1x03_sensitivity(0～3)
+    AAL_DEF_VARS;                                    // L = mz1x03_sensitivity(0～3)
     extern  inputMZ1X03_button_1;
     extern  inputMZ1X03_vSyncLoop;
     extern  inputMZ1X03_wait1Loop;
@@ -509,9 +509,9 @@ inputMZ1X03_notDetected:
 #pragma restore
 
 
-void inputMZ1X03Axis2(void) __z80ana __naked
+void inputMZ1X03Axis2(void) __aal __naked
 {
-    Z80ANA_DEF_VARS;                                    // L = enabled
+    AAL_DEF_VARS;                                    // L = enabled
     extern  _input_joy_;
     extern  INPUT_MZ1X03_TAB;
 
@@ -537,9 +537,9 @@ inputMZ1X03_button_1: A |= 0x00;                        //      00UD_RLBA 自己
     return;
 
 INPUT_MZ1X03_TAB:
-    Z80ANA_DB(INPUT_MASK_R | INPUT_MASK_D, INPUT_MASK_NC              , INPUT_MASK_NC              , INPUT_MASK_NC              );  // 0000, 0001, 0010, 0011
-    Z80ANA_DB(               INPUT_MASK_D, INPUT_MASK_L | INPUT_MASK_D, INPUT_MASK_NC              , INPUT_MASK_NC              );  // 0100, 0101, 0110, 0111
-    Z80ANA_DB(INPUT_MASK_R               , INPUT_MASK_NC              , INPUT_MASK_R | INPUT_MASK_U, INPUT_MASK_NC              );  // 1000, 1001, 1010, 1011
-    Z80ANA_DB(0                          , INPUT_MASK_L               , INPUT_MASK_U               , INPUT_MASK_L | INPUT_MASK_U);  // 1100, 1101, 1110, 1111
-    Z80ANA_NO_RETURN;
+    AAL_DB(INPUT_MASK_R | INPUT_MASK_D, INPUT_MASK_NC              , INPUT_MASK_NC              , INPUT_MASK_NC              );  // 0000, 0001, 0010, 0011
+    AAL_DB(               INPUT_MASK_D, INPUT_MASK_L | INPUT_MASK_D, INPUT_MASK_NC              , INPUT_MASK_NC              );  // 0100, 0101, 0110, 0111
+    AAL_DB(INPUT_MASK_R               , INPUT_MASK_NC              , INPUT_MASK_R | INPUT_MASK_U, INPUT_MASK_NC              );  // 1000, 1001, 1010, 1011
+    AAL_DB(0                          , INPUT_MASK_L               , INPUT_MASK_U               , INPUT_MASK_L | INPUT_MASK_U);  // 1100, 1101, 1110, 1111
+    AAL_NO_RETURN;
 }

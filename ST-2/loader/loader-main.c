@@ -28,7 +28,7 @@ __endasm;
 static void go(void)
 {
 __asm
-    // PCG-700 の設定を戻す
+    // PCG-700 を無効化する
     BANKH_VRAM_MMIO     C
     PCG700_DISABLE      A
     BANKH_RAM           C
