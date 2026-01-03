@@ -4,7 +4,7 @@
  */
 
 #include "../../../../src-common/common.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/sound.h"
 #include "se.h"
 #include "game-mode.h"

@@ -7,7 +7,7 @@
 #include "addr.h"
 #include "sound.h"
 #include "input.h"
-#include "vram.h"
+#include "vvram.h"
 #include "sys.h"
 #include "../game/bgm.h"
 #include "../scenes/scene-title.h"

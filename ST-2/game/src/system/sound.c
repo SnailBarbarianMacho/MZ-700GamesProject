@@ -7,7 +7,7 @@
 #include "../../../../src-common/common.h"
 #include "../../../../src-common/hard.h"
 #include "addr.h"
-#include "vram.h"
+#include "vvram.h"
 #include "math.h"
 #include "../game/bgm.h"
 #include "../game/se.h"

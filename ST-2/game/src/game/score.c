@@ -7,7 +7,7 @@
 #include "../../../../src-common/hard.h"
 #include "../system/addr.h"
 #include "../system/sys.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/sound.h"
 #include "../system/math.h"
 #include "../system/print.h"

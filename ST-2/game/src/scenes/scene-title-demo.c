@@ -7,7 +7,7 @@
 #include "../system/addr.h"
 #include "../system/sys.h"
 #include "../system/input.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/print.h"
 #include "../system/math.h"
 #include "../system/obj.h"

@@ -5,7 +5,7 @@
 #include "../../../../src-common/common.h"
 #include "../system/sys.h"
 #include "../system/obj.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/print.h"// DEBUG
 #include "../system/sound.h"
 #include "../system/math.h"
@@ -788,7 +788,7 @@ void objEnemyDraw3_1(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
         ((u8*)cg_enemy3_1)[4] = CORE_TEXT_TAB_[(p_obj->u_obj_work.enemy.anim_ct >> 2) & 0x0f];
-        vVramDraw3x3(draw_addr, cg_enemy3_1);
+        vvramDraw3x3(draw_addr, cg_enemy3_1);
     }
 }
 static const u8 ENEMY_3_2_ANIM_TAB_[] = {0x62, 0x02};
@@ -796,7 +796,7 @@ void objEnemyDraw3_2(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
         ((u8*)cg_enemy3_2)[13] = ENEMY_3_2_ANIM_TAB_[(p_obj->u_obj_work.enemy.anim_ct >> 3) & 1];
-        vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_2);
+        vvramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_2);
     }
 }
 static const u8 ENEMY_3_3_ANIM_TAB_[] = {0x04, 0x14, 0x24, 0x34, 0x44, 0x54, 0x64, 0x74};
@@ -804,14 +804,14 @@ void objEnemyDraw3_3(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
         ((u8*)cg_enemy3_3)[13] = ENEMY_3_3_ANIM_TAB_[p_obj->u_obj_work.enemy.anim_ct & 7];
-        vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_3);
+        vvramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_3);
     }
 }
 void objEnemyDraw3_4(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
         ((u8*)cg_enemy3_4)[4] = CORE_TEXT_TAB_[rand8() & 0x0f];
-        vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_4);
+        vvramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_4);
     }
 }
 
@@ -820,7 +820,7 @@ void objEnemyDraw3_5(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
         ((u8*)cg_enemy3_5)[13] = ENEMY_3_5_ANIM_TAB_[(p_obj->u_obj_work.enemy.anim_ct >> 2) & 3];
-        vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_5);
+        vvramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3 : cg_enemy3_5);
     }
 }
 static const u8 ENEMY_3_6_ANIM_TAB_[] = {
@@ -833,7 +833,7 @@ void objEnemyDraw3_6(Obj* const p_obj, u8* draw_addr)
 {
     if (!(p_obj->ct & 1)) {
         ((u8*)cg_enemy3_6)[13] = ENEMY_3_6_ANIM_TAB_[p_obj->u_obj_work.enemy.anim_ct & 0x0f];
-        vVramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3_6 : cg_enemy3_6);
+        vvramDraw3x3(draw_addr, p_obj->b_hit ? cg_enemy_damage3_6 : cg_enemy3_6);
     }
 }
 static const u8 ENEMY_4_1_ANIM_TAB_[] = {
@@ -848,7 +848,7 @@ void objEnemyDraw4_1(Obj* const p_obj, u8* draw_addr)
         ((u8*)cg_enemy4_1)[ 6] = *p++;
         ((u8*)cg_enemy4_1)[ 9] = *p++;
         ((u8*)cg_enemy4_1)[10] = *p;
-        vVramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_1);
+        vvramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_1);
     }
 }
 static const u8 ENEMY_4_2_ANIM_TAB_[] = { 0x73, 0x63, 0x52, 0x42, 0x32, 0x42, 0x52, 0x63 };
@@ -860,7 +860,7 @@ void objEnemyDraw4_2(Obj* const p_obj, u8* draw_addr)
         ((u8*)cg_enemy4_2)[16 +  6] = c;
         ((u8*)cg_enemy4_2)[16 +  9] = c;
         ((u8*)cg_enemy4_2)[16 + 10] = c;
-        vVramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_2);
+        vvramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_2);
     }
 }
 static const u8 ENEMY_4_3_ANIM_TAB_[] = {
@@ -877,7 +877,7 @@ void objEnemyDraw4_3(Obj* const p_obj, u8* draw_addr)
         ((u8*)cg_enemy4_3)[ 6] = *p++;
         ((u8*)cg_enemy4_3)[ 9] = *p++;
         ((u8*)cg_enemy4_3)[10] = *p;
-        vVramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_3);
+        vvramDraw4x4(draw_addr, p_obj->b_hit ? cg_enemy_damage4 : cg_enemy4_3);
     }
 }
 
@@ -897,7 +897,7 @@ void objEnemyDraw5_1(Obj* const p_obj, u8* draw_addr)
         ((u8*)cg_enemy5_1)[12] = *p++;
         ((u8*)cg_enemy5_1)[13] = *p++;
         ((u8*)cg_enemy5_1)[17] = *p;
-        vVramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_1);
+        vvramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_1);
     }
 }
 
@@ -914,7 +914,7 @@ void objEnemyDraw5_2(Obj* const p_obj, u8* draw_addr)
         ((u8*)cg_enemy5_2)[25 + 13] = c;
         ((u8*)cg_enemy5_2)[25 + 17] = c;
         ((u8*)cg_enemy5_2)[     12] = (rand8() & 0x0f) + 0xf0;
-        vVramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_2);
+        vvramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_2);
     }
 }
 
@@ -930,7 +930,7 @@ void objEnemyDraw5_3(Obj* const p_obj, u8* draw_addr)
         ((u8*)cg_enemy5_3)[25 +  4] = *p++;
         ((u8*)cg_enemy5_3)[25 + 20] = *p++;
         ((u8*)cg_enemy5_3)[25 + 24] = *p;
-        vVramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_3);
+        vvramDraw5x5(draw_addr, p_obj->b_hit ? cg_enemy_damage5 : cg_enemy5_3);
     }
 }
 
@@ -971,7 +971,7 @@ void objEnemyDraw8_1(Obj* const p_obj, u8* draw_addr)
             e = cg_enemy_damage8;
         }
         objEnemyDraw8_1Anim_(p_obj);
-        vVramDrawRect(draw_addr, e, W8H8(8, 8));
+        vvramDrawRect(draw_addr, e, W8H8(8, 8));
     }
 }
 void objEnemyDraw8_2(Obj* const p_obj, u8* draw_addr)
@@ -995,7 +995,7 @@ void objEnemyDraw8_3(Obj* const p_obj, u8* draw_addr)
             }
         }
         objEnemyDraw8_1Anim_(p_obj);
-        vVramDrawRect(draw_addr, e, W8H8(8, 8));
+        vvramDrawRect(draw_addr, e, W8H8(8, 8));
     }
 }
 

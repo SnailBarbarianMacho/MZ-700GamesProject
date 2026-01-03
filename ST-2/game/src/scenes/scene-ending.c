@@ -8,7 +8,7 @@
 #include "../system/sys.h"
 #include "../system/sound.h"
 #include "../system/print.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/math.h"
 #include "../game/score.h"
 #include "../game/stage.h"

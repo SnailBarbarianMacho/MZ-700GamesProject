@@ -8,7 +8,7 @@
 #include "../system/sys.h"
 #include "../system/input.h"
 #include "../system/obj.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/print.h"
 #include "../system/sound.h"
 #include "../system/math.h"
@@ -247,11 +247,11 @@ void objPlayerDraw(Obj* const p_obj, u8* draw_addr)
         }
         ct &= 1;
         if (!ct) {
-            vVramDraw3x3(draw_addr, cg_player);
+            vvramDraw3x3(draw_addr, cg_player);
             draw_addr += VVRAM_WIDTH * 2 + 1;
-            vVramDraw1x1(draw_addr, BACKFIRE_TAB2_[rand8() & 0x07]);
+            vvramDraw1x1(draw_addr, BACKFIRE_TAB2_[rand8() & 0x07]);
             draw_addr += VVRAM_WIDTH;
-            vVramDraw1x1(draw_addr, BACKFIRE_TAB1_[rand8() & 0x07]);
+            vvramDraw1x1(draw_addr, BACKFIRE_TAB1_[rand8() & 0x07]);
         }
         break;
     case OBJ_PLAYER_STEP_DEAD:
@@ -263,7 +263,7 @@ void objPlayerDraw(Obj* const p_obj, u8* draw_addr)
             printString(text_continue);
 #pragma disable_warning 110 // 除算最適化警告
 #pragma save
-            vVramDrawRectTransparent((u8*)VVRAM_TEXT_ADDR(18, 10), CONTINUE_TAB_[p_obj->ct / 32], W8H8(4, 4));
+            vvramDrawRectTransparent((u8*)VVRAM_TEXT_ADDR(18, 10), CONTINUE_TAB_[p_obj->ct / 32], W8H8(4, 4));
 #pragma restore
             if ((p_obj->ct % 32) == 31) {
                 sdPlaySe(SE_CONTINUE);

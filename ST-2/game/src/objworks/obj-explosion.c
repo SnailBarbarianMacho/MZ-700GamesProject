@@ -5,7 +5,7 @@
 
 #include "../../../../src-common/common.h"
 #include "../system/obj.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/sound.h"
 #include "../system/math.h"
 #include "../../cg/explosion0.h"
@@ -65,7 +65,7 @@ static const u8* const EXPLOSION_TAB_[] = {
 };
 void objExplosionDraw(Obj* const p_obj, u8* draw_addr)
 {
-    vVramDraw3x3Transparent(draw_addr, EXPLOSION_TAB_[p_obj->ct]);
+    vvramDraw3x3Transparent(draw_addr, EXPLOSION_TAB_[p_obj->ct]);
 }
 
 static const u8* const PLAYER_EXPLOSION_TAB_[] = {
@@ -76,5 +76,5 @@ static const u8* const PLAYER_EXPLOSION_TAB_[] = {
 };
 void objExplosionPlayerDraw(Obj* const p_obj, u8* draw_addr)
 {
-    vVramDraw3x3Transparent(draw_addr, PLAYER_EXPLOSION_TAB_[p_obj->ct]);
+    vvramDraw3x3Transparent(draw_addr, PLAYER_EXPLOSION_TAB_[p_obj->ct]);
 }

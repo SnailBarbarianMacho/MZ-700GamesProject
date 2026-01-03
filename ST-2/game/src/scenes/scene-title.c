@@ -8,7 +8,7 @@
 #include "../system/sys.h"
 #include "../system/version.h"
 #include "../system/input.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/print.h"
 #include "../system/math.h"
 #include "../system/sound.h"
@@ -133,17 +133,17 @@ const u8* sceneTitleGetStrNwkPresents(void)
 
 void sceneTitleDrawTitleS(const u8* draw_addr)
 {
-    vVramDrawRectTransparent(draw_addr, cg_title_s,      W8H8(CG_TITLE_S_WIDTH, CG_TITLE_S_HEIGHT));
+    vvramDrawRectTransparent(draw_addr, cg_title_s,      W8H8(CG_TITLE_S_WIDTH, CG_TITLE_S_HEIGHT));
 }
 void sceneTitleDrawTitleT(const u8* draw_addr)
 {
-    vVramDrawRectTransparent(draw_addr, cg_title_t,      W8H8(CG_TITLE_T_WIDTH, CG_TITLE_T_HEIGHT));
+    vvramDrawRectTransparent(draw_addr, cg_title_t,      W8H8(CG_TITLE_T_WIDTH, CG_TITLE_T_HEIGHT));
 }
 void sceneTitleDrawTitleHyphen(const u8* draw_addr)
 {
-    vVramDrawRectTransparent(draw_addr, cg_title_hyphen, W8H8(CG_TITLE_HYPHEN_WIDTH, CG_TITLE_HYPHEN_HEIGHT));
+    vvramDrawRectTransparent(draw_addr, cg_title_hyphen, W8H8(CG_TITLE_HYPHEN_WIDTH, CG_TITLE_HYPHEN_HEIGHT));
 }
 void sceneTitleDrawTitle2(const u8* draw_addr)
 {
-    vVramDrawRectTransparent(draw_addr, cg_title_2,      W8H8(CG_TITLE_2_WIDTH, CG_TITLE_2_HEIGHT));
+    vvramDrawRectTransparent(draw_addr, cg_title_2,      W8H8(CG_TITLE_2_WIDTH, CG_TITLE_2_HEIGHT));
 }

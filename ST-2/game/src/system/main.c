@@ -7,7 +7,7 @@
 #include "../../../../src-common/common.h"
 #include "sys.h"
 #include "input.h"
-#include "vram.h"
+#include "vvram.h"
 #include "print.h"
 #include "sound.h"
 #include "obj.h"
@@ -23,7 +23,7 @@ void main(void) __naked
     sysInit();
     sysSetScene(sceneLogoInit, sceneLogoMain);
     inputInit();
-    vramInit();
+    vvramInit();
     sdInit();
     objInit();
     mathInit();
@@ -41,6 +41,6 @@ void main(void) __naked
         scoreMain();
         sdBgmMain();
         sdSeMain();
-        vramTrans();
+        vvramTrans();
     }
 }

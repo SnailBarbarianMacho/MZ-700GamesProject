@@ -6,7 +6,7 @@
 #include "../../../../src-common/common.h"
 #include "addr.h"
 #include "obj.h"
-#include "vram.h"
+#include "vvram.h"
 #include "sound.h"
 
 // ---------------------------------------------------------------- 変数, マクロ

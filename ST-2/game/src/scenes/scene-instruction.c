@@ -6,7 +6,7 @@
 #include "../../../../src-common/common.h"
 #include "../system/addr.h"
 #include "../system/sys.h"
-#include "../system/vram.h"
+#include "../system/vvram.h"
 #include "../system/print.h"
 #include "../system/obj.h"
 #include "../game/score.h"

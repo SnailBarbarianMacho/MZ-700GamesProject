@@ -7,7 +7,7 @@
 #include "../../../../src-common/common.h"
 #include "addr.h"
 #include "sys.h"
-#include "vram.h"
+#include "vvram.h"
 #include "print.h"
 
 // ---------------------------------------------------------------- 変数
