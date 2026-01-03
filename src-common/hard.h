@@ -71,24 +71,24 @@
 #define MMIO_8255_CTRL_PORTC_BSR_SET(bit)   (((bit) << 1) | 1)      // BSR モードによるポートCのセット
 #define MMIO_8255_CTRL_PORTC_BSR_RES(bit)   (((bit) << 1) | 0)      // BSR モードによるポートCのリセット
 
-#define MMIO_8253_CT0                   0xe004  /// 8253 カウンタ 0. 出力は, サウンドに繋がってます
+#define MMIO_8253_CT0                   0xe004  /// 8253 カウンタ 0. 出力は, スピーカーに繋がってます
 #define MMIO_8253_CT1                   0xe005  /// 8253 カウンタ 1. 出力は, カウンタ 2 に繋がってます
 #define MMIO_8253_CT2                   0xe006  /// 8253 カウンタ 2. 出力は, Z80 の割込に繋がってます
 #define MMIO_8253_CTRL                  0xe007  /// 8253 制御
-#define MMIO_8253_CTRL_CT0_MASK         0x00    /// カウンタ 0 SC1～0
-#define MMIO_8253_CTRL_CT1_MASK         0x40    /// カウンタ 1 SC1～0
-#define MMIO_8253_CTRL_CT2_MASK         0x80    /// カウンタ 2 SC1～0
-#define MMIO_8253_CTRL_RL_LATCH_MASK    0x00    /// カウンタR/W時のビット数. カウンタ ラッチ操作 RL1～0
-#define MMIO_8253_CTRL_RL_L_MASK        0x10    /// カウンタR/W時のビット数. 下 8bit のみ        RL1～0
-#define MMIO_8253_CTRL_RL_H_MASK        0x20    /// カウンタR/W時のビット数. 上 8bit のみ        RL1～0
-#define MMIO_8253_CTRL_RL_LH_MASK       0x30    /// カウンタR/W時のビット数. 下→上 でアクセス   RL1～0
-#define MMIO_8253_CTRL_MODE0_MASK       0x00    /// モード0 M2～0
-#define MMIO_8253_CTRL_MODE1_MASK       0x02    /// モード1 M2～0
-#define MMIO_8253_CTRL_MODE2_MASK       0x04    /// モード2 M2～0
-#define MMIO_8253_CTRL_MODE3_MASK       0x06    /// モード3 M2～0
-#define MMIO_8253_CTRL_MODE4_MASK       0x08    /// モード4 M2～0
-#define MMIO_8253_CTRL_MODE5_MASK       0x0a    /// モード5 M2～0
-#define MMIO_8253_CTRL_BCD_MASK         0x01    /// BCD カウンタモード. 通常 0 で使用 BCD
+#define MMIO_8253_CTRL_CT0_MASK         0x00    /// (SC1～0) カウンタ 0 の制御
+#define MMIO_8253_CTRL_CT1_MASK         0x40    /// (SC1～0) カウンタ 1 の制御
+#define MMIO_8253_CTRL_CT2_MASK         0x80    /// (SC1～0) カウンタ 2 の制御
+#define MMIO_8253_CTRL_RL_LATCH_MASK    0x00    /// (RL1～0) カウンタ R/W 時のビット数. 16bit:下→上 でアクセス (ラッチ有)
+#define MMIO_8253_CTRL_RL_L_MASK        0x10    /// (RL1～0) カウンタ R/W 時のビット数. 下 8bit のみ
+#define MMIO_8253_CTRL_RL_H_MASK        0x20    /// (RL1～0) カウンタ R/W 時のビット数. 上 8bit のみ
+#define MMIO_8253_CTRL_RL_LH_MASK       0x30    /// (RL1～0) カウンタ R/W 時のビット数. 16bit:下→上 でアクセス (ラッチ無)
+#define MMIO_8253_CTRL_MODE0_MASK       0x00    /// (M2～0) モード0 (カウント終了割込)
+#define MMIO_8253_CTRL_MODE1_MASK       0x02    /// (M2～0) モード1 (プログラマブル ワンショット)
+#define MMIO_8253_CTRL_MODE2_MASK       0x04    /// (M2～0) モード2 (レート ジェネレータ)
+#define MMIO_8253_CTRL_MODE3_MASK       0x06    /// (M2～0) モード3 (方形波 レート ジェネレータ)
+#define MMIO_8253_CTRL_MODE4_MASK       0x08    /// (M2～0) モード4 (ソフトウェア トリガ ストローブ)
+#define MMIO_8253_CTRL_MODE5_MASK       0x0a    /// (M2～0) モード5 (ハードウェア ウェア トリガ ストローブ)
+#define MMIO_8253_CTRL_BCD_MASK         0x01    /// (BCD) '1' = BCD カウンタモード
 #define MMIO_8253_CTRL_CT0(rl_mask, mode_mask)   ((MMIO_8253_CTRL_CT0_MASK) | (rl_mask) | (mode_mask))
 #define MMIO_8253_CTRL_CT1(rl_mask, mode_mask)   ((MMIO_8253_CTRL_CT1_MASK) | (rl_mask) | (mode_mask))
 #define MMIO_8253_CTRL_CT2(rl_mask, mode_mask)   ((MMIO_8253_CTRL_CT2_MASK) | (rl_mask) | (mode_mask))

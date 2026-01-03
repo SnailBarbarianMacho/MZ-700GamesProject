@@ -5,6 +5,7 @@ all:
 	@cd memory-dirtinizer && make
 	@cd ram-check && make
 	@cd joystick-mz1x03-test && make
+	@cd 8253test && make
 	@cd sound-test1 && make
 	@cd SoundTest2 && make
 	@cd SoundTest3 && make
@@ -16,6 +17,7 @@ release:
 	@cd memory-dirtinizer && make
 	@cd ram-check && make
 	@cd joystick-mz1x03-test && make
+	@cd 8253test && make
 	@cd sound-test1 && make
 	@cd Sound-test2 && make
 	@cd Sound-test3 && make
@@ -27,9 +29,9 @@ clean:
 	@cd memory-dirtinizer && make clean
 	@cd ram-check && make clean
 	@cd joystick-mz1x03-test && make clean
+	@cd 8253test && make clean
 	@cd sound-test1 && make clean
 	@cd SoundTest2 && make clean
 	@cd SoundTest3 && make clean
 	@cd SoundTest4 && make clean
-	@cd JoystickMZ1X03Test && make clean
 	@cd ST-2 && make clean

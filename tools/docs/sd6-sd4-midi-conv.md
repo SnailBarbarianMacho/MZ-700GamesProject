@@ -1,3 +1,7 @@
+# MIDI → sd6 / sd4 形式データ変換ツール sd6-midi-conv / sd4-midi-conv
+- sd6 形式と sd4 形式は元データは共通してるので, 違うところは [sd6], [sd4] とマークを入れます
+- 個人使用のツールなので, バグが沢山あります
+
 目次:
 - [MIDI → sd6 / sd4 形式データ変換ツール sd6-midi-conv / sd4-midi-conv](#midi--sd6--sd4-形式データ変換ツール-sd6-midi-conv--sd4-midi-conv)
 - [ファイルとコマンド](#ファイルとコマンド)
@@ -32,11 +36,6 @@
 - [\[Appendix D\] Drum 音色の作成](#appendix-d-drum-音色の作成)
   - [\[SD6\]](#sd6)
   - [\[SD4\]](#sd4)
-
-# MIDI → sd6 / sd4 形式データ変換ツール sd6-midi-conv / sd4-midi-conv
-- sd6 形式と sd4 形式は元データは共通してるので, 違うところは [sd6], [sd4] とマークを入れます
-- バグや手抜きが沢山あります!
-
 
 # ファイルとコマンド
 
