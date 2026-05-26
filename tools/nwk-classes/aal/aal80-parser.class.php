@@ -6,7 +6,7 @@
 declare(strict_types = 1);
 namespace nwk\aal;
 require_once(__DIR__ . '/../utils/error.class.php');
-require_once('aal80-param.class.php');
+require_once('aal80-operand.class.php');
 
 
 // MARK: Parser
@@ -20,7 +20,7 @@ Class Parser
     private bool    $is_ended_;     // 末端に AAL_ENDM, AAL_NO_RETURN, AAL_FALL_THROUGH を指定したかのフラグ
 
     private int     $label_ct_;
-    private array   $labels_;
+    private array   $labels_;       //
 
     private int     $indent_lv_;
 
@@ -30,30 +30,10 @@ Class Parser
     public  const MODE_FUNC  = 'func';  // 関数モード
     public  const MODE_MACRO = 'macro'; // マクロ定義モード
 
-    private const EXPR_CHAR_ = '\w\+\-\*\/\%\&\|\^\~\(\)\<\>\,\.\ \t';  // 式を構成する文字 A-Za-z0-9_+-*%/()<>,. くらい?
+    private const EXPR_CHAR_ = '\w\!\?\=\+\-\*\/\%\&\|\^\~\(\)\<\>\,\.\ \t';  // 式を構成する文字 A-Za-z0-9!?=_+-*%/()<>,. くらい?
     private const EXPR_LIST_ = '[' . Parser::EXPR_CHAR_ . '\n\[\]]*';   // 式リスト     (EXPR_CHAR_ に \n[] を追加. 0文字以上)
     private const EXPR_MEM_  = '[' . Parser::EXPR_CHAR_ . '\n\[\]]+';   // メモリ式     (EXPR_CHAR_ に \n[] を追加. 1文字以上)
     public  const EXPR_NMEM  = '[' . Parser::EXPR_CHAR_ . '\n]+';       // メモリ無し式 (EXPR_CHAR_ に \n   を追加. 1文字以上)
-    private const EXPR_NLB_  = '[' . Parser::EXPR_CHAR_ . ']+';         // 改行無し式   (EXPR_CHAR_.                1文字以上)
-    public  const SYMBOL    = '[A-Za-z_][A-Za-z0-9_]*';                // シンボル('fooBar2', 'foo_bar_2' など)
-    private const BACK_REG_  = 'A_|B_|C_|D_|E_|H_|L_|AF_|BC_|DE_|HL_';
-    public  const REG        = 'A|B|C|D|E|H|L|I|R|IXH|IXL|IYH|IYL|AF|BC|DE|HL|PC|SP|IX|IY|XH|XL|YH|YL|' . Parser::BACK_REG_;
-    public  const FLAG_IF           = // if (<式>) の式の内容
-        'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
-        'z_else_jr|eq_else_jr|nz_else_jr|ne_else_jr|c_else_jr|lt_else_jr|nc_else_jr|ge_else_jr|p_else_jr|m_else_jr|v_else_jr|nv_else_jr|pe_else_jr|po_else_jr|' .
-        'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
-        'z_jr_else_jr|eq_jr_else_jr|nz_jr_else_jr|ne_jr_else_jr|c_jr_else_jr|lt_jr_else_jr|nc_jr_else_jr|ge_jr_else_jr';
-    private const FLAG_IF1_         = // if (<式>) <文1> で, <文1> が「単文の goto/jp()/jr()/call()/ret()」の場合に使える <式> の内容
-        'z|nz|c|nc|p|m|v|nv|pe|po';
-    private const FLAG_DO_WHILE_    = // do <文> while(<式>) での式の内容
-        'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
-        'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
-        'true|true_jr|false|B--|--B';
-    private const FLAG_WHILE_       = // while(<式>) <文> での式の内容
-        'z|eq|nz|ne|c|lt|nc|ge|p|m|v|nv|pe|po|' .
-        'z_jr|eq_jr|nz_jr|ne_jr|c_jr|lt_jr|nc_jr|ge_jr|' .
-        'true';
-    private const NOT_FLAG_         =  '(?!z,)(?!nz,)(?!c,)(?!nc,)(?!p,)(?!m,)(?!v,)(?!nv,)(?!pe,)(?!po,)(?!eq,)(?!ne,)(?!lt,)(?!ge,)';
     private const FLAG_CONV_TAB_ = array( // フラグを一般的なcc形式に
         'z'  => 'z',
         'eq' => 'z',
@@ -100,52 +80,18 @@ Class Parser
         'nc_jr_else_jr' => 'nc',
         'ge_jr_else_jr' => 'nc',
     );
-    private const FLAG_NEG_TAB_ = array( // フラグを反転
+    private const FLAG_NEG_CONV_TAB_ = array( // FLAG_CONV_TAB のフラグを反転したもの
         ''   => 'false',
         'z'  => 'nz',
-        'eq' => 'nz',
         'nz' => 'z',
-        'ne' => 'z',
         'c'  => 'nc',
-        'lt' => 'nc',
         'nc' => 'c',
-        'ge' => 'c',
         'p'  => 'm',
         'm'  => 'p',
         'v'  => 'nv',
         'nv' => 'v',
         'pe' => 'po',
         'po' => 'pe',
-        'z_else_jr'  => 'nz',
-        'eq_else_jr' => 'nz',
-        'nz_else_jr' => 'z',
-        'ne_else_jr' => 'z',
-        'c_else_jr'  => 'nc',
-        'lt_else_jr' => 'nc',
-        'nc_else_jr' => 'c',
-        'ge_else_jr' => 'c',
-        'p_else_jr'  => 'm',
-        'm_else_jr'  => 'p',
-        'v_else_jr'  => 'nv',
-        'nv_else_jr' => 'v',
-        'pe_else_jr' => 'po',
-        'po_else_jr' => 'pe',
-        'z_jr'  => 'nz',
-        'eq_jr' => 'nz',
-        'nz_jr' => 'z',
-        'ne_jr' => 'z',
-        'c_jr'  => 'nc',
-        'lt_jr' => 'nc',
-        'nc_jr' => 'c',
-        'ge_jr' => 'c',
-        'z_jr_else_jr'  => 'nz',
-        'eq_jr_else_jr' => 'nz',
-        'nz_jr_else_jr' => 'z',
-        'ne_jr_else_jr' => 'z',
-        'c_jr_else_jr'  => 'nc',
-        'lt_jr_else_jr' => 'nc',
-        'nc_jr_else_jr' => 'c',
-        'ge_jr_else_jr' => 'c',
     );
     private const DO_WHILE_OP_TAB_ = // do <文> while (<式>) の式からループ末のジャンプ命令を決めます
         array(
@@ -159,11 +105,11 @@ Class Parser
             'nz_jr' => 'jr nz,', 'ne_jr' => 'jr nz',
             'c_jr'  => 'jr c,',  'lt_jr' => 'jr c,',
             'nc_jr' => 'jr nc,', 'ge_jr' => 'jr nc,',
-            'true'  => 'jp',
-            'true_jr' => 'jr',
             'false' => '',
             'B--'   => 'djnz B,',
             '--B'   => 'djnz B,',
+            'B_--'  => 'djnz B,',
+            '--B_'  => 'djnz B,',
         );
     private const WHILE_OP_TAB_ = // while (<式>) <文> の式からループ先頭のジャンプ命令を決めます
         array(
@@ -179,18 +125,6 @@ Class Parser
             'nc_jr' => 'jr c,',  'ge_jr' => 'jr c,',
             'true'  => 'jp',
         );
-    public const REGS_G16_SPLIT8_TAB_ = [ // AF, SP, PC を除いた汎用16bitレジスタと 8bit に分解したテーブル
-        'HL' => ['L', 'H'],
-        'DE' => ['E', 'D'],
-        'BC' => ['C', 'B'],
-        'IX' => ['IXL', 'IXH'],
-        'IY' => ['IYL', 'IYH'],
-        'HL_' => ['L', 'H'],    // 裏レジスタに分解する必要はないでしょう
-        'DE_' => ['E', 'D'],
-        'BC_' => ['C', 'B'],
-        'IX_' => ['IXL', 'IXH'],
-        'IY_' => ['IYL', 'IYH'],
-    ];
 
     // MARK: __construct()
     /** コンストラクタ */
@@ -282,9 +216,14 @@ Class Parser
             return $this->parseWhitespaces_($r_str, $r_offset, $matches[1]);
         }
 
+        // 'int xxxx, yyyy;' は無視
+        if (preg_match('/(int\s+[\w,\s]+)/Ax', $r_str, $matches, 0, $r_offset)) {
+            return $this->parseInt_($r_str, $r_offset, $matches[1]);
+        }
+
         // 'AAL_' で始まる指示語
         if (preg_match('/(AAL_[A-Z_]+)/Ax', $r_str, $matches, 0, $r_offset)) {
-            return $this->parseZ80anaDirective_($r_str, $r_offset, $matches[1]);
+            return $this->parseZ80aalDirective_($r_str, $r_offset, $matches[1]);
         }
 
         // '#' で始まるプリプロセス
@@ -298,27 +237,34 @@ Class Parser
         }
 
         // goto <式>;
-        if (preg_match('/(goto) \s* (\w+) \s* \;/Ax', $r_str, $matches, 0, $r_offset)) {
-            return $this->parseGoto_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
-        }
+        //if (preg_match('/(goto) \s* (.+)\;/Ax', $r_str, $matches, 0, $r_offset)) {
+        //    return $this->parseGoto_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
+        //}
 
         // extern <式>[, ...];
         if (preg_match('/(extern) \s* ([\w\s\,]+) \s* \;/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseExtern_($r_str, $r_offset, $matches[0], $matches[1], $matches[2]);
         }
 
-        // if (<式>) <文> else <文> ※式はフラグのみ
-        if (preg_match('/if \s* \( \s* (' . Parser::FLAG_IF . ') \s* \) /Ax', $r_str, $matches, 0, $r_offset)) {
+        // if (<式>) <文> else <文>
+        if (preg_match('/if \s* (\( (?:[^()]+ | (?1))* \))/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseIf_($r_str, $r_offset, $matches[0], $matches[1], $continue, $break);
         }
 
-        // do <文> while (<式>); ※式はフラグ, 'true', 'true_jr', 'false', 'B--', '--B' のみ
+        // do <文> while (<式>);
         if (preg_match('/do [\w\s,]+ /Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseDoWhile_($r_str, $r_offset);
         }
 
-        // while(<式>) <文> ※式はフラグ, 'true' のみ
-        if (preg_match('/while \s* \( \s* (' . Parser::FLAG_WHILE_ . ') \s* \)/Ax', $r_str, $matches, 0, $r_offset)) {
+        // while (<式>) <文>
+        if (preg_match('/while \s* (\( (?:[^()]+ | (?1))* \))/Ax', $r_str, $matches, 0, $r_offset)) {
+            // ↑正規表現の説明
+            // a. (?: ... )* は, カッコの中身を0回以上繰り返す
+            // b. [^()]*     は, カッコ以外の文字0文字以上にマッチ
+            // c. |          または
+            // d. (?1)       再帰的に a. のカッコを再帰します
+            // e. ... /Ax    Aは最初にマッチ, x は正規表現の切れ目をスペースで分かりやすく見せる
+            // 'while (abc(de))' は, '(abc(de))' にマッチします. 両側のカッコを取り除いて使ってください
             return $this->parseWhile_($r_str, $r_offset, $matches[0], $matches[1]);
         }
 
@@ -340,7 +286,7 @@ Class Parser
         }
 
         // シンボル名:
-        if (preg_match('/(' . Parser::SYMBOL . '\:)/Ax', $r_str, $matches, 0, $r_offset)) {
+        if (preg_match('/(' . Operand::SYMBOL . '\:)/Ax', $r_str, $matches, 0, $r_offset)) {
             return $this->parseLabel_($r_str, $r_offset, $matches[1]);
         }
 
@@ -389,27 +335,36 @@ Class Parser
         return '';
     }
 
+    // MARK: parseInt_()
+    /** 'int xxxxx' のパース */
+    private function parseInt_(string &$r_str, int &$r_offset, string $match): string
+    {
+        $r_offset  += strlen($match);
+        return '';
+    }
 
-    // MARK: parseZ80anaDirective_()
+    // MARK: parseZ80aalDirective_()
     /** 'AAL_' で始まる指示語. インデントなし */
-    private function parseZ80anaDirective_(string &$r_str, int &$r_offset, string $directive): string
+    private function parseZ80aalDirective_(string &$r_str, int &$r_offset, string $directive): string
     {
         // echo("directive1[$r_offset $this->line_nr_][$directive]\n");
-        // 括弧の無いディレクティブの処理を先にやる
         $offset_old = $r_offset;
         $r_offset += strlen($directive);
+        $ret  = '';
+
+        // カッコの無いディレクティブ
         switch ($directive) {
             case 'AAL_ELSE':
                 $this->decIndent_();
-                $ret = "else\n";
+                $ret = $this->getIndentStr_() . "else\n";
                 $this->incIndent_();
                 return $ret;
             case 'AAL_ENDIF':
                 $this->decIndent_();
-                return "endif\n";
+                return $this->getIndentStr_() . "endif\n";
             case 'AAL_ENDR':
                 $this->decIndent_();
-                return "endr\n";
+                return $this->getIndentStr_() . "endr\n";
             case 'AAL_DEF_VARS':
                 $this->defVarsDirective_($r_str, $offset_old);
                 return '';
@@ -424,15 +379,46 @@ Class Parser
                 return '';
         }
 
-        // 括弧のあるディレクティブの処理
+        // 引数のあるディレク底部
         $args = $this->extractParentheses_($r_str, $r_offset);
-        $f = $directive . '_';
-        if (method_exists($this, $f)) {
-            return $this->{$f}($args) . "\n";
-        } else {
-            $this->errorLine_("この AAL ディレクティブは存在しません", $directive);
-            return '';
+        switch ($directive) {
+            case 'AAL_DEF_DUMMY_VARS':
+                return "\n";
+            case 'AAL_LOCAL':
+                return $this->getIndentStr_() . $this->parseLocalGlobal_('local', $args) . "\n";
+            case 'AAL_GLOBAL':
+                return $this->getIndentStr_() . $this->parseLocalGlobal_('global', $args) . "\n";
+            case 'AAL_DB':
+                return $this->getIndentStr_() . $this->parseDb_($args) . "\n";
+            case 'AAL_DW':
+                return $this->getIndentStr_() . $this->parseDw_($args) . "\n";
+            case 'AAL_DS':
+                return $this->getIndentStr_() . $this->parseDs_($args) . "\n";
+            case 'AAL_IF':
+                $ret = $this->getIndentStr_() . $this->parseIfRept_('if', $args) . "\n";
+                $this->incIndent_();
+                return $ret;
+            case 'AAL_ELIF':
+                $this->decIndent_();
+                $ret = $this->getIndentStr_() . $this->parseIfRept_('elif', $args) . "\n";
+                $this->incIndent_();
+                return $ret;
+            case 'AAL_REPT':
+                $ret = $this->getIndentStr_() . $this->parseIfRept_('rept', $args) . "\n";
+                $this->incIndent_();
+                return $ret;
+            case 'AAL_REPTC':
+                $ret = $this->getIndentStr_() . $this->parseReptc_($args) . "\n";
+                $this->incIndent_();
+                return $ret;
+            case 'AAL_REPTI':
+                $ret = $this->getIndentStr_() . $this->parseRepti_($args) . "\n";
+                $this->incIndent_();
+                return $ret;
         }
+
+        $this->errorLine_("この AAL ディレクティブは存在しません", $directive);
+        return $ret;
     }
 
 
@@ -476,54 +462,63 @@ Class Parser
 
     // MARK: parseGoto_()
     /** goto <式>; */
-    private function parseGoto_(string &$r_str, int &$r_offset, $match, $directive, $label): string
+    private function parseGoto_(string &$r_str, int &$r_offset, string $match, string $directive, string $to): string
     {
         $r_offset  += strlen($match);
         $this->line_nr_ += substr_count($match, "\n");
-        return $this->getIndentStr_() . "jp $label\n";
+
+        $opcode = 'goto';
+        $operands = $this->createOperands_($opcode, $to, 1);
+        if ($operands === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $operands[0], 1, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+            return $this->getIndentStr_() . "jp " . $operands[0]->out . "\n";
+        }
+
+        return '';
     }
 
 
     // MARK: parseExtern_()
     /** extern <式>[, ...]; */
-    private function parseExtern_(string &$r_str, int &$r_offset, $match, $directive, $labels): string
+    private function parseExtern_(string &$r_str, int &$r_offset, string $match, string $directive, string $labels): string
     {
         $r_offset  += strlen($match);
         $this->line_nr_ += substr_count($match, "\n");
-        $params = $this->explodeByComma_($labels);
 
-        $ret = $this->getIndentStr_() . "extern ";
-        $err = false;
-
-        foreach($params as $i => $param) {
-            $p = $this->createParamObject_($param);
-            if ($p === null || $p->type !== Param::TYPE_VAL) {
-                $this->errorLine_("$opcode 引数 ". ($i + 1) . " のエラー", $param);
-                $err = true;
-            } else {
-                if ($i !== 0) { $ret .= ', '; }
-                $ret .= $p->value;
-            }
-        }
-        if ($err) {
-            return '';
-        }
-        return "$ret\n";
+        $opcode = 'extern';
+        $ret = $this->parseVariadicCommon_($opcode, $labels, 1, $opcode . ' ',
+            function(string $opcode, Operand $operand, int $index) : string {
+                if ($this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_SYM])) {
+                    return $operand->value;
+                }
+                return '';
+            },
+        '', ', ');
+        return $this->getIndentStr_() . $ret . "\n";
     }
 
 
     // MARK: parseIf_()
-    /** if (flag) <文1> else <文2> */
-    private function parseIf_(string &$r_str, int &$r_offset, $match, $flag, ?string $continue, ?string $break): string
+    /** if (<式>) <文1> else <文2> */
+    private function parseIf_(string &$r_str, int &$r_offset, string $match, string $expr, ?string $continue, ?string $break): string
     {
-        $r_offset  += strlen($match);
-        $this->line_nr_ += substr_count($match, "\n");
+        $r_offset = $this->skipStringSpaces_($r_str, $r_offset, $match);
 
-        // flag から, ジャンプ命令とラベルの設定
-        $flag_neg = Parser::FLAG_NEG_TAB_[$flag];
-        $opcode_if   = 'jp';
-        $opcode_else = 'jp';
+        // $expr をオペランドに変換し, 型のチェック
+        $expr = substr($expr, 1, -1); // 両側のカッコを取り除く
+        $operands = $this->createOperands_('if', $expr, 1);
+        if ($operands === null) { return ''; }
 
+        if (!$this->checkTypeOneOf_('if', $operands[0], 1, [Operand::TYPE_FLAG_COMMON, Operand::TYPE_FLAG_IF])) { return ''; }
+        $flag = $operands[0]->out;
+
+        // ラベル生成・登録
+        [$label_else, $label_endif] = $this->genRegistLabels_(["else", "endif"]);
+
+        // <式> の解析
+        $opcode_if   = 'jp';    // if() で使う条件ジャンプ命令
+        $opcode_else = 'jp';    // <文1> 後の無条件ジャンプ命令 (else が無ければ無視)
         if (str_ends_with($flag, '_jr_else_jr') ||
             (str_ends_with($flag, '_jr') && !str_ends_with($flag, '_else_jr'))) {
             $opcode_if = 'jr';
@@ -531,41 +526,85 @@ Class Parser
         if (str_ends_with($flag, '_else_jr')) {
             $opcode_else = 'jr';
         }
+        $jump_if      = $label_endif;
+        $flag         = Parser::FLAG_CONV_TAB_[$flag];
+        $opcode_if   .= ' ' . Parser::FLAG_NEG_CONV_TAB_[$flag] . ', ';
+        $opcode_else .= ' ' . $label_endif;
 
-        if ($flag_neg !== 'false') { $flag_neg .= ','; }
-
-        $label_else = '';
-        $label_endif = $this->genRegistLabel_();
-        $this->skipSpaces_($r_str, $r_offset);
-
-        // <文1> の処理
+        // <文1> の解析
         $this->incIndent_();
-        $out_sentence1 = $this->parseSentence_($r_str, $r_offset, $continue, $break);
+        $sentence1 = $this->parseSentence_($r_str, $r_offset, $continue, $break);
+        $sentence2 = '';
         $this->decIndent_();
+        $r_offset = $this->skipStringSpaces_($r_str, $r_offset);
 
-        // <文1> が「単文の jp/jr/call/ret 命令」になってる場合, 1命令に最適化されます.
-        // ※if (cc) break; 等も最適化されます
-        if (preg_match('/^([ \t]*)(jp|jr|call)([ \t]+)(' . Parser::EXPR_NLB_ . ')(\r?\n)$/Ax', $out_sentence1, $matches) &&
-            !preg_match('/^(' . Parser::FLAG_IF1_ . '),/', $matches[4])) { // フラグのない jp/jr/call 命令であること
-            $opcode_1 = $matches[2];   // <文1> の命令 (jp|jr|call)
-            $addr     = $matches[4];   // <文1> ジャンプ/コール先
-            if ($opcode_if === 'jr') {
-                if ($opcode_1 === 'call') {
-                    $this->errorLine_("if 節の 1命令 call 文では, if (式) に jr は使えません");
-                }
-                $opcode_1 = 'jr';
+        // else の検出
+        if (!preg_match('/else\W/Ax', $r_str, $matches, 0, $r_offset)) {
+            $label_else = '';
+
+            // else 無し
+            // 最適化
+            //   <文1> が「単文,フラグ判定無しの jp/jr/call/ret 命令」になってる場合, 1命令に最適化します
+            //   1命令でできるなら, opcode_if を書き換えて, sentence1 は破棄
+            //   原始的ですが, アセンブラソース状態で判別します. カンマが入ってたらダメ
+            if (preg_match('/^ \s* (jp|jr|call) \s+ ([^,\s]+) \s* (\/\/.*)?$/Ax', $sentence1, $matches)) {
+                $opcode_if = $matches[1] . ' ' . $flag . ', ' . $matches[2] . (count($matches) === 4 ? $matches[3] : '');
+                $jump_if = '';
+                $sentence1 = '';
+                $label_endif = '';
+            } else if (preg_match('/^ \s* (ret) \s* $/Ax', $sentence1, $matches)) {
+                $opcode_if = $matches[1] . ' ' . $flag;
+                $jump_if = '';
+                $sentence1 = '';
+                $label_endif = '';
             }
-            $out = $this->getIndentStr_() . $opcode_1 . ' ' . Parser::FLAG_CONV_TAB_[$flag] . ', ' . $matches[4] . "\n";
-            $opcode_else = '';  // 最適化したフラグ兼用
-        } else if (preg_match('/^([ \t]*)(ret)([ \t]*)(\r?\n)$/Ax', $out_sentence1, $matches)) {
-            if ($opcode_if === 'jr') {
-                $this->errorLine_("if 節の 1命令 ret 文では, if (式) に jr は使えません");
-            }
-            $out = $this->getIndentStr_() . 'ret ' . Parser::FLAG_CONV_TAB_[$flag] . "\n";
-            $opcode_else = '';  // 最適化したフラグ兼用
+
+        } else {
+            // else 有
+            $jump_if = $label_else;
+            $r_offset = $this->skipStringSpaces_($r_str, $r_offset, $matches[0]);
+
+            // <文2> の解析
+            $this->incIndent_();
+            $sentence2 = $this->parseSentence_($r_str, $r_offset, $continue, $break);
+            $this->decIndent_();
+            $r_offset = $this->skipStringSpaces_($r_str, $r_offset);
         }
-        $this->skipSpaces_($r_str, $r_offset);
 
+    //echo("[$opcode_if $jump_if][$opcode_else][$r_offset][$sentence1][$sentence2]\n");
+    // 出力文字列作成
+    $indent = $this->getIndentStr_();
+    $out =
+        $indent . $opcode_if . $jump_if . "\n" .
+        $sentence1 .
+        (($sentence2 !== '') ? (
+            $indent . $opcode_else . "\n" .
+            $indent . $label_else . ":\n" .
+            $sentence2) : '') .
+        (($label_endif !== '') ? (
+            $indent . $label_endif . ":\n") : '') .
+        "\n";
+
+    // YET
+    // 後処理の最適化
+    // xxxxx: jp label_endif
+    // となってるコードを探し, xxxxx にジャンプしてるコードを全て label_endif に書き換えます
+    if ($label_endif !== '') {
+        if (preg_match_all('/\n \s* (' . Operand::SYMBOL . '): \s* (jp|jr) \s+' . $label_endif . '/x', $out, $matches)) {
+            if ($matches) {
+                for ($i = 0; $i < count($matches[0]); $i++) {
+                    $label_org = $matches[1][$i]; // 元のジャンプ先
+                    //echo("最適化[". $matches[0][$i] . "] $label_org -> $label_endif\n");
+                    $out = preg_replace('/('. $label_org . ')([^:])/', $label_endif . ' // optimized from ' . $label_org . '$2' , $out, -1, $count);
+                    if ($count !== 0) {
+                        //echo("note: ネストする if - else 節の多重ジャンプが最適化されました: $label_org -> $label_endif, $count 箇所\n");
+                    }/**/
+                }
+            }
+        }
+    }
+
+    /*
         if (!preg_match('/else/Ax', $r_str, $matches, 0, $r_offset)) { // if のみ
             // if () <文1> 節の後のラベル. if が最適化された場合はラベル無し
             if ($opcode_else !== '') {
@@ -585,34 +624,18 @@ Class Parser
             }
 
             // <文2> の処理
-            $this->skipSpaces_($r_str, $r_offset);
+            $r_offset = $this->skipStringSpaces_($r_str, $r_offset);
             $this->incIndent_();
             $out .= $this->parseSentence_($r_str, $r_offset, $continue, $break);
             $this->decIndent_();
-            $this->skipSpaces_($r_str, $r_offset);
+            $r_offset = $this->skipStringSpaces_($r_str, $r_offset);
 
             // else <文2> 節の後のラベル. if が最適化された場合はラベル無し
             if ($opcode_else !== '') {
                 $out .= "$label_endif: // } endif\n";
             }
         }
-        // 後処理の最適化
-        //    xxxxx:\n  jp label_endif
-        // となってるコードを探し, xxxxx にジャンプしてるコードを label_endif に書き換えます
-        if (preg_match_all('/\n[ \t]*(' . Parser::SYMBOL . '):\n[ \t]*(jp|jr)[ \t]*' . $label_endif . '/', $out, $matches)) {
-            if ($matches) {
-                //echo("else:$label_else endif:$label_endif\n");
-                for ($i = 0; $i < count($matches[0]); $i++) {
-                    $label_org = $matches[1][$i]; // 元のジャンプ先
-                    //echo("最適化[". $matches[0][$i] . "] $label_org -> $label_endif\n");
-                    $out = preg_replace('/('. $label_org . ')([^:])/', $label_endif . ' // optimized from ' . $label_org . '$2' , $out, -1, $count);
-                    if ($count !== 0) {
-                        echo("note: ネストする if - else 節の多重ジャンプが最適化されました: $label_org -> $label_endif, $count 箇所\n");
-                    }
-                }
-            }
-        }
-
+    */
         return $out;
     }
 
@@ -620,66 +643,85 @@ Class Parser
     /** do <文> while (<式>); */
     private function parseDoWhile_(string &$r_str, int &$r_offset): string
     {
-        $r_offset += strlen('do');
+        $r_offset = $this->skipStringSpaces_($r_str, $r_offset, 'do');
 
-        $label_loop_top = $this->genRegistLabel_(); // continue のジャンプ先
-        $label_loop_end = $this->genRegistLabel_(); // break のジャンプ先
+        // ラベル生成・登録
+        [$label_loop_top, $label_loop_end, $label_loop_exit] = $this->genRegistLabels_(["loop_top", "loop_end", "loop_exit"]); // ループ先頭と末尾,外のラベル
 
-        // <文>の処理
-        $this->skipSpaces_($r_str, $r_offset);
+        // <文> の解析
         $this->incIndent_();
-        $out_sentence = $this->parseSentence_($r_str, $r_offset, $label_loop_top, $label_loop_end);
+        $sentence = $this->parseSentence_($r_str, $r_offset, $label_loop_end, $label_loop_exit);
         $this->decIndent_();
-        $this->skipSpaces_($r_str, $r_offset);
+        $r_offset = $this->skipStringSpaces_($r_str, $r_offset);
 
-        // while() の処理
-        if (!preg_match('/while \s* \( \s* (' . Parser::FLAG_DO_WHILE_ . ') \s* \) \s* ;/Ax', $r_str, $matches, 0, $r_offset)) {
+        // while (<式>) の抽出
+        //         // 正規表現については, parseWhile_() 呼び出し部分を参考に
+        if (!preg_match('/while \s* (\( (?:[^()]+ | (?1))* \))/Ax', $r_str, $matches, 0, $r_offset)) {
             $this->errorLine_("do に対する while 句が無いか, あってもカッコの中が間違ってます");
             return '';
         }
 
-        $flag = $matches[1];
+        // <式> の解析
+        $expr = substr($matches[1], 1, -1); // 両側のカッコを取り除く
+        $operands = $this->createOperands_('while', $expr, 1);
+        $r_offset += strlen($matches[0]);
+        if ($operands === null) { return ''; }
+        if (!$this->checkTypeOneOf_('while', $operands[0], 1, [Operand::TYPE_FLAG_COMMON, Operand::TYPE_FALSE, Operand::TYPE_FLAG_DO_WHILE])) { return ''; }
+
+        // ループ末端の jump 命令
         $loop_end_inst = '';    // while (false) の場合, ループ末端のジャンプ命令は省く
-        $loop_end_op = Parser::DO_WHILE_OP_TAB_[$flag];
+        $loop_end_op = Parser::DO_WHILE_OP_TAB_[$operands[0]->out];
         if ($loop_end_op !== '') {
             $loop_end_inst = $loop_end_op . ' ' . $label_loop_top;
         }
 
-        $out = $this->getIndentStr_() . $label_loop_top . ": // do {\n" .
-            $out_sentence .
-            $this->getIndentStr_() . $loop_end_inst . " // } while ($flag)\n" .
-                $this->getIndentStr_() . $label_loop_end . ": // loop end\n";
-
-            $r_offset += strlen($matches[0]);
+        // 文字列作成
+        $indent = $this->getIndentStr_();
+        $out =
+            $indent . $label_loop_top . ": // do {\n" .
+            $sentence .
+            $indent . $label_loop_end . ":\n" .
+            $indent . $loop_end_inst . " // } while (" . $operands[0]->out. ")\n" .
+            $indent . $label_loop_exit . ": // loop exit\n\n";
 
         return $out;
     }
 
 
-    /** while(<式>) <文> ※式はフラグ, 'true' のみ */
-    private function parseWhile_(string &$r_str, int &$r_offset, string $match, string $flag): string
+    /** while (<式>) <文> */
+    private function parseWhile_(string &$r_str, int &$r_offset, string $match, string $expr): string
     {
-        $r_offset += strlen($match);
+        $r_offset = $this->skipStringSpaces_($r_str, $r_offset, $match);
 
-        $label_loop_top = $this->genRegistLabel_(); // continue のジャンプ先
-        $label_loop_end = $this->genRegistLabel_(); // break のジャンプ先
+        // $expr をオペランドに変換し, 型のチェック
+        $expr = substr($expr, 1, -1); // 両側のカッコを取り除く
+        $operands = $this->createOperands_('while', $expr, 1);
+        if ($operands === null) { return ''; }
+        if (!$this->checkTypeOneOf_('while', $operands[0], 1, [Operand::TYPE_FLAG_COMMON, Operand::TYPE_TRUE, Operand::TYPE_FLAG_WHILE])) { return ''; }
 
-        $this->skipSpaces_($r_str, $r_offset);
-        $this->incIndent_();
-        $out_sentence = $this->parseSentence_($r_str, $r_offset, $label_loop_top, $label_loop_end);
-        $this->decIndent_();
-        $this->skipSpaces_($r_str, $r_offset);
+        // ラベル生成・登録
+        [$label_loop_top, $label_loop_exit] = $this->genRegistLabels_(["loop_top", "loop_exit"]); // ループ先頭とループ外のラベル
 
+        // <式> の解析
         $loop_top_op = '';
-        if ($flag !== 'true') {
-            $loop_top_op = Parser::WHILE_OP_TAB_[$flag] . ' ' . $label_loop_end;
+        if ($operands[0]->out !== 'true') {
+            $loop_top_op = Parser::WHILE_OP_TAB_[$operands[0]->out] . ' ' . $label_loop_exit . "\n";
         }
 
-        $out = $label_loop_top . ": // while ($flag) {\n" .
-            $loop_top_op .
-            $out_sentence .
-            $this->getIndentStr_() . 'jp ' . $label_loop_top . " // }\n" .
-            $label_loop_end . ": // loop end\n";
+        // <文> の解析
+        $out_sentence = $this->parseSentence_($r_str, $r_offset, $label_loop_top, $label_loop_exit);
+
+        // 文字列作成
+        $indent1 = $this->getIndentStr_();
+        $this->incIndent_();
+        $indent2 = $this->getIndentStr_();
+        $this->decIndent_();
+        $out =
+            $indent1 . $label_loop_top . ": // while (" . $operands[0]->out . ") {\n" .
+            ($loop_top_op === '' ? "" : ($indent2 . $loop_top_op)) .
+            $indent1 . $out_sentence .
+            $indent2 . 'jp ' . $label_loop_top . " // }\n" .
+            $indent1 . $label_loop_exit . ": // loop exit\n\n";
 
         return $out;
     }
@@ -696,8 +738,7 @@ Class Parser
             $out = $this->getIndentStr_() . "jp $break // break\n";
         }
 
-        $r_offset += strlen($match);
-        $this->skipSpaces_($r_str, $r_offset);
+        $r_offset = $this->skipStringSpaces_($r_str, $r_offset, $match);
 
         return $out;
     }
@@ -714,8 +755,7 @@ Class Parser
             $out = $this->getIndentStr_() . "jp $continue // continue\n";
         }
 
-        $r_offset += strlen($match);
-        $this->skipSpaces_($r_str, $r_offset);
+        $r_offset = $this->skipStringSpaces_($r_str, $r_offset, $match);
 
         return $out;
     }
@@ -763,66 +803,26 @@ Class Parser
         //echo("assignOp1[$r_offset $this->line_nr_][$l_value][$op][$r_value]\n");
 
         // 型によって命令が変わるので, 右辺値, 左辺値の型を調べる
-        $b_err = false;
-        $l_value = $this->stripBackReg_($l_value);
-        $r_value = $this->stripBackReg_($r_value);
-        $l_param = $this->createParamObject_($l_value);
-        $r_param = $this->createParamObject_($r_value);
-        if ($l_param === null) {
-            $this->errorLine_("左辺値の異常", $match);
-            $b_err = true;
-        }
-        if ($r_param === null) {
-            $this->errorLine_("右辺値の異常", $match);
-            $b_err = true;
-        }
         $ret = '';
-        if ($b_err !== true) {
-            $expr = $l_value . "," . $this->cutOffCarryExpr_($r_value);
+        $expr = $l_value . "," . $r_value;
 
-            // 入出力
-            if ($l_param->type === Param::TYPE_PORT || $r_param->type === Param::TYPE_PORT) {
-                if ($op !== '=') {
-                    $this->errorLine_("入出力で使える演算子は '=' のみです", $match);
-                } else {
-                    if ($r_param->type === Param::TYPE_PORT) {
-                        $ret = $this->in_($expr, $this->line_nr_);
-                    } else {
-                        $ret = $this->out_($expr, $this->line_nr_);
-                    }
-                }
-            } else {
-                // $op によって命令を決める
-                switch ($op) {
-                    case '=': $ret = $this->ld_($expr, $this->line_nr_); break;
-                    case '+=':
-                        if ($r_param->isTypeMemRegValC()) {
-                            $ret = $this->adc_($expr, $this->line_nr_);
-                        } else {
-                            $ret = $this->add_($expr, $this->line_nr_);
-                        }
-                        break;
-                    case '-=':
-                        if ($r_param->isTypeMemRegValC()) {
-                            $ret = $this->sbc_($expr, $this->line_nr_);
-                        } else {
-                            $ret = $this->sub_($expr, $this->line_nr_);
-                        }
-                        break;
-                    case '&=': $ret = $this->and_($expr, $this->line_nr_); break;
-                    case '|=': $ret = $this->or_($expr, $this->line_nr_); break;
-                    case '^=': $ret = $this->xor_($expr, $this->line_nr_); break;
-                    case '>>=': $ret = $this->srl_n_($expr, $this->line_nr_); break;
-                    case '<<=': $ret = $this->sla_n_($expr, $this->line_nr_); break;
-                }
-            }
+        // $op によって命令を決める
+        switch ($op) {
+            case '=': $ret =  $this->parseLdInOut_($expr); break;
+            case '+=': $ret = $this->parseAddAdc_($expr); break;
+            case '-=': $ret = $this->parseSubSbc_($expr); break;
+            case '&=': $ret = $this->parseAnd_('and', $expr); break;
+            case '|=': $ret = $this->parseAnd_('or',  $expr); break;
+            case '^=': $ret = $this->parseAnd_('xor', $expr); break;
+            case '>>=': $ret = $this->parseRShift_($expr, 2); break;
+            case '<<=': $ret = $this->sla_n_($expr); break;
         }
 
         $r_offset  += strlen($match);
         $this->line_nr_ += substr_count($match, "\n");
         //echo("assignOp2[$r_offset $this->line_nr_][$l_value][$op][$r_value]\n");
 
-        return ($b_err) ? '' : ($this->getIndentStr_() . "$ret\n");
+        return $this->getIndentStr_() . "$ret\n";
     }
 
 
@@ -834,10 +834,9 @@ Class Parser
 
         // $op によって命令を決める
         $ret = '';
-        $expr = $this->stripBackReg_($expr);
         switch ($op) {
-            case '++': $ret = $this->inc_($expr, $this->line_nr_); break;
-            case '--': $ret = $this->dec_($expr, $this->line_nr_); break;
+            case '++': $ret = $this->parseIncDec_('inc', $expr); break;
+            case '--': $ret = $this->parseIncDec_('dec', $expr); break;
             //case '-': $ret = $this->neg_($expr, $this->line_nr_); break;
             //case '~': $ret = $this->cpl_($expr, $this->line_nr_); break;
         }
@@ -860,11 +859,11 @@ Class Parser
             // 全て大文字ならばマクロの展開とみなす(例 ABC() )
             $expr = str_replace("\n", ' ', $expr);// マクロ呼び出しは1行で書かないといけないので改行を削除
             $params = $this->explodeByComma_($expr);
-            // ヘタに加工するとマクロ展開がおかしくなるので, パラメータはそのまま渡す
+            // ヘタに加工するとマクロ展開がおかしくなるので, パラメータはそのまま渡す(裏レジスタを除く)
             $ret = $funcname . ' ';
-            foreach($params as $i => $param) {
-                $ret .= $this->stripBackReg_($param);
-                //echo("{$ret} [{$param}]\n");
+            foreach($params as $i => $operand) {
+                $ret .= Operand::stripBackReg($operand);
+                //echo("マクロ呼び出し {$ret} [{$operand}]\n");
                 if ($i !== count($params) - 1) { $ret .= ", "; }
             }
         } else if (preg_match('/^[a-z_][a-z_0-9]*$/', $funcname) &&
@@ -883,71 +882,6 @@ Class Parser
         return $this->getIndentStr_() . "$ret\n";
     }
 
-
-
-    // -------------------------------- ラベル
-    // MARK: initLabels_()
-    /** ラベルを初期化します */
-    private function initLabels_(): void
-    {
-        $this->label_ct_ = 0;
-        $this->labels_ = [];
-    }
-
-
-    // MARK: genRegistLabel_()
-    /** ラベル名を生成し, 登録もしますます */
-    private function genRegistLabel_(): string
-    {
-        $ret = $this->funcname_ . '__' . $this->label_ct_;
-        $this->label_ct_++;
-        $this->registLabel_($ret);
-        return $ret;
-    }
-
-
-    // MARK: registLabel_()
-    /** ラベル名を登録します */
-    private function registLabel_(string $label): void
-    {
-        $this->labels_[] = $label;
-    }
-
-
-    // MARK: getLabels()
-    /** 登録したラベル一覧を出力します */
-    public function getLabels(): array
-    {
-        return $this->labels_;
-    }
-
-    // -------------------------------- インデント
-
-    // MARK: initIndent_()
-    /** インデントを初期化します */
-    private function initIndent_(): void { $this->indent_lv_ = 0; }
-
-
-    // MARK: incIndent_()
-    /** インデント レベルを進めます */
-    private function incIndent_(): void { $this->indent_lv_++; }
-
-
-    // MARK: decIndent_()
-    /** インデント レベルを戻します */
-    private function decIndent_(): void { $this->indent_lv_--; }
-
-
-    // MARK: getIndentStr_()
-    /** インデント文字列を生成します */
-    private function getIndentStr_(): string
-    {
-        $ret = '';
-        for ($i = 0; $i < $this->indent_lv_; $i++) {
-            $ret .= '  ';
-        }
-        return $ret;
-    }
 
     // -------------------------------- 関数やマクロの最後のディレクティブ
     // MARK: DEF_VARS
@@ -1010,24 +944,980 @@ Class Parser
         }
     }
 
-    // -------------------------------- 文の解析ユーティリティ
-    // ---------------- 空白文字(半角スペースと改行)
-    // MARK: skipSpaces_()
-    /** 空白文字をスキップします.
-     * @param $r_offset $r_str の文字位置(0～)
-     * - [in]  開始時
-     * - [out] スキップした空白文字の次の位置. スキップしなかったら変化なし
-     */
-    private function skipSpaces_(string &$r_str, int &$r_offset): void
+
+    // ---------------------------------------------------------------- 命令ディスパッチャ
+    // MARK: command dispatches
+    //private function ld_(string $expr): string { return $this->parseLdInOut_($expr); }
+    private function ldi_(string $expr): string { return $this->parseNop_('ldi', $expr); }
+    private function ldd_(string $expr): string { return $this->parseNop_('ldd', $expr); }
+    private function ldir_(string $expr): string { return $this->parseNop_('ldir', $expr); }
+    private function lddr_(string $expr): string { return $this->parseNop_('lddr', $expr); }
+    private function ex_(string $expr): string { return $this->parseEx_('ex', $expr); }
+    private function exx_(string $expr): string { return $this->parseNop_('exx', $expr); }
+    private function push_(string $expr): string { return $this->parsePushPop_('push', $expr); }
+    private function pop_(string $expr): string { return $this->parsePushPop_('pop', $expr); }
+    //private function and_(string $expr): string { return $this->parseAnd_('and', $expr); }
+    //private function or_( string $expr): string { return $this->parseAnd_('or', $expr); }
+    //private function xor_(string $expr): string { return $this->parseAnd_('xor', $expr); }
+    //private function cpl_(string $expr): string { return $this->parseA_('cpl', $expr); }
+    private function not_(string $expr): string { return $this->parseA_('cpl', $expr); }
+    private function cp_(string $expr): string { return $this->parseAnd_('cp', $expr); }
+    private function cpi_(string $expr): string { return $this->parseNop_('cpi', $expr); }
+    private function cpd_(string $expr): string { return $this->parseNop_('cpd', $expr); }
+    private function cpir_(string $expr): string { return $this->parseNop_('cpir', $expr); }
+    private function cpdr_(string $expr): string { return $this->parseNop_('cpdr', $expr); }
+    //private function add_(string $expr): string { return $this->parseAdd_('add', $expr); }
+    //private function adc_(string $expr): string { return $this->parseAdc_('adc', $expr); }
+    //private function sub_(string $expr): string { return $this->parseSub_('sub', $expr); }
+    //private function sbc_(string $expr): string { return $this->parseAdc_('sbc', $expr); }
+    //private function inc_(string $expr): string { return $this->parseIncDec_('inc', $expr); }
+    //private function dec_(string $expr): string { return $this->parseIncDec_('dec', $expr); }
+    private function neg_(string $expr): string { return $this->parseA_('neg', $expr); }
+    private function daa_(string $expr): string { return $this->parseA_('daa', $expr); }
+    private function bit_(string $expr): string { return $this->parseBit_('bit', $expr); }
+    private function set_(string $expr): string { return $this->parseBit_('set', $expr); }
+    private function res_(string $expr): string { return $this->parseBit_('res', $expr); }
+    private function bit3_(string $expr): string { return $this->parseBit3_('bit', $expr); }// 未定義命令 bit b, mem[ix + d], r
+    private function set3_(string $expr): string { return $this->parseBit3_('set', $expr); }// 未定義命令 set b, mem[ix + d], r
+    private function res3_(string $expr): string { return $this->parseBit3_('res', $expr); }// 未定義命令 res b, mem[ix + d], r
+    private function sla_(string $expr): string { return $this->parseShift_('sla', 'sla', 'rl', true,  $expr, 1); }
+    private function sll_(string $expr): string { return $this->parseShift_('sll', 'sll', 'rl', true,  $expr, 1); }
+    private function sra_(string $expr): string { return $this->parseShift_('sra', 'sra', 'rr', false, $expr, 1); }
+    private function srl_(string $expr): string { return $this->parseShift_('srl', 'srl', 'rr', false, $expr, 1); }
+    private function rl_( string $expr): string { return $this->parseRotate_('rl',  $expr, 1); }
+    private function rr_( string $expr): string { return $this->parseRotate_('rr',  $expr, 1); }
+    private function rlc_(string $expr): string { return $this->parseRotate_('rlc', $expr, 1); }
+    private function rrc_(string $expr): string { return $this->parseRotate_('rrc', $expr, 1); }
+    private function sla_n_(string $expr): string { return $this->parseShift_('sla', 'sla', 'rl', true,  $expr, 2); }
+    private function sll_n_(string $expr): string { return $this->parseShift_('sll', 'sll', 'rl', true,  $expr, 2); }
+    private function sra_n_(string $expr): string { return $this->parseShift_('sra', 'sra', 'rr', false, $expr, 2); }
+    private function srl_n_(string $expr): string { return $this->parseShift_('sra', 'sra', 'rr', false, $expr, 2); }
+    private function rln_( string $expr): string { return $this->parseRotate_('rl',  $expr, 2); }
+    private function rrn_( string $expr): string { return $this->parseRotate_('rr',  $expr, 2); }
+    private function rlc_n_(string $expr): string { return $this->parseRotate_('rlc', $expr, 2); }
+    private function rrc_n_(string $expr): string { return $this->parseRotate_('rrc', $expr, 2); }
+    private function sla2_(string $expr): string { return $this->parseShift2_('sla', $expr); }// 未定義命令 sla mem[ix + d], r
+    private function sll2_(string $expr): string { return $this->parseShift2_('sll', $expr); }// 未定義命令 sll mem[ix + d], r
+    private function sra2_(string $expr): string { return $this->parseShift2_('sra', $expr); }// 未定義命令 sra mem[ix + d], r
+    private function srl2_(string $expr): string { return $this->parseShift2_('srl', $expr); }// 未定義命令 srl mem[ix + d], r
+    private function rl2_( string $expr): string { return $this->parseShift2_('rl', $expr); } // 未定義命令 rl mem[ix + d], r
+    private function rr2_( string $expr): string { return $this->parseShift2_('rr', $expr); } // 未定義命令 rr mem[ix + d], r
+    private function rlc2_(string $expr): string { return $this->parseShift2_('rlc', $expr); }// 未定義命令 rlc mem[ix + d], r
+    private function rrc2_(string $expr): string { return $this->parseShift2_('rrc', $expr); }// 未定義命令 rrc mem[ix + d], r
+    private function rla_ (string $expr): string { return $this->parseA_('rla', $expr); }
+    private function rra_ (string $expr): string { return $this->parseA_('rra', $expr); }
+    private function rlca_(string $expr): string { return $this->parseA_('rlca', $expr); }
+    private function rrca_(string $expr): string { return $this->parseA_('rrca', $expr); }
+    private function rla_n_ (string $expr): string { return $this->parseRotateA_('rla', $expr); }
+    private function rra_n_ (string $expr): string { return $this->parseRotateA_('rra', $expr); }
+    private function rlca_n_(string $expr): string { return $this->parseRotateA_('rlca', $expr); }
+    private function rrca_n_(string $expr): string { return $this->parseRotateA_('rrca', $expr); }
+    private function rld_(string $expr): string { return $this->parseRld_('rld', $expr); }
+    private function rrd_(string $expr): string { return $this->parseRld_('rrd', $expr); }
+    private function jp_(string $expr): string { return $this->parseJp_($expr); }
+    private function jp_z_(string $expr): string { return $this->parseJpJrCall_('jp z,', $expr); }
+    private function jp_eq_(string $expr): string { return $this->jp_z_($expr); }
+    private function jp_nz_(string $expr): string { return $this->parseJpJrCall_('jp nz,', $expr); }
+    private function jp_ne_(string $expr): string { return $this->jp_nz_($expr); }
+    private function jp_c_(string $expr): string { return $this->parseJpJrCall_('jp c,', $expr); }
+    private function jp_lt_(string $expr): string { return $this->jp_c_($expr); }
+    private function jp_nc_(string $expr): string { return $this->parseJpJrCall_('jp nc,', $expr); }
+    private function jp_ge_(string $expr): string { return $this->jp_nc_($expr); }
+    private function jp_p_(string $expr): string { return $this->parseJpJrCall_('jp p,', $expr); }
+    private function jp_m_(string $expr): string { return $this->parseJpJrCall_('jp m,', $expr); }
+    private function jp_v_(string $expr): string { return $this->parseJpJrCall_('jp v,', $expr); }
+    private function jp_nv_(string $expr): string { return $this->parseJpJrCall_('jp nv,', $expr); }
+    private function jp_pe_(string $expr): string { return $this->parseJpJrCall_('jp pe,', $expr); }
+    private function jp_po_(string $expr): string { return $this->parseJpJrCall_('jp po,', $expr); }
+    private function jr_(string $expr): string { return $this->parseJpJrCall_('jr', $expr); }
+    private function jr_z_(string $expr): string { return $this->parseJpJrCall_('jr z,', $expr); }
+    private function jr_eq_(string $expr): string { return $this->jr_z_($expr); }
+    private function jr_nz_(string $expr): string { return $this->parseJpJrCall_('jr nz,', $expr); }
+    private function jr_ne_(string $expr): string { return $this->jr_nz_($expr); }
+    private function jr_c_(string $expr): string { return $this->parseJpJrCall_('jr c,', $expr); }
+    private function jr_lt_(string $expr): string { return $this->jr_c_($expr); }
+    private function jr_nc_(string $expr): string { return $this->parseJpJrCall_('jr nc,', $expr); }
+    private function jr_ge_(string $expr): string { return $this->jr_nc_($expr); }
+    private function djnz_(string $expr): string { return $this->parseDjnz_($expr); }
+    private function call_(string $expr): string { return $this->parseJpJrCall_('call', $expr); }
+    private function call_z_(string $expr): string { return $this->parseJpJrCall_('call z,', $expr); }
+    private function call_eq_(string $expr): string { return $this->call_z_($expr); }
+    private function call_nz_(string $expr): string { return $this->parseJpJrCall_('call nz,', $expr); }
+    private function call_ne_(string $expr): string { return $this->call_nz_($expr); }
+    private function call_c_(string $expr): string { return $this->parseJpJrCall_('call c,', $expr); }
+    private function call_lt_(string $expr): string { return $this->call_c_($expr); }
+    private function call_nc_(string $expr): string { return $this->parseJpJrCall_('call nc,', $expr); }
+    private function call_ge_(string $expr): string { return $this->call_nc_($expr); }
+    private function call_p_(string $expr): string { return $this->parseJpJrCall_('call p,', $expr); }
+    private function call_m_(string $expr): string { return $this->parseJpJrCall_('call m,', $expr); }
+    private function call_v_(string $expr): string { return $this->parseJpJrCall_('call v,', $expr); }
+    private function call_nv_(string $expr): string { return $this->parseJpJrCall_('call nv,', $expr); }
+    private function call_pe_(string $expr): string { return $this->parseJpJrCall_('call pe,', $expr); }
+    private function call_po_(string $expr): string { return $this->parseJpJrCall_('call po,', $expr); }
+    private function rst_(string $expr): string { return $this->parseRst_($expr); }
+    //private function ret_(string $expr): string { return $this->parseNop_('ret', $expr); }
+    private function ret_z_(string $expr): string { return $this->parseNop_('ret z', $expr); }
+    private function ret_eq_(string $expr): string { return $this->ret_z_($expr); }
+    private function ret_nz_(string $expr): string { return $this->parseNop_('ret nz', $expr); }
+    private function ret_ne_(string $expr): string { return $this->ret_nz_($expr); }
+    private function ret_c_(string $expr): string { return $this->parseNop_('ret c', $expr); }
+    private function ret_lt_(string $expr): string { return $this->ret_c_($expr); }
+    private function ret_nc_(string $expr): string { return $this->parseNop_('ret nc', $expr); }
+    private function ret_ge_(string $expr): string { return $this->ret_ge_($expr); }
+    private function ret_p_(string $expr): string { return $this->parseNop_('ret p', $expr); }
+    private function ret_m_(string $expr): string { return $this->parseNop_('ret m', $expr); }
+    private function ret_v_(string $expr): string { return $this->parseNop_('ret v', $expr); }
+    private function ret_nv_(string $expr): string { return $this->parseNop_('ret nv', $expr); }
+    private function ret_pe_(string $expr): string { return $this->parseNop_('ret pe', $expr); }
+    private function ret_po_(string $expr): string { return $this->parseNop_('ret po', $expr); }
+    private function reti_(string $expr): string { return $this->parseNop_('reti', $expr); }
+    private function retn_(string $expr): string { return $this->parseNop_('retn', $expr); }
+    private function nop_(string $expr): string { return $this->parseNop_('nop', $expr); }
+    private function halt_(string $expr): string { return $this->parseNop_('halt', $expr); }
+    private function di_(string $expr): string { return $this->parseNop_('di', $expr); }
+    private function ei_(string $expr): string { return $this->parseNop_('ei', $expr); }
+    private function im0_(string $expr): string { return $this->parseNop_('im 0', $expr); }
+    private function im1_(string $expr): string { return $this->parseNop_('im 1', $expr); }
+    private function im2_(string $expr): string { return $this->parseNop_('im 2', $expr); }
+    private function scf_(string $expr): string { return $this->parseNop_('scf', $expr); }
+    private function ccf_(string $expr): string { return $this->parseNop_('ccf', $expr); }
+    //private function in_(string $expr): string { return $this->checkParam22_R_P_('in', $expr); }
+    //private function out_(string $expr): string { return $this->checkParam22_P_RI_('out', $expr); }
+    private function ini_(string $expr): string { return $this->parseNop_('ini', $expr); }
+    private function ind_(string $expr): string { return $this->parseNop_('ind', $expr); }
+    private function inir_(string $expr): string { return $this->parseNop_('inir', $expr); }
+    private function indr_(string $expr): string { return $this->parseNop_('indr', $expr); }
+    private function outi_(string $expr): string { return $this->parseNop_('outi', $expr); }
+    private function outd_(string $expr): string { return $this->parseNop_('outd', $expr); }
+    private function otir_(string $expr): string { return $this->parseNop_('otir', $expr); }
+    private function otdr_(string $expr): string { return $this->parseNop_('otdr', $expr); }
+
+    // MARK: local,global
+    private function parseLocalGlobal_(string $opcode, string $operandsStr): string
     {
-        if (preg_match('/[\ \n]+/Ax', $r_str, $matches, 0, $r_offset)) {
-            $r_offset  += strlen($matches[0]);
-            $this->line_nr_ += substr_count($matches[0], "\n");
-        }
+        return $this->parseVariadicCommon_($opcode, $operandsStr, 1, '',
+            function(string $opcode, Operand $operand, int $index) : string {
+                if ($this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_SYM])) {
+                    return "$opcode " . $operand->value;
+                }
+                return '';
+            },
+        $this->getIndentStr_(), "\n");
     }
 
 
-    // MARK: isBeginningOfLine_()
+    // MARK: db
+    private function parseDb_(string $operandsStr): string
+    {
+        // db 123, 45h, “ABCDEFG”, LABEL
+        $opcode = 'db';
+        return $this->parseVariadicCommon_($opcode, $operandsStr, 1, $opcode . ' ',
+            function(string $opcode, Operand $operand, int $index) : string {
+                if ($this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR, Operand::TYPE_STR])) {
+                    return $operand->out;
+                }
+                return '';
+            },
+        '', ', ');
+    }
+
+
+    // MARK: dw
+    private function parseDw_(string $operandsStr): string
+    {
+        // dw 123, VAL, LABEL
+        $opcode = 'dw';
+        return $this->parseVariadicCommon_($opcode, $operandsStr, 1, $opcode . ' ',
+            function(string $opcode, Operand $operand, int $index) : string {
+                if ($this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+                    return $operand->out;
+                }
+                return '';
+            },
+        '', ', ');
+    }
+
+
+    // MARK: ds
+    private function parseDs_(string $operandsStr): string
+    {
+        // ds 123
+        // ds 123, VAL, 3, 4
+        // ds 123, "ABCDEFG"
+        $opcode = 'ds';
+        return $this->parseVariadicCommon_($opcode, $operandsStr, 1, $opcode . ' ',
+            function(string $opcode, Operand $operand, int $index) : string {
+                if ($index == 1) {  // 第1引数はサイズ
+                    if (!$this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+                        return "";
+                    }
+                } else if ($operand->type === Operand::TYPE_STR) {
+                    // 第2引数は文字列の場合は1つだけ
+                    if ($index !== 2) {
+                        $this->errorLine_("$opcode 文字列は1つだけです");
+                        return "";
+                    }
+                } else {
+                    if (!$this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+                        return "";
+                    }
+                }
+                return $operand->out;
+            },
+        '', ', ');
+    }
+
+    // MARK: if,elif,rept
+    private function parseIfRept_(string $opcode, string $operandsStr): string
+    {
+        $operands = $this->createOperands_($opcode, $operandsStr, 1);
+        if ($operands === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $operands[0], 1, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+            return "$opcode " . $operands[0]->out;
+        }
+        return '';
+    }
+
+    // MARK: reptc
+    private function parseReptc_(string $operandsStr): string
+    {
+        $opcode = 'reptc';
+        $operands = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($operands === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $operands[0], 1, [Operand::TYPE_SYM])) {
+            if ($this->checkTypeOneOf_($opcode, $operands[1], 2, [Operand::TYPE_STR])) {
+                return "$opcode " . $operands[0]->value . ", " . $operands[1]->out;
+            }
+        }
+        return '';
+    }
+
+
+    // MARK: repti
+    private function parseRepti_(string $operandsStr): string
+    {
+        $opcode = 'repti';
+        return $this->parseVariadicCommon_($opcode, $operandsStr, 2, $opcode . ' ',
+            function(string $opcode, Operand $operand, int $index) : string {
+                if ($index === 1) {
+                    if ($this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_SYM])) {
+                        return $operand->value;
+                    }
+                } else {
+                    if ($this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR, Operand::TYPE_STR])) {
+                        return $operand->out;
+                    }
+                }
+                return '';
+            },
+        '', ', ');
+    }
+
+
+    // -------------------------------- パラメータの型チェックとコード生成 (引数なし)
+    // MARK: nop,ret,ldir,im0,scf,...
+    private function parseNop_(string $opcode, string $operandsStr): string
+    {
+        if ($operandsStr !== '') {
+            $this->errorLine_("$opcode は引数不要です", $operandsStr);
+        }
+        return $opcode;
+    }
+
+
+    // -------------------------------- パラメータの型チェックとコード生成 (引数 1)
+    // MARK: neg,cpl,rca,...
+    /** 引数が A のみ */
+    private function parseA_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 1);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_A])) {
+            return $opcode;
+        }
+        return '';
+    }
+
+
+    // MARK: inc,dec
+    private function parseIncDec_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 1);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [
+            Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_IX8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX,
+            Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC, Operand::TYPE_SP, Operand::TYPE_IX])) {
+            return "$opcode " . $params[0]->out;
+        }
+        return '';
+    }
+
+
+    // -------------------------------- パラメータの型チェックとコード生成 (引数 2)
+    // MARK: ld,in,out
+    private function parseLdInOut_(string $operandsStr): string
+    {
+        $opcode = "ld";
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        if ($params[0]->type === Operand::TYPE_PORT) {
+            // 第1引数が port なら out (n), A
+            $opcode = 'out';
+            $this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_A]);
+        } else if ($params[0]->type === Operand::TYPE_PORT_C) {
+            // 第1引数が port なら out (C), r  out (C), n
+            $opcode = 'out';
+            if ($this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_NUM])) {
+                if ($params[1]->type === Operand::TYPE_NUM && ($params[1]->value != 0 && $params[1]->value != 255)) {
+                    $this->errorLine_("$opcode の第2引数が即値の場合は, 0 または 255 だけです", $params[1]->org);
+                }
+            }
+        } else if ($params[1]->type === Operand::TYPE_PORT) {
+            // 第2引数が port なら in A, (n)  in F, (n)
+            $opcode = 'in';
+            $this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_A, Operand::TYPE_F]);
+        } else if  ($params[1]->type === Operand::TYPE_PORT_C) {
+            // 第2引数が port なら in r, (C)
+            $opcode = 'in';
+            $this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_NUM]);
+        } else {
+            // それ以外は ld. 条件ややこい
+            switch ($params[0]->type) {
+                case Operand::TYPE_IR:              // fall through
+                case Operand::TYPE_MEM_DEBC:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_A]);
+                    break;
+                case Operand::TYPE_MEM:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_A, Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC, Operand::TYPE_IX, Operand::TYPE_SP]);
+                    break;
+                case Operand::TYPE_A:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_IR, Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_IX8,
+                        Operand::TYPE_MEM, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_DEBC, Operand::TYPE_MEM_IX,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_B:               // fall through
+                case Operand::TYPE_CDE8:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_IX8,
+                        Operand::TYPE_MEM_HL,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_HL8:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8,
+                        Operand::TYPE_MEM_HL,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_IX8:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_IX8,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_MEM_HL:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_MEM_IX:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_HL:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC,
+                        Operand::TYPE_MEM,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_IX:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_IX, Operand::TYPE_DE, Operand::TYPE_BC,
+                        Operand::TYPE_MEM,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_DE:              // fall through
+                case Operand::TYPE_BC:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC, Operand::TYPE_IX,
+                        Operand::TYPE_MEM,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                case Operand::TYPE_SP:
+                    $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                        Operand::TYPE_HL, Operand::TYPE_IX,
+                        Operand::TYPE_MEM,
+                        Operand::TYPE_NUM, Operand::TYPE_TRUE, Operand::TYPE_FALSE, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+                    break;
+                default:
+                    $this->errorLine_("$opcode の第1引数は, I|R|A|B|C|D|E|H|L|IXH等|mem[addr]|mem[HL]|mem[IX+d]等|HL|DE|BC|IX等|SP|port[addr]|port[C]等 が使用できます", $params[0]->org);
+            }
+        }
+        return "$opcode " . $params[0]->out . ', ' .  $params[1]->out;
+    }
+
+
+    // MARK: add,adc
+    private function parseAddAdc_(string $operandsStr): string
+    {
+        $opcode = '+=';
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        switch ($params[0]->type) {
+            case Operand::TYPE_A:   // 8bit
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                    Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8,
+                    Operand::TYPE_A_C, Operand::TYPE_B_C, Operand::TYPE_CDE8_C, Operand::TYPE_HL8_C,
+                    Operand::TYPE_IX8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX, Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR,
+                    Operand::TYPE_IX8_C, Operand::TYPE_MEM_HL_C, Operand::TYPE_MEM_IX_C, Operand::TYPE_NUM_C, Operand::TYPE_SYM_C, Operand::TYPE_EXPR_C]);
+                break;
+            case Operand::TYPE_HL:  // 16bit
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                    Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC, Operand::TYPE_SP,
+                    Operand::TYPE_HL_C, Operand::TYPE_DE_C, Operand::TYPE_BC_C, Operand::TYPE_SP_C]);
+                break;
+            case Operand::TYPE_IX:  // 16bit
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                    Operand::TYPE_IX, Operand::TYPE_DE, Operand::TYPE_BC, Operand::TYPE_SP]);  // IX += 系命令には adc は無い
+                break;
+            default:
+                if ($params[1]->isWithCarry()) {
+                    $this->errorLine_("adc の第1引数は, A|HL が使用できます", $params[0]->org);
+                } else {
+                    $this->errorLine_("add の第1引数は, A|HL|IX が使用できます", $params[0]->org);
+                }
+                return '';
+        }
+
+        return ($params[1]->isWithCarry() ? 'adc' : 'add') . " " . $params[0]->out . ', ' .  $params[1]->out;
+    }
+
+    // MARK: sub,sbc
+    private function parseSubSbc_(string $operandsStr): string
+    {
+        $opcode = '-=';
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        switch ($params[0]->type) {
+            case Operand::TYPE_A:   // 8bit
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                    Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8,
+                    Operand::TYPE_A_C, Operand::TYPE_B_C, Operand::TYPE_CDE8_C, Operand::TYPE_HL8_C,
+                    Operand::TYPE_IX8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX, Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR,
+                    Operand::TYPE_IX8_C, Operand::TYPE_MEM_HL_C, Operand::TYPE_MEM_IX_C, Operand::TYPE_NUM_C, Operand::TYPE_SYM_C, Operand::TYPE_EXPR_C]);
+                break;
+            case Operand::TYPE_HL:  // 16bit
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                    Operand::TYPE_HL_C, Operand::TYPE_DE_C, Operand::TYPE_BC_C, Operand::TYPE_SP_C]);   // 16bit sub 命令はありません
+                break;
+            default:
+                if ($params[1]->isWithCarry()) {
+                    $this->errorLine_("sbc の第1引数は, A|HL が使用できます", $params[0]->org);
+                } else {
+                    $this->errorLine_("sub の第1引数は, A が使用できます", $params[0]->org);
+                }
+                return '';
+        }
+
+        return ($params[1]->isWithCarry() ? 'sbc' : 'sub') . " " . $params[0]->out . ', ' .  $params[1]->out;
+    }
+
+
+    // MARK: and,or,xor,cp
+    private function parseAnd_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        $this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_A]);
+        $this->checkTypeOneOf_($opcode, $params[1], 2, [
+            Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_IX8,
+            Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX, Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+
+        return "$opcode " . $params[0]->out . ', ' .  $params[1]->out;
+    }
+
+
+    // MARK: ex
+    private function parseEx_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        switch ($params[0]->type) {
+            case Operand::TYPE_AF:                  // ex(AF, AF)
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_AF]);
+                break;
+            case Operand::TYPE_DE:                  // ex(DE, HL)
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_HL]);
+                break;
+            case Operand::TYPE_MEM_SP:              // ex(mem[SP], HL)
+                $this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_HL, Operand::TYPE_IX]);
+                break;
+            default:
+                $this->errorLine_("$opcode の第1引数は, AF|DE|mem[SP] が使用できます", $params[0]->org);
+                return '';
+        }
+
+        return "$opcode " . $params[0]->out . ', ' .  $params[1]->out;
+    }
+
+
+    // MARK: bit,set,res
+    private function parseBit_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR]) &&
+            $this->checkTypeOneOf_($opcode, $params[1], 2, [
+                Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8,
+                Operand::TYPE_IX8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX])) {
+            return "$opcode " . $params[0]->out . ', ' . $params[1]->out;
+        }
+        return '';
+    }
+
+    // -------------------------------- パラメータの型チェックとコード生成 (シフト/ローテート)
+    // MARK:parseShiftRotate8Core_()
+    /** シフト・ローテートの出力中核部分(8bit版)
+     * @param $opcode       8bit  時の opcode
+     * @param $params       Operand の配列(操作対象と回数)
+     * @param $use_param0   rrca のように オペランドが無ければ false, rrc A のように必要ならば true
+     */
+    private function parseShiftRotate8Core_(string $opcode, array $params, bool $use_param0): string
+    {
+        $out = '';
+
+        // 第2引数が TYPE_NUM の場合は値を調査して展開, TYPE_SYM の場合は rept 疑似命令
+        if ($params[1]->type === Operand::TYPE_NUM) {
+            $n = $params[1]->value;
+            if ($n < 1 || 8 <= $n) {
+                $this->errorLine_("$opcode 第二引数の範囲は, [1, 7]です", $params[1]->org);
+                return $out;
+            }
+            for ($i = 0; $i < $n; $i++) {
+                if ($i != 0) { $out .= $this->getIndentStr_(); }
+                $out .= $opcode . ($use_param0 ? (' ' . $params[0]->out) : '');
+                if ($i != $n - 1) { $out .= "\n"; }
+            }
+        } else {
+            $out .= "rept " . $params[1]->out . "\n";
+            $this->incIndent_();
+            $out .= $this->getIndentStr_() . $opcode . ($use_param0 ? (' ' . $params[0]->out) : '') . "\n";
+            $this->decIndent_();
+            $out .= $this->getIndentStr_() . "endr";
+        }
+
+        return $out;
+    }
+
+    // MARK:parseShiftRotate16Core_()
+    /** シフト・ローテートの出力中核部分(16bit版)
+     * @param $opcode1   16bit 時の最初に実行される opcode
+     * @param $opcode2   16bit 時の2番目に実行される opcode
+     * @param $is_left   左シフトなら true (16bit時は下8bit->上8bitの順で実行)
+     * @param $params    Operand の配列(操作対象と回数)
+     */
+    private function parseShiftRotate16Core_(string $opcode1, string $opcode2, bool $is_left, array $params): string
+    {
+        $out = '';
+
+        // 第2引数が TYPE_NUM の場合は展開, TYPE_SYM, Operand::TYPE_EXPR の場合はリピートシンボル
+        if ($is_left) {
+            $reg1 = substr($params[0]->value, 1);    // L
+            $reg2 = substr($params[0]->value, 0, 1); // H
+        } else {
+            $reg1 = substr($params[0]->value, 0, 1); // H
+            $reg2 = substr($params[0]->value, 1);    // L
+        }
+
+        if ($params[1]->type === Operand::TYPE_NUM) {
+            $n = $params[1]->value;
+            if ($n < 1 || 8 <= $n) {
+                $this->errorLine_("$opcode のリピート範囲[1, 7]です", $params[1]->org);
+                return $out;
+            }
+            for ($i = 0; $i < $n; $i++) {
+                if ($i != 0) { $out .= $this->getIndentStr_(); }
+                $out .= $opcode1 . ' ' . $reg1 . "\n";
+                $out .= $this->getIndentStr_();
+                $out .= $opcode2 . ' ' . $reg2;
+                if ($i != $n - 1) { $out .= "\n"; }
+            }
+        } else {
+            $out .= "rept " . $params[1]->out . "\n";
+            $this->incIndent_();
+            $out .= $this->getIndentStr_() . $opcode1 . ' ' . $reg1 . "\n";
+            $out .= $this->getIndentStr_() . $opcode2 . ' ' . $reg2 . "\n";
+            $this->decIndent_();
+            $out .= $this->getIndentStr_() . "endr";
+        }
+
+        return $out;
+    }
+
+
+    // MARK: sla,sll,sra,srl,<<=
+    /**
+     * @param $opcode    8bit  時の opcode
+     * @param $opcode1   16bit 時の最初に実行される opcode
+     * @param $opcode2   16bit 時の2番目に実行される opcode
+     * @param $is_left   左シフトなら true (16bit時は下8bit->上8bitの順で実行)
+     * @param $nr_params 引数の数 1(1回のみ) or 2(n回)
+     */
+    private function parseShift_(string $opcode, string $opcode1, string $opcode2, bool $is_left, string $operandsStr, int $nr_params): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, $nr_params);
+        if ($params === null) { return ''; }
+
+        // 第1引数のチェック
+        if (!$this->checkTypeOneOf_($opcode, $params[0], 1, [
+            Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX,
+            Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC])) { return ''; }
+
+        // 第2引数のチェック
+        if ($nr_params === 1) {
+            $params[] = new Operand('1', Parser::MODE_FUNC); // なければ数値の1を追加
+        } else if (!$this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_NUM, Operand::TYPE_SYM], Operand::TYPE_EXPR)) {
+            return '';
+        }
+
+        // コード生成
+        if ($params[0]->isTypeOneOf([Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC])) {
+            return $this->parseShiftRotate16Core_($opcode1, $opcode2, $is_left, $params);
+        }
+        return $this->parseShiftRotate8Core_($opcode, $params, true);
+    }
+
+
+    // MARK: >>=
+    private function parseRShift_(string $operandsStr, int $nr_params): string
+    {
+        $opcode = '>>=演算子';
+
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        if (!$this->checkTypeOneOf_($opcode, $params[0], 1, [
+            Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX,
+            Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC])) { return ''; }
+
+        // 第1引数のチェック
+        if (!$this->checkTypeOneOf_($opcode, $params[0], 1, [
+            Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX,
+            Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC])) { return ''; }
+
+        // 第2引数のチェック
+        if ($nr_params === 1) {
+            $params[] = new Operand('1', Parser::MODE_FUNC); // 無ければ数値の1を追加. 文法エラーは起きないので cretaeOperand_() は使わない
+        } else if (!$this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+            return '';
+        }
+
+        // コード生成
+        if ($params[0]->isTypeOneOf([Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC])) {
+            return $this->parseShiftRotate16Core_('sra', 'rr', false, $params);// 16bit ならば, signed
+        }
+        return $this->parseShiftRotate8Core_('srl', $params, true); // 8bit ならば, unsigned
+    }
+
+
+    // MARK: rl,rr,rlc,rrc
+    /**
+     * @param $nr_params 引数の数 1(1回のみ) or 2(n回)
+     */
+    private function parseRotate_(string $opcode, string $operandsStr, int $nr_params): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, $nr_params);
+        if ($params === null) { return ''; }
+
+        // 第1引数のチェック
+        if (!$this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8, Operand::TYPE_MEM_HL, Operand::TYPE_MEM_IX])) {
+            return '';
+        }
+
+        // 第2引数のチェック
+        if ($nr_params === 1) {
+            $params[] = new Operand('1', Parser::MODE_FUNC); // 無ければ数値の1を追加. 文法エラーは起きないので cretaeOperand_() は使わない
+        } else {
+            if (!$this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+                return '';
+            }
+        }
+
+        return $this->parseShiftRotate8Core_($opcode, $params, true);
+    }
+
+
+    // MARK: sla2,sll2,sra2,srl2,rl2,rr2,rlc2,rrc2
+    /** sll mem[ix + d], r 等 */
+    private function parseShift2_($opcode, $operandsStr)
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_MEM_IX])) {
+            if ($this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8])) {
+                return "$opcode " . $params[0]->out . ', ' .  $params[1]->out;
+            }
+        }
+
+        return '';
+    }
+
+
+    // MARK: rla_n,rra_n,rlca_n,rrca_n
+    private function parseRotateA_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_A])) {
+            if ($this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+                return $this->parseShiftRotate8Core_($opcode, $params, false);
+            }
+        }
+
+        return '';
+    }
+
+
+    // MARK: rld,rrd
+    private function parseRld_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_A])) {
+            if ($this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_MEM_HL])) {
+                return "$opcode " . $params[0]->out . ', ' .  $params[1]->out;
+            }
+        }
+
+        return '';
+    }
+
+
+    // MARK: bit3,set3,res3
+    private function parseBit3_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 3);
+        if ($params === null) { return ''; }
+
+        $this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR]);
+        $this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_MEM_IX]);
+        $this->checkTypeOneOf_($opcode, $params[2], 3, [Operand::TYPE_A, Operand::TYPE_B, Operand::TYPE_CDE8, Operand::TYPE_HL8]);
+
+        return "$opcode " . $params[0]->out . ', ' .  $params[1]->out . ', ' .  $params[2]->out;
+    }
+
+
+    // -------------------------------- パラメータの型チェックとコード生成 (ジャンプ/コール)
+    // MARK: jp
+    private function parseJp_(string $operandsStr): string
+    {
+        $opcode = 'jp';
+        $params = $this->createOperands_($opcode, $operandsStr, 1);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR, Operand::TYPE_HL, Operand::TYPE_IX])) {
+            // HL, IX の場合のみ (HL) のようにカッコを付ける必要があります
+            if ($params[0]->isTypeOneOf([Operand::TYPE_HL, Operand::TYPE_IX])) {
+                return "$opcode (" . $params[0]->out . ')';
+            } else {
+                return "$opcode " . $params[0]->out;
+            }
+        }
+
+        return '';
+    }
+
+
+    // MARK: jp,jr,call
+    private function parseJpJrCall_(string $opcode, string $operandsStr): string
+    {
+        $params = $this->createOperands_($opcode, $operandsStr, 1);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+            return "$opcode " . $params[0]->out;
+        }
+
+        return '';
+    }
+
+
+    // MARK: djnz
+    private function parseDjnz_(string $operandsStr): string
+    {
+        $opcode = 'djnz';
+
+        $params = $this->createOperands_($opcode, $operandsStr, 2);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_B])) {
+            if ($this->checkTypeOneOf_($opcode, $params[1], 2, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+                return "$opcode B," . $params[1]->out;
+            }
+        }
+
+        return '';
+    }
+
+
+    // MARK: rst
+    private function parseRst_(string $operandsStr): string
+    {
+        $opcode = 'rst';
+
+        $params = $this->createOperands_($opcode, $operandsStr, 1);
+        if ($params === null) { return ''; }
+
+        if ($this->checkTypeOneOf_($opcode, $params[0], 1, [Operand::TYPE_NUM, Operand::TYPE_SYM, Operand::TYPE_EXPR])) {
+            if ($params[0]->type === Operand::TYPE_NUM) {
+                if ($params[0]->value < 0 || 0x38 < $params[0]->value || ($params[0]->value & 0x07) !== 0) {
+                    $this->errorLine_("$opcode の引数は, 0x00,0x08,0x10,0x18,0x20,0x28,0x30,0x38 が使用できます", $params[0]->org);
+                    return '';
+                }
+            }
+            return "$opcode " . $params[0]->out;
+        }
+
+        return '';
+    }
+
+
+    // -------------------------------- パラメータの型チェックとコード生成 (引数 n)
+    // MARK: push,pop
+    private function parsePushPop_(string $opcode, string $operandsStr): string
+    {
+        return $this->parseVariadicCommon_($opcode, $operandsStr, 1, '',
+            function(string $opcode, Operand $operand, int $index) : string {
+                if ($this->checkTypeOneOf_($opcode, $operand, $index, [Operand::TYPE_HL, Operand::TYPE_DE, Operand::TYPE_BC, Operand::TYPE_AF, Operand::TYPE_IX])) {
+                    return "$opcode " . $operand->out;
+                }
+                return '';
+            },
+        $this->getIndentStr_(), "\n");
+    }
+
+
+    // ---------------------------------------------------------------- ユーティリティ
+    // -------------------------------- システム
+    // MARK: utils: system
+    private function errorLine_(string $msg, string $src = ''): void
+    {
+        $this->error_->errorLine($this->line_nr_, $msg, $src);
+    }
+
+
+    // -------------------------------- ラベル
+    // MARK: utils: label
+    /** ラベルを初期化します */
+    private function initLabels_(): void
+    {
+        $this->label_ct_ = 0;
+        $this->labels_ = [];
+    }
+
+
+    /** 複数のラベル名を生成し, 登録もしますます
+     * - 関数名が foo ならば, genRegistLabels_(["while", "wend"]) と書くと,
+     *   foo_while10, foo_wehd10 といったラベルを生成し, 登録します
+     * @return ラベル名の配列
+    */
+    private function genRegistLabels_(array $strings): array
+    {
+        $ret = [];
+        foreach ($strings as $str) {
+            $label = $this->funcname_ . '__' . $str . $this->label_ct_;
+            $this->registLabel_($label);
+            $ret[] = $label;
+        }
+        $this->label_ct_++;
+        return $ret;
+    }
+    private function genRegistLabel_(): string
+    {
+        $ret = $this->funcname_ . '__' . $this->label_ct_;
+        $this->label_ct_++;
+        $this->registLabel_($ret);
+        return $ret;
+    }
+
+
+    /** ラベル名を登録します */
+    private function registLabel_(string $label): void
+    {
+        $this->labels_[] = $label;
+    }
+
+
+    /** 登録したラベル一覧を出力します. マクロ時の local 疑似命令に使います */
+    public function getLabels(): array
+    {
+        return $this->labels_;
+    }
+
+
+    // -------------------------------- インデント
+    // MARK: utils: indent
+    /** インデントを初期化します */
+    private function initIndent_(): void { $this->indent_lv_ = 0; }
+
+
+    /** インデント レベルを進めます */
+    private function incIndent_(): void { $this->indent_lv_++; }
+
+
+    /** インデント レベルを戻します */
+    private function decIndent_(): void { $this->indent_lv_--; }
+
+
+    /** インデント文字列を生成します */
+    private function getIndentStr_(): string
+    {
+        $ret = '';
+        for ($i = 0; $i < $this->indent_lv_; $i++) {
+            $ret .= '  ';
+        }
+        return $ret;
+    }
+
+
+    // -------------------------------- 空白文字(半角スペースと改行)
+    // MARK: utils: spaces
+    /**
+     * $r_str の $r_offset 文字目から, $string の文字数分と, それに続く空白文字をスキップします.
+     * $string や空白文字内に改行があれば行数もカウントします
+     * @param $r_str 対象文字列
+     * @param $offset $r_str の文字位置(0～)
+     * @param $string スキップする文字列
+     * @return スキップした空白文字の次の位置
+     */
+    private function skipStringSpaces_(string &$r_str, int $offset, string $string = ''): int
+    {
+        $offset += strlen($string);
+        $this->line_nr_ += substr_count($string, "\n");
+
+        if (preg_match('/[\ \n]+/Ax', $r_str, $matches, 0, $offset)) {
+            $offset += strlen($matches[0]);
+            $this->line_nr_ += substr_count($matches[0], "\n");
+        }
+
+        return $offset;
+    }
+
+
     /** $offset が行頭にあるかをチェック
      * - $offset より前を改行(or行頭)までサーチして, 空白文字以外の文字があればエラー
      */
@@ -1047,7 +1937,6 @@ Class Parser
     }
 
 
-    // MARK: toNextBeginningOfLine_()
     /** 次の行頭まで移動します.
      * - 但し 「'\' + 改行」は除く
      */
@@ -1068,8 +1957,9 @@ Class Parser
         }
     }
 
-    // ---------------- 括弧内の検出
-    // MARK: extractParentheses_()
+
+    // -------------------------------- 括弧内の検出
+    // MARK: utils: parentheses
     /** 空白文字に続くカッコ (...) で囲まれた中の文字列を抽出します
      * @param $r_offset $r_str の文字位置(0～)
      * - [in]  '(' の位置
@@ -1085,7 +1975,6 @@ Class Parser
     }
 
 
-    // MARK: extractCurlyBracket_()
     /** 空白文字に続く中カッコ {...} で囲まれた中の文字列を抽出します
      * - 引数などは, 上の extractParentheses_() を参照してください
      */
@@ -1095,7 +1984,6 @@ Class Parser
     }
 
 
-    // MARK: extractParenthesesSub_()
     /** カッコ $c0...$c1 で囲まれた中の文字列を抽出します */
     private function extractParenthesesSub_(string &$r_str, int &$r_offset, string $c0, string $c1): string|false
     {
@@ -1141,8 +2029,115 @@ Class Parser
     }
 
 
-    // ---------------- その他文字処理
-    // MARK: explodeByComma_()
+    // -------------------------------- オペランドの生成, 型チェック
+    // MARK: utils: operands
+    /** expr を Operand オブジェクトの配列にします
+     * n 個の Operand が得られなければエラー処理して null を返します
+     * @param $opcode エラー(n 個のオペランドが得られなかっや)時に表示するオペコード
+     * @param $expr 判別したい文字列
+     * @param $n    期待されるオペランドの数
+     */
+    private function createOperands_(string $opcode, string $expr, int $n): array|null
+    {
+        $params = $this->explodeByComma_($expr);
+        if (count($params) != $n) {
+            //echo("------"); print_r($expr); echo("------>"); print_r($params);
+            $this->errorLine_("$opcode の引数は $n 個です", $expr);
+            return null;
+        }
+
+        $ret = [];
+        foreach($params as $i => $operand) {
+            $p = $this->createOperand_($operand);
+            if ($p !== null) {
+                $ret[] = $p;
+            }
+        }
+        if (count($ret) !== $n) { return null; }
+        return $ret;
+    }
+
+
+    /** 式から, オペランド オブジェクトを生成します. new Operand のエラー付バージョン
+     * モードによって挙動が異なります
+     * @return エラーなら, エラー表示して null
+     */
+    private function createOperand_(string $expr): Operand|null
+    {
+        $operand = new Operand($expr, $this->mode_);
+        if ($operand->type === Operand::TYPE_OTHER) {
+            $this->errorLine_("未知の式です", $expr);
+            return null;
+        }
+        return $operand;
+    }
+
+
+
+    /**
+     * パラメータ $operand の型が, $types のいずれでも無いなら errorLine_() します
+     * $opcode はエラー時のメッセージに含まれる命令, $index は同じくエラー時に表示される引数番号(1～)です
+     * @return エラーなら false
+     */
+    private function checkTypeOneOf_(string $opcode, Operand $operand, int $index, array $types): bool
+    {
+        if ($operand->isTypeOneOf($types)) {
+            return true;
+        }
+
+        // エラー文字列の凡例の作成
+        $legends = [];
+        foreach ($types as $type) {
+            $legends[] = Operand::LEGEND_TAB[$type];
+        }
+
+        $this->errorLine_("$opcode の第 $index 引数は, " . implode('|', $legends) . " が使用できます", $operand->org);
+        return false;
+    }
+
+
+    // -------------------------------- パース関係
+    // MARK: utils: parse
+    /** 可変パラメータ系 parse() の共通関数
+     * @param $opcode       出力する際のオペコード
+     * @param $operandsStr  カッコの中の文字列(オペランド文字列)
+     * @param $out          出力初期値
+     * @param $min_nr_args  最低引数の数
+     * @param $callback     引数毎に呼び出される関数. 引数は,
+     *    string  $opcode
+     *    Operand   $operand
+     *    int     $index(引数番号. 1～)
+     *    returns その引数を処理した結果の文字列
+     * @param $top  $callback 戻値の前につける文字列. 一番最初の引数には付きません
+     * @param $last $callback 戻値の後につける文字列. 一番最後の引数には付きません
+     */
+    private function parseVariadicCommon_(string $opcode, string $operandsStr, int $min_nr_args, string $out,
+        callable $callback, string $top, string $last): string
+    {
+        $paramStrs = $this->explodeByComma_($operandsStr);
+        if (count($paramStrs) < $min_nr_args) {
+            $this->errorLine_("$opcode: 引数は最低でも $min_nr_args 個必要です");
+            return '';
+        }
+
+        foreach($paramStrs as $i => $paramStr) {
+            $operand = $this->createOperand_($paramStr);
+            if ($operand === null) {
+                $this->errorLine_("$opcode 引数 ". ($i + 1) . " のエラー[", $paramStr, "]");
+                return '';
+            }
+
+            if ($i !== 0) { $out .= $top; }
+            $out .= $callback($opcode, $operand, $i + 1);
+            if ($i !== count($paramStrs) - 1) { $out .= $last; }
+        }
+
+        return $out;
+    }
+
+
+    // -------------------------------- その他文字処理
+    // MARK: utils: etc
     /** $expr を ',' で分割します. */
     private function explodeByComma_(string $expr): array
     {
@@ -1181,7 +2176,6 @@ Class Parser
     }
 
 
-    // MARK: cutOffCarryExpr_()
     /**  文字列の末端に ' + c' があれば, それを削除します */
     private function cutOffCarryExpr_(string $expr): string
     {
@@ -1194,7 +2188,6 @@ Class Parser
     }
 
 
-    // MARK: str2int_()
     /** 文字列から整数へ. 10/16進数対応. 失敗したら false */
     private function str2int_($str): int | bool
     {
@@ -1209,810 +2202,10 @@ Class Parser
     }
 
 
-    // ---------------- 式
-    // MARK: createParamObject_()
-    /** 式から, パラメータ オブジェクトを生成します
-     * <expr> := mem[<expr1>]
-     *         | mem[<expr1>] + c
-     *         | port[<expr1>]
-     *         | <reg>
-     *         | <reg> + c
-     *         | reg_<reg>
-     *         | reg_<reg> + c
-     *         | 値
-     *         | 値 + c
-     *         | <expr1>
-     * <expr1> := 面倒なので, Parser::EXPR_NMEM で指定した文字種
-     * モードによって挙動が異なります
-     * @return エラーなら null
-     */
-    private function createParamObject_(string $expr): Param|null
-    {
-        $param = new Param($expr, $this->mode_);
-        if ($param->type === Param::TYPE_OTHER) {
-            if ($this->mode_ === Parser::MODE_MACRO) {
-                $this->errorLine_("未知の式です. reg_ で始まる引数名は, マクロ定義/呼び出し用です", $expr);
-            } else {
-                $this->errorLine_("未知の式です", $expr);
-            }
-            return null;
-        }
-        return $param;
-    }
-
-
-    // ---------------- その他
-    // MARK: swap_()
     private function swap_(&$a, &$b): void
     {
         $c = $a;
         $a = $b;
         $b = $c;
-    }
-
-    // MARK: errorLine_()
-    private function errorLine_(string $msg, string $src = ''): void
-    {
-        $this->error_->errorLine($this->line_nr_, $msg, $src);
-    }
-
-    // MARK: stripBackReg_()
-    /** 裏レジスタ表記を通常表記に変換して返します. それ以外は何もしません */
-    private function stripBackReg_(string $value): string
-    {
-        if (preg_match('/^(?:' . Parser::BACK_REG_ . ')$/x', $value)) {
-            //echo("stripBackReg_: [$value] --> " . trim($value, '_') . "\n");
-            return trim($value, '_'); // 最後の '_' を削る
-        }
-        return $value;
-    }
-
-    // MARK: command dispatches
-    // -------------------------------- aalDirective->疑似命令ディスパッチ
-    private function AAL_DEF_DUMMY_VARS_(string $expr): string { return ''; }
-    private function AAL_LOCAL_(string $expr): string { return $this->checkParamNN_S_('local', $expr); }
-    private function AAL_DB_(string $expr): string { return $this->checkParamNN_V_('db', $expr); }
-    private function AAL_DW_(string $expr): string { return $this->checkParamNN_V_('dw', $expr); }
-    private function AAL_IF_(string $expr): string { $this->incIndent_(); return $this->checkParam11_('if', $expr); }
-    private function AAL_ELIF_(string $expr): string { return $this->checkParam11_('elif', $expr); }
-    private function AAL_REPT_(string $expr): string { $this->incIndent_(); return $this->checkParam11_('rept', $expr); }
-    private function AAL_REPTC_(string $expr): string { $this->incIndent_(); return $this->checkParam22_('reptc', $expr); }
-    private function AAL_REPTI_(string $expr): string { $this->incIndent_(); return $this->checkParamNN_('repti', $expr); }
-    private function AAL_GLOBAL_(string $expr): string { return $this->checkParamNN_S_('global', $expr); }
-
-    // -------------------------------- 関数->命令ディスパッチ
-    private function ld_(string $expr): string { return $this->checkParam22_RM_RMV_('ld', $expr); }
-    private function ldi_(string $expr): string { return $this->checkParam00_('ldi', $expr); }
-    private function ldd_(string $expr): string { return $this->checkParam00_('ldd', $expr); }
-    private function ldir_(string $expr): string { return $this->checkParam00_('ldir', $expr); }
-    private function lddr_(string $expr): string { return $this->checkParam00_('lddr', $expr); }
-    private function ex_(string $expr): string { return $this->checkParam22_RM_R_('ex', $expr); }
-    private function exx_(string $expr): string { return 'exx'; }// 引数無し
-    private function push_(string $expr): string { return $this->checkParam1N_R_('push', $expr); }
-    private function pop_(string $expr): string { return $this->checkParam1N_R_('pop', $expr); }
-    private function and_(string $expr): string { return $this->checkParam22_A_RM_('and', $expr); }
-    private function or_( string $expr): string { return $this->checkParam22_A_RM_('or', $expr); }
-    private function xor_(string $expr): string { return $this->checkParam22_A_RM_('xor', $expr); }
-    private function cpl_(string $expr): string { return $this->checkParam01_A_('cpl', $expr); }
-    private function not_(string $expr): string { return $this->cpl_($expr); }
-    private function cp_(string $expr): string { return $this->checkParam22_A_RM_('cp', $expr); }
-    private function cpi_(string $expr): string { return $this->checkParam00_('cpi', $expr); }
-    private function cpd_(string $expr): string { return $this->checkParam00_('cpd', $expr); }
-    private function cpir_(string $expr): string { return $this->checkParam00_('cpir', $expr); }
-    private function cpdr_(string $expr): string { return $this->checkParam00_('cpdr', $expr); }
-    private function add_(string $expr): string { return $this->checkParam22_R_RMV_('add', $expr); }
-    private function adc_(string $expr): string { return $this->checkParam22_R_RMV_('adc', $expr); }
-    private function sub_(string $expr): string { return $this->checkParam22_A_RM_('sub', $expr); }
-    private function sbc_(string $expr): string { return $this->checkParam22_R_RMV_('sbc', $expr); }
-    private function inc_(string $expr): string { return $this->checkParam11_RM_('inc', $expr); }
-    private function dec_(string $expr): string { return $this->checkParam11_RM_('dec', $expr); }
-    private function neg_(string $expr): string { return $this->checkParam01_A_('neg', $expr); }
-    private function daa_(string $expr): string { return $this->checkParam01_A_('daa', $expr); }
-    private function bit_(string $expr): string { return $this->checkParam22_V_RM_('bit', $expr); }
-    private function set_(string $expr): string { return $this->checkParam22_V_RM_('set', $expr); }
-    private function res_(string $expr): string { return $this->checkParam22_V_RM_('res', $expr); }
-    private function bit_3_(string $expr): string { return $this->checkParam33_V_M_R_('bit', $expr); }
-    private function set_3_(string $expr): string { return $this->checkParam33_V_M_R_('set', $expr); }
-    private function res_3_(string $expr): string { return $this->checkParam33_V_M_R_('res', $expr); }
-    private function sla_(string $expr): string { return $this->checkParam11_RM_('sla', $expr); }
-    private function sll_(string $expr): string { return $this->checkParam11_RM_('sll', $expr); }
-    private function sra_(string $expr): string { return $this->checkParam11_RM_('sra', $expr); }
-    private function srl_(string $expr): string { return $this->checkParam11_RM_('srl', $expr); }
-    private function rl_( string $expr): string { return $this->checkParam11_RM_('rl', $expr); }
-    private function rr_( string $expr): string { return $this->checkParam11_RM_('rr', $expr); }
-    private function rlc_(string $expr): string { return $this->checkParam11_RM_('rlc', $expr); }
-    private function rrc_(string $expr): string { return $this->checkParam11_RM_('rrc', $expr); }
-    private function sla_n_(string $expr): string { return $this->checkParam12_RM_V_('sla', $expr); }
-    private function sll_n_(string $expr): string { return $this->checkParam12_RM_V_('sll', $expr); }
-    private function sra_n_(string $expr): string { return $this->checkParam12_RM_V_('sra', $expr); }
-    private function srl_n_(string $expr): string { return $this->checkParam12_RM_V_('srl', $expr); }
-    private function rl_n_( string $expr): string { return $this->checkParam12_RM_V_('rl', $expr); }
-    private function rr_n_( string $expr): string { return $this->checkParam12_RM_V_('rr', $expr); }
-    private function rlc_n_(string $expr): string { return $this->checkParam12_RM_V_('rlc', $expr); }
-    private function rrc_n_(string $expr): string { return $this->checkParam12_RM_V_('rrc', $expr); }
-    private function sla_2_(string $expr): string { return $this->checkParam22_M_R_('sla', $expr); }
-    private function sll_2_(string $expr): string { return $this->checkParam22_M_R_('sll', $expr); }
-    private function sra_2_(string $expr): string { return $this->checkParam22_M_R_('sra', $expr); }
-    private function srl_2_(string $expr): string { return $this->checkParam22_M_R_('srl', $expr); }
-    private function rl_2_( string $expr): string { return $this->checkParam22_M_R_('rl', $expr); }
-    private function rr_2_( string $expr): string { return $this->checkParam22_M_R_('rr', $expr); }
-    private function rlc_2_(string $expr): string { return $this->checkParam22_M_R_('rlc', $expr); }
-    private function rrc_2_(string $expr): string { return $this->checkParam22_M_R_('rrc', $expr); }
-    private function rla_ (string $expr): string { return $this->checkParam01_A_('rla', $expr); }
-    private function rra_ (string $expr): string { return $this->checkParam01_A_('rra', $expr); }
-    private function rlca_(string $expr): string { return $this->checkParam01_A_('rlca', $expr); }
-    private function rrca_(string $expr): string { return $this->checkParam01_A_('rrca', $expr); }
-    private function rla_n_ (string $expr): string { return $this->checkParam02_AV_('rla', $expr); }
-    private function rra_n_ (string $expr): string { return $this->checkParam02_AV_('rra', $expr); }
-    private function rlca_n_(string $expr): string { return $this->checkParam02_AV_('rlca', $expr); }
-    private function rrca_n_(string $expr): string { return $this->checkParam02_AV_('rrca', $expr); }
-    private function rld_(string $expr): string { return $this->checkParam20_A_M_('rld', $expr); }
-    private function rrd_(string $expr): string { return $this->checkParam20_A_M_('rrd', $expr); }
-    private function jp_(string $expr): string { return $this->checkParam11_V_HL_('jp', $expr); }
-    private function jp_z_(string $expr): string { return $this->checkParam11_V_HL_('jp z,', $expr); }
-    private function jp_eq_(string $expr): string { return $this->jp_z_($expr); }
-    private function jp_nz_(string $expr): string { return $this->checkParam11_V_HL_('jp nz,', $expr); }
-    private function jp_ne_(string $expr): string { return $this->jp_nz_($expr); }
-    private function jp_c_(string $expr): string { return $this->checkParam11_V_HL_('jp c,', $expr); }
-    private function jp_lt_(string $expr): string { return $this->jp_c_($expr); }
-    private function jp_nc_(string $expr): string { return $this->checkParam11_V_HL_('jp nc,', $expr); }
-    private function jp_ge_(string $expr): string { return $this->jp_nc_($expr); }
-    private function jp_p_(string $expr): string { return $this->checkParam11_V_HL_('jp p,', $expr); }
-    private function jp_m_(string $expr): string { return $this->checkParam11_V_HL_('jp m,', $expr); }
-    private function jp_v_(string $expr): string { return $this->checkParam11_V_HL_('jp v,', $expr); }
-    private function jp_nv_(string $expr): string { return $this->checkParam11_V_HL_('jp nv,', $expr); }
-    private function jp_pe_(string $expr): string { return $this->checkParam11_V_HL_('jp pe,', $expr); }
-    private function jp_po_(string $expr): string { return $this->checkParam11_V_HL_('jp po,', $expr); }
-    private function jr_(string $expr): string { return $this->checkParam11_V_('jr', $expr); }
-    private function jr_z_(string $expr): string { return $this->checkParam11_V_('jr z,', $expr); }
-    private function jr_eq_(string $expr): string { return $this->jr_z_($expr); }
-    private function jr_nz_(string $expr): string { return $this->checkParam11_V_('jr nz,', $expr); }
-    private function jr_ne_(string $expr): string { return $this->jr_nz_($expr); }
-    private function jr_c_(string $expr): string { return $this->checkParam11_V_('jr c,', $expr); }
-    private function jr_lt_(string $expr): string { return $this->jr_c_($expr); }
-    private function jr_nc_(string $expr): string { return $this->checkParam11_V_('jr nc,', $expr); }
-    private function jr_ge_(string $expr): string { return $this->jr_nc_($expr); }
-    private function djnz_(string $expr): string { return $this->checkParam22_B_V_('djnz', $expr); }
-    private function call_(string $expr): string { return $this->checkParam11_V_('call', $expr); }
-    private function call_z_(string $expr): string { return $this->checkParam11_V_('call z,', $expr); }
-    private function call_eq_(string $expr): string { return $this->call_z_($expr); }
-    private function call_nz_(string $expr): string { return $this->checkParam11_V_('call nz,', $expr); }
-    private function call_ne_(string $expr): string { return $this->call_nz_($expr); }
-    private function call_c_(string $expr): string { return $this->checkParam11_V_('call c,', $expr); }
-    private function call_lt_(string $expr): string { return $this->call_c_($expr); }
-    private function call_nc_(string $expr): string { return $this->checkParam11_V_('call nc,', $expr); }
-    private function call_ge_(string $expr): string { return $this->call_nc_($expr); }
-    private function call_p_(string $expr): string { return $this->checkParam11_V_('call p,', $expr); }
-    private function call_m_(string $expr): string { return $this->checkParam11_V_('call m,', $expr); }
-    private function call_v_(string $expr): string { return $this->checkParam11_V_('call v,', $expr); }
-    private function call_nv_(string $expr): string { return $this->checkParam11_V_('call nv,', $expr); }
-    private function call_pe_(string $expr): string { return $this->checkParam11_V_('call pe,', $expr); }
-    private function call_po_(string $expr): string { return $this->checkParam11_V_('call po,', $expr); }
-    private function rst_(string $expr): string { return $this->checkParam11_V_('rst', $expr); }
-    private function ret_(string $expr): string { return $this->checkParam00_('ret', $expr); }
-    private function ret_z_(string $expr): string { return $this->checkParam00_('ret z', $expr); }
-    private function ret_eq_(string $expr): string { return $this->ret_z_($expr); }
-    private function ret_nz_(string $expr): string { return $this->checkParam00_('ret nz', $expr); }
-    private function ret_ne_(string $expr): string { return $this->ret_nz_($expr); }
-    private function ret_c_(string $expr): string { return $this->checkParam00_('ret c', $expr); }
-    private function ret_lt_(string $expr): string { return $this->ret_c_($expr); }
-    private function ret_nc_(string $expr): string { return $this->checkParam00_('ret nc', $expr); }
-    private function ret_ge_(string $expr): string { return $this->ret_ge_($expr); }
-    private function ret_p_(string $expr): string { return $this->checkParam00_('ret p', $expr); }
-    private function ret_m_(string $expr): string { return $this->checkParam00_('ret m', $expr); }
-    private function ret_v_(string $expr): string { return $this->checkParam00_('ret v', $expr); }
-    private function ret_nv_(string $expr): string { return $this->checkParam00_('ret nv', $expr); }
-    private function ret_pe_(string $expr): string { return $this->checkParam00_('ret pe', $expr); }
-    private function ret_po_(string $expr): string { return $this->checkParam00_('ret po', $expr); }
-    private function reti_(string $expr): string { return $this->checkParam00_('reti', $expr); }
-    private function retn_(string $expr): string { return $this->checkParam00_('retn', $expr); }
-    private function nop_(string $expr): string { return $this->checkParam00_('nop', $expr); }
-    private function halt_(string $expr): string { return $this->checkParam00_('halt', $expr); }
-    private function di_(string $expr): string { return $this->checkParam00_('di', $expr); }
-    private function ei_(string $expr): string { return $this->checkParam00_('ei', $expr); }
-    private function im0_(string $expr): string { return $this->checkParam00_('im 0', $expr); }
-    private function im1_(string $expr): string { return $this->checkParam00_('im 1', $expr); }
-    private function im2_(string $expr): string { return $this->checkParam00_('im 2', $expr); }
-    private function scf_(string $expr): string { return $this->checkParam01_c_('scf', $expr); }
-    private function ccf_(string $expr): string { return $this->checkParam01_c_('ccf', $expr); }
-    private function in_(string $expr): string { return $this->checkParam22_R_P_('in', $expr); }
-    private function out_(string $expr): string { return $this->checkParam22_P_RV_('out', $expr); }
-    private function ini_(string $expr): string { return $this->checkParam00_('ini', $expr); }
-    private function ind_(string $expr): string { return $this->checkParam00_('ind', $expr); }
-    private function inir_(string $expr): string { return $this->checkParam00_('inir', $expr); }
-    private function indr_(string $expr): string { return $this->checkParam00_('indr', $expr); }
-    private function outi_(string $expr): string { return $this->checkParam00_('outi', $expr); }
-    private function outd_(string $expr): string { return $this->checkParam00_('outd', $expr); }
-    private function otir_(string $expr): string { return $this->checkParam00_('otir', $expr); }
-    private function otdr_(string $expr): string { return $this->checkParam00_('otdr', $expr); }
-
-
-    // MARK: checkParamSub_()
-    /** expr を n 分割し, それぞれを更にパラメータとタイプに分割します */
-    private function checkParamSub_(string $opcode, string $expr, int $n): array|null
-    {
-        $params = $this->explodeByComma_($expr);
-        if (count($params) != $n) {
-            //echo("------"); print_r($expr); echo("------>"); print_r($params);
-            $this->errorLine_("$opcode の引数は $n 個です", $expr);
-            return null;
-        }
-
-        $ret = [];
-        foreach($params as $i => $param) {
-            $p = $this->createParamObject_($param);
-            if ($p === null) {
-                $this->errorLine_("$opcode 引数 ". ($i + 1) . " のエラー", $param);
-            } else {
-                $ret[] = $p;
-            }
-        }
-        if (count($ret) !== $n) { return null; }
-        return $ret;
-    }
-
-
-    // MARK: checkParam00_()
-    /** 命令, 関数共に引数ありません */
-    private function checkParam00_(string $opcode, string $expr): string
-    {
-        if ($expr !== '') {
-            $this->errorLine_("$opcode は引数不要です", $expr);
-        }
-        return $opcode;
-    }
-
-
-    // MARK: checkParam01_A_()
-    /** 命令は引数無しですが, 関数は 1 つの引数 ('A') を持ちます. 例: rra(A) -> rra  */
-    private function checkParam01_A_(string $opcode, string $expr): string
-    {
-        if ($expr !== 'A' && $expr !== 'A_') {
-            $this->errorLine_("$opcode で使用できる引数は, A のみです", $expr);
-        }
-        return $opcode;
-    }
-
-
-    // MARK: checkParam01_c_()
-    /** 命令は引数無しですが, 関数は 1つのの引数 ('c') を持ちます  */
-    private function checkParam01_c_(string $opcode, string $expr): string
-    {
-        if ($expr !== 'c') {
-            $this->errorLine_("$opcode で使用できる引数は, c のみです", $expr);
-        }
-        return $opcode;
-    }
-
-
-    // MARK: checkParam02_AV_()
-    /** 命令は引数無しですが, 関数は 2 つの引数 ('A', 値) を持ちます. 例: rrca(a, n) -> rrca を n 個 */
-    private function checkParam02_AV_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->value !== 'A' && $p[0]->value !== 'A_') {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, A のみです", $expr);
-            return '';
-        }
-        if ($p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, 値 のみです", $expr);
-            return '';
-        }
-
-        // 値が数値ならば直接展開(8以上はエラー), そうでなければ rept
-        $out = '';
-        //echo($p[1]->value . "\n");
-        $n = $this->str2int_($p[1]->value);
-        if ($n !== false) { // 数値
-            if (8 < $n) {
-                $this->errorLine_("$opcode の第2引数値が大きすぎます", $expr);
-            } else {
-                for ($i = 0; $i < $n; $i++) {
-                    if ($i != 0) { $out .= $this->getIndentStr_(); }
-                    $out .= $opcode;
-                    if ($i != $n - 1) { $out .= "\n"; }
-                }
-            }
-        } else { // 数値以外
-            $out .= "rept " . $p[1]->value . "\n";
-            $this->incIndent_();
-            $out .= $this->getIndentStr_() . "$opcode\n";
-            $this->decIndent_();
-            $out .= $this->getIndentStr_() . "endr";
-        }
-        return $out;
-    }
-
-
-    // MARK: checkParam11_()
-    /** 命令, 関数共に 1つの引数 (タイプはなんでもいい) を持ちます  */
-    private function checkParam11_(string $opcode, string $expr): string
-    {
-        $params = $this->explodeByComma_($expr);
-        if (count($params) != 1) {
-            $this->errorLine_("$opcode の引数は 1 個です", $params[0]);
-            return '';
-        }
-
-        return "$opcode " . $this->stripBackReg_($params[0]);
-    }
-
-
-    // MARK: checkParam11_RM_()
-    /** 命令, 関数共に 1つの引数 (レジスタ|メモリ) を持ちます  */
-    private function checkParam11_RM_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 1);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_REG && $p[0]->type !== Param::TYPE_MEM) {
-            $this->errorLine_("$opcode の引数は, レジスタ|メモリ のみです", $expr);
-            return '';
-        }
-
-        if ($p[0]->type !== Param::TYPE_REG || array_key_exists($p[0]->value, Parser::REGS_G16_SPLIT8_TAB_) === false) {
-            return "$opcode " . $this->stripBackReg_($p[0]->value);
-        }
-        // 例外:次の命令は, レジスタが16bitの時(HL,DE,BC,IX,IY)は, 複数の命令に分解されます:
-        // sla(HL) -> sla L, rl H
-        // sll(HL) -> sll L, rl H
-        // sra(HL) -> sra H, rr L
-        // srl(HL) -> srl H, rr L
-        // rla(HL) -> rla H, rla L
-        // rra(HL) -> rra H, rra L
-        $reg_l = Parser::REGS_G16_SPLIT8_TAB_[$p[0]->value][0];
-        $reg_h = Parser::REGS_G16_SPLIT8_TAB_[$p[0]->value][1];
-        $out = '';
-        switch ($opcode) {
-            default:
-                $out = "$opcode " . $this->stripBackReg_($p[0]->value);
-                break;
-            case 'sla':
-            case 'sll':
-                $out = "$opcode " . $reg_l . "\n";
-                $this->incIndent_();
-                $out .= "rl " . $reg_h;
-                break;
-            case 'sra':
-            case 'srl':
-                $out = "$opcode " . $reg_h . "\n";
-                $this->incIndent_();
-                $out .= "rr " . $reg_l;
-                break;
-            case 'rla':
-                $out = "$opcode " . $reg_l . "\n";
-                $this->incIndent_();
-                $out .= "$opcode " . $reg_h . "\n";
-                break;
-            case 'rra':
-                $out = "$opcode " . $reg_h . "\n";
-                $this->incIndent_();
-                $out .= "$opcode " . $reg_l . "\n";
-                break;
-        }
-        return $out;
-    }
-
-
-    // MARK: checkParam11_V_HL_()
-    /** 命令, 関数共に 1つの引数 (値|HL|IX|IY) を持ちます  */
-    private function checkParam11_V_HL_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 1);
-        if ($p === null) { return ''; }
-        if (($p[0]->type !== Param::TYPE_VAL && $p[0]->type !== Param::TYPE_REG) ||
-            ($p[0]->type === Param::TYPE_REG &&
-                ($p[0]->value !== 'HL' && $p[0]->value !== 'HL_' &&
-                $p[0]->value !== 'IX' && $p[0]->value !== 'IY'))) {
-            $this->errorLine_("$opcode の引数は, 値 HL|IX|IY のみです", $expr);
-            return '';
-        }
-
-        $p[0]->adjustVal();
-
-        if ($p[0]->type === Param::TYPE_REG) {
-            $p[0]->value = '(' . $p[0]->value . ')';
-        }
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value);
-    }
-
-
-    // MARK: checkParam11_V_()
-    /** 命令, 関数共に 1つの引数 (値) を持ちます  */
-    private function checkParam11_V_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 1);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の引数は, 値 のみです", $expr);
-            return '';
-        }
-        $p[0]->adjustVal();
-
-        return "$opcode " . $p[0]->value;
-    }
-
-
-    // MARK: checkParam11_F_()
-    /** 命令, 関数共に 1つの引数 (フラグ) を持ちます  */
-    private function checkParam11_F_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 1);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_FLAG) {
-            $this->errorLine_("$opcode の引数は, フラグ のみです", $expr);
-        }
-
-        return "$opcode " . $p[0]->value;
-    }
-
-
-    // MARK: checkParam12_RM_V_()
-    /** 命令は1つ(レジスタ|メモリ), 関数は2つの引数 (値) を持ちます */
-    private function checkParam12_RM_V_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_REG && $p[0]->type !== Param::TYPE_MEM) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, レジスタ|メモリ のみです", $expr);
-        }
-        if ($p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, 値 のみです", $expr);
-        }
-
-        // 値が数値ならば直接展開(8以上はエラー), そうでなければ rept
-        $out = '';
-        //echo($p[1]->value . "\n");
-        $n = $this->str2int_($p[1]->value);
-        if ($n !== false) { // 数値
-            if (8 < $n) {
-                $this->errorLine_("$opcode の第2引数値が大きすぎます", $expr);
-            } else {
-                for ($i = 0; $i < $n; $i++) {
-                    if ($i != 0) { $out .= $this->getIndentStr_(); }
-                    $out .= "$opcode " . $p[0]->value;
-                    if ($i != $n - 1) { $out .= "\n"; }
-                }
-            }
-        } else { // 数値以外
-            $out .= "rept " . $p[1]->value . "\n";
-            $this->incIndent_();
-            $out .= $this->getIndentStr_() . "$opcode " . $this->stripBackReg_($p[0]->value) . "\n";
-            $this->decIndent_();
-            $out .= $this->getIndentStr_() . "endr";
-        }
-        return $out;
-    }
-
-
-    // MARK: checkParam22_()
-    /** 命令, 関数共に 2つの引数 (タイプはなんでもいい) を持ちます  */
-    private function checkParam22_(string $opcode, string $expr): string
-    {
-        $params = $this->explodeByComma_($expr);
-        if (count($params) != 2) {
-            $this->errorLine_("$opcode の引数は 2 個です", $expr);
-            return '';
-        }
-
-        return "$opcode " . $this->stripBackReg_($expr);
-    }
-
-
-    // MARK: checkParam22_RM_RMV_()
-    /** 命令, 関数共に 2つの引数 (レジスタ|メモリ, レジスタ|メモリ|値) を持ちます */
-    private function checkParam22_RM_RMV_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-        if ($p[0]->type !== Param::TYPE_REG && $p[0]->type !== Param::TYPE_MEM) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, レジスタ|メモリ のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_MEM && $p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|メモリ|値 のみです", $p[1]->value);
-        }
-        $p[1]->adjustVal();
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
-    }
-
-
-    // MARK: checkParam22_R_P_()
-    /** 命令, 関数共に 2つの引数 (レジスタ, ポート) を持ちます */
-    private function checkParam22_R_P_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_REG) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, レジスタ のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_PORT) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, ポート のみです", $p[1]->value);
-        }
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $p[1]->value;
-    }
-
-
-    // MARK: checkParam22_P_RV_()
-    /** 命令, 関数共に 2つの引数 (ポート, レジスタ|値) を持ちます */
-    private function checkParam22_P_RV_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_PORT) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, ポート のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|値 のみです", $p[1]->value);
-        }
-        $p[1]->adjustVal();
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $p[1]->value;
-    }
-
-    // MARK: checkParam22_A_RM_()
-    /** 命令, 関数共に 2つの引数 ('A', 二番目はレジスタ|メモリ|値) を持ちます */
-    private function checkParam22_A_RM_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->value !== 'A' && $p[0]->value !== 'A_') {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, 'A' のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_MEM && $p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|メモリ|値 のみです", $p[1]->value);
-        }
-        $p[1]->adjustVal();
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
-    }
-
-
-    // MARK: checkParam22_R_RMV_()
-    /** 命令, 関数共に 2つの引数 (レジスタ, レジスタ|メモリ|値) を持ちます */
-    private function checkParam22_R_RMV_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== 'reg') {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, レジスタのみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_MEM && $p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|メモリ|値 のみです", $p[1]->value);
-        }
-        $p[1]->adjustVal();
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
-    }
-
-
-    // MARK: checkParam22_V_RM_()
-    /** 命令, 関数共に 2つの引数 (値, レジスタ|メモリ) を持ちます */
-    private function checkParam22_V_RM_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, 値 のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_REG && $p[1]->type !== Param::TYPE_MEM) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ|メモリ のみです", $p[1]->value);
-        }
-
-        return "$opcode " . $p[0]->value . ', ' .   $this->stripBackReg_($p[1]->value);
-    }
-
-
-    // MARK: checkParam22_RM_R_()
-    /** 命令, 関数共に 2つの引数 (レジスタ|メモリ, レジスタ) を持ちます */
-    private function checkParam22_RM_R_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_REG && $p[0]->type !== Param::TYPE_MEM) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, レジスタ|メモリ のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_REG ) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, レジスタ のみです", $p[1]->value);
-        }
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $this->stripBackReg_($p[1]->value);
-    }
-
-
-    // MARK: checkParam20_A_M_()
-    /** 命令, 関数共に 2つの引数 ('A', メモリ) を持ちます */
-    private function checkParam20_A_M_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->value !== 'A' && $p[0]->value !== 'A_') {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, 'A' のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_MEM ) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, メモリ のみです", $p[1]->value);
-        }
-
-        return "$opcode";
-    }
-
-
-    // MARK: checkParam22_B_V_()
-    /** 命令, 関数共に 2つの引数 ('B', 値) を持ちます */
-    private function checkParam22_B_V_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->value !== 'B' && $p[0]->value !== 'B_') {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, 'B' のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, 値 のみです", $p[1]->value);
-        }
-
-        $p[1]->adjustVal();
-
-        return "$opcode " . $this->stripBackReg_($p[0]->value) . ', ' .  $p[1]->value;
-    }
-
-
-    // MARK: checkParam22_F_V_()
-    /** 命令, 関数共に 2つの引数 (フラグ, 値) を持ちます */
-    private function checkParam22_F_V_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_FLAG) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, フラグ のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, 値 のみです", $p[1]->value);
-        }
-
-        $p[1]->adjustVal();
-
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value;
-    }
-
-
-    // MARK: checkParam22_M_R_()
-    /** 命令, 関数共に 2つの引数 (メモリ, レジスタ) を持ちます */
-    private function checkParam22_M_R_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 2);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_MEM) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, メモリ のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_REG) {
-            $this->errorLine_("$opcode の第3引数で使用できるのは, レジスタ のみです", $p[1]->value);
-        }
-
-        return "$opcode " . $p[0]->value . ', ' .  $this->stripBackReg_($p[1]->value);
-    }
-
-
-    // MARK: checkParam33_V_M_R_()
-    /** 命令, 関数共に 3つの引数 (値, メモリ, レジスタ) を持ちます */
-    private function checkParam33_V_M_R_(string $opcode, string $expr): string
-    {
-        $p = $this->checkParamSub_($opcode, $expr, 3);
-        if ($p === null) { return ''; }
-
-        if ($p[0]->type !== Param::TYPE_VAL) {
-            $this->errorLine_("$opcode の第1引数で使用できるのは, 値 のみです", $p[0]->value);
-        }
-        if ($p[1]->type !== Param::TYPE_MEM) {
-            $this->errorLine_("$opcode の第2引数で使用できるのは, メモリ のみです", $p[1]->value);
-        }
-        if ($p[2]->type !== Param::TYPE_REG) {
-            $this->errorLine_("$opcode の第3引数で使用できるのは, レジスタ のみです", $p[2]->value);
-        }
-
-        $p[0]->adjustVal();
-
-        return "$opcode " . $p[0]->value . ', ' .  $p[1]->value . ', ' .  $this->stripBackReg_($p[2]->value);
-    }
-
-
-    // MARK: checkParam1N_R_()
-    /** 命令は引数1. 関数は1～n個の引数 (全てレジスタ) を持ちます  */
-    private function checkParam1N_R_(string $opcode, string $expr): string
-    {
-        $params = $this->explodeByComma_($expr);
-        $b_err = false;
-        $out = '';
-
-        foreach($params as $i => $param) {
-            $p = $this->createParamObject_($param);
-            if ($p === null || $p->type !== Param::TYPE_REG) {
-                $this->errorLine_("$opcode で使用できる引数は, レジスタ のみです", $p->value);
-                $b_err = true;
-            } else {
-                if ($i !== 0) { $out .= $this->getIndentStr_(); }
-                $out .= "$opcode " . $this->stripBackReg_($p->value);
-                if ($i !== count($params) - 1) { $out .= "\n"; }
-            }
-        }
-        return $b_err ? '' : $out;
-    }
-
-
-    // MARK: checkParamNN_()
-    /** 命令は引数n. 関数もn個の引数 (タイプはなんでもいい) を持ちます. nは2以上  */
-    private function checkParamNN_(string $opcode, string $expr): string
-    {
-        $params = $this->explodeByComma_($expr);
-        if (count($params) < 2) {
-            $this->errorLine_("$opcode の引数は 2 個以上です", $expr);
-            return '';
-        }
-        $out = $opcode . ' ';
-        foreach($params as $i => $param) {
-            $out .= $this->stripBackReg_($param);
-            if ($i !== count($params) - 1) { $out .= ", "; }
-        }
-        return $out;
-    }
-
-
-    // MARK: checkParamNN_S_()
-    /** 命令は引数n. 関数もn個の引数 (全てシンボル値) を持ちます  */
-    private function checkParamNN_S_(string $opcode, string $expr): string
-    {
-        $params = $this->explodeByComma_($expr);
-        $b_err = false;
-        $out = $opcode . ' ';
-
-        foreach($params as $i => $param) {
-            $p = $this->createParamObject_($param);
-            if ($p === null || !preg_match('/^' . Parser::SYMBOL . '$/x', $p->value)) {
-                $this->errorLine_("$opcode で使用できる引数は, シンボル値 のみです", $p->value);
-                $b_err = true;
-            } else {
-                $out .= $p->value;
-                if ($i !== count($params) - 1) { $out .= ", "; }
-            }
-        }
-        return $b_err ? '' : $out;
-    }
-
-
-    // MARK: checkParamNN_V_()
-    /** 命令は引数n. 関数もn個の引数 (全て値) を持ちます  */
-    private function checkParamNN_V_(string $opcode, string $expr): string
-    {
-        $params = $this->explodeByComma_($expr);
-        $b_err = false;
-        $out = $opcode . ' ';
-
-        foreach($params as $i => $param) {
-            $p = $this->createParamObject_($param);
-            if ($p === null || $p->type !== Param::TYPE_VAL) {
-                $this->errorLine_("$opcode で使用できる引数は, 値 のみです", $p->value ?? '');
-                $b_err = true;
-            } else {
-                $out .= $p->value;
-                if ($i !== count($params) - 1) { $out .= ", "; }
-            }
-        }
-        return $b_err ? '' : $out;
     }
 }

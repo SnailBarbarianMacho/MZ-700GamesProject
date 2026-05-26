@@ -149,6 +149,7 @@ $in_text = rtrim($in_text); // 最後の改行コード等はカット
 // 1 文字 1 文字読む`
 $arr = [];
 $len = 0;
+$width = 0;         // 文字幅
 $tag = '';          // タグモード       '{..}' 文字列
 $nr_lfs = 0;        // 改行モード       連続する改行数
 $b_caps = false;    // CAPS モード(false/true = AZカナ/azかな)
@@ -179,7 +180,7 @@ for ($i = 0; $i < strlen($in_text); $i++) {
             $tag = '';
             continue;
         } else if (strpos($tag, '{moveRight=') === 0) {
-            if (checkTagMoveRight($tag, $arr, $len) === false) {
+            if (checkTagMoveRight($tag, $arr, $len, $width) === false) {
                 $nr_errs++;
             }
             $tag = '';
@@ -192,7 +193,11 @@ for ($i = 0; $i < strlen($in_text); $i++) {
             continue;
         }
         if (isset(TAB[$tag])) {
-            $arr[] = TAB[$tag];
+            $dc = TAB[$tag];
+            if ($dc === 'DC_LF' | $dc === 'DC_LF2') {
+                $width = 0;
+            }
+            $arr[] = $dc;
             $len++;
         } else {
             $nr_errs++;
@@ -200,16 +205,19 @@ for ($i = 0; $i < strlen($in_text); $i++) {
         }
         $tag = '';
     } else {
-        if ($c === chr(0x0a)) {// LF
+        if ($c === chr(0x0a)) {// LF を検出
             if ($nr_lfs === 0) {// 改行モード開始
+                $width = 0;
                 $nr_lfs++;
             } else {
                 $arr[] = 'DC_LF2';
+                $width = 0;
                 $nr_lfs = 0;
             }
             continue;
-        } else if ($nr_lfs !== 0) {// 改行モード終了
+        } else if ($nr_lfs !== 0) {// LF 以外の文字ならば, 改行モード終了
             $arr[] = 'DC_LF';
+            $width = 0;
             $nr_lfs = 0;
         }
         if ($c === '{') {// タグ モード開始
@@ -231,13 +239,18 @@ for ($i = 0; $i < strlen($in_text); $i++) {
 
             //echo var_export($b_caps, true)."[$c]\n";
             if (isset(TAB[$c])) {
-                $arr[] = TAB[$c];
+                $dc = TAB[$c];
+                $arr[] = $dc;
+                $width++;
                 $len++;
+
+                // 濁点半濁点
                 if (preg_match('/[がぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽヴガギグゲゴザジズゼドダヂヅデドバビブベボパピプペポ]/u', $c)) {
                     $len++;
+                    $width++;
                 }
             } else {
-                fwrite(STDERR, "ERROR: The character [$c] is not exist\n");
+                fwrite(STDERR, "ERROR: MZ-700 には,この文字 [$c] はありません\n");
                 $nr_errs++;
             }
             continue;
@@ -253,6 +266,10 @@ optimizeAtb($arr, '0x40', 'DC_COL4');
 optimizeAtb($arr, '0x50', 'DC_COL5');
 optimizeAtb($arr, '0x60', 'DC_COL6');
 optimizeAtb($arr, '0x70', 'DC_COL7');
+if ($width > 40) {
+    fwrite(STDERR, "ERROR: MZ-700 の1行は40文字までです: $width\n");
+    exit(1);
+}
 outData($in_text, $out_filename, $arr, $len);
 
 // -------------------------------- 引数を持つタグの処理関数
@@ -288,7 +305,7 @@ function checkTagColor(string $tag, int &$fg_color, int &$bg_color, bool $b_caps
     return false;
 }
 
-function checkTagMoveRight(string $tag, array &$arr, int &$len): bool
+function checkTagMoveRight(string $tag, array &$arr, int &$len, int $width): bool
 {
     $matches = [];
     if (!preg_match('/^\{moveRight=([0-9]{1,2})\}$/', $tag, $matches) ||
@@ -300,7 +317,8 @@ function checkTagMoveRight(string $tag, array &$arr, int &$len): bool
     }
     $arr[] = 'DC_MOVE_RIGHT';
     $arr[] = sprintf('0x%02x', $matches[1]);
-    $len += $matches[1];
+    $len   += $matches[1];
+    $width += $matches[1];
     return true;
 }
 
@@ -316,7 +334,6 @@ function checkTagMoveDown(string $tag, array &$arr, int &$len): bool
     }
     $arr[] = 'DC_MOVE_DOWN';
     $arr[] = sprintf('0x%02x', $matches[1]);
-    //$len += $matches[1];
     return true;
 }
 

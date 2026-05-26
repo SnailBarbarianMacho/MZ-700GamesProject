@@ -40,6 +40,6 @@ else if ($percent >= 80) { $col = "\e[33m"; }   // 黄 ... あまり圧縮効い
 $col_off = "\e[0m";
 $bar = '[' . $col . str_repeat('=', $percent2) . $col_off . str_repeat('-', 50 - $percent2) . ']';
 $out = "[$cmp_filename]: $bar" .
-    sprintf("0x%04x/0x%04x=%d%%", $cmp_filesize, $ref_filesize, $percent) .
+    sprintf("0x%04x/0x%04x=$col%d%%$col_off", $cmp_filesize, $ref_filesize, $percent) .
     " of [$ref_filename]\n";
 fwrite(STDERR, $out);

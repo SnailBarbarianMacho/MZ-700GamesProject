@@ -43,10 +43,10 @@ $col_off = "\e[0m";
 $bar = '[' . $col . str_repeat('*', $percent2) . $col_off . str_repeat('-', 50 - $percent2) . ']';
 $out = "[$in_size]: $bar";
 if ($filesize === false || $filesize > $max_size) {
-    $out .= sprintf("0x%04x(%d%%)-0x%04x=0x%04x", $filesize, $percent, $filesize - $max_size, $max_size);
+    $out .= sprintf("0x%04x($col%d%%$col_off)-".$col."0x%04x$col_off=0x%04x", $filesize, $percent, $filesize - $max_size, $max_size);
     fwrite(STDERR, "$out Size check failed\n");
     exit(1);
 } else {
-    $out .= sprintf("0x%04x(%d%%)+0x%04x=0x%04x", $filesize, $percent, $max_size - $filesize, $max_size);
+    $out .= sprintf("0x%04x($col%d%%$col_off)+".$col."0x%04x$col_off=0x%04x", $filesize, $percent, $max_size - $filesize, $max_size);
     print("$out Size check OK\n");
 }
