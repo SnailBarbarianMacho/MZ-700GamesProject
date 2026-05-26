@@ -215,46 +215,35 @@ __asm
 
     /** メモリ上位を VRAM/MMIO に切り替えます
      * - メモリ下位は変化しません
-     * - C レジスタを破壊するので, 引数で明示します
      */
-    macro   BANKH_VRAM_MMIO C
-    ld      C,  IO_BANKH_VRAM_MMIO
-    out     (C), A              // 値はなんでもいい
+    macro   BANKH_VRAM_MMIO
+    out     (IO_BANKH_VRAM_MMIO), A // 値はなんでもいい
     endm
 
     /** メモリ上位を RAM に切り替えます
      * - メモリ下位は変化しません
-     * - C レジスタを破壊するので, 引数で明示します
      */
-    macro   BANKH_RAM   C
-    ld      C,  IO_BANKH_RAM
-    out     (C), A              // 値はなんでもいい
+    macro   BANKH_RAM
+    out     (IO_BANKH_RAM), A   // 値はなんでもいい
     endm
 
     /** メモリ下位を RAM に切り替えます
      * - メモリ上位は変化しません
-     * - C レジスタを破壊するので, 引数で明示します
      */
-    macro   BANKL_RAM   C
-    ld      C,  IO_BANKL_RAM
-    out     (C), A              // 値はなんでもいい
+    macro   BANKL_RAM
+    out     (IO_BANKL_RAM), A   // 値はなんでもいい
     endm
 
     /** メモリ下位を ROM に切り替えます
      * - メモリ上位は変化しません
-     * - C レジスタを破壊するので, 引数で明示します
      */
-    macro   BANKL_ROM   C
-    ld      C,  IO_BANKL_ROM
-    out     (C), A              // 値はなんでもいい
+    macro   BANKL_ROM
+    out     (IO_BANKL_ROM), A   // 値はなんでもいい
     endm
 
-    /** メモリ下位をモニタROM, 上位を VRAM/MMIO に切り替えます
-     * - C レジスタを破壊するので, 引数で明示します
-     */
-    macro   BANKL_ROM_BANKH_VRAM_MMIO   C
-    ld      C,  IO_BANKL_ROM_BANKH_VRAM_MMIO
-    out     (C), A              // 値はなんでもいい
+    /** メモリ下位をモニタROM, 上位を VRAM/MMIO に切り替えます */
+    macro   BANKL_ROM_BANKH_VRAM_MMIO
+    out     (IO_BANKL_ROM_BANKH_VRAM_MMIO), A   // 値はなんでもいい
     endm
 
     // -------------------------------- PCG-700

@@ -12,6 +12,7 @@
 #define OPCODE_ADD_HL   0x86
 #define OPCODE_ADD_N    0xc6
 #define OPCODE_AND_N    0xe6
+#define OPCODE_CALL     0xcd
 #define OPCODE_DEC_A    0x3d
 #define OPCODE_DEC_D    0x15
 #define OPCODE_DEC_E    0x1d
@@ -59,39 +60,31 @@ __asm
     macro   NO_OP
     endm
 
-    // -------------------------------- MARK:8 bit not
-    /** Aレジスタのビット反転です */
-    macro   NOT8A
-        cpl
-    endm
-
     // -------------------------------- MARK:8 bit 回転
+
     /** A レジスタを任意回数左ローテートします
      * - N は回数を, 最後の A は対象レジスタを示します
-     * @param n 回数
-     * - n <  0 なら右回転します
-     * - n == 0 なら何もしません
-     * - n >  4 ならば反対回転します
+     * @param imm ローテート回数即値 (右回転が正, 左回転は負. 0 ならば何もしません)
      */
-    macro   RLCA_N  n
-        if      (n) < 0
-            if      ((-(n)) & 7) <= 4
-                rept    (-(n)) & 7
+    macro   RLCA_N  A, imm
+        if      (imm) < 0
+            if      ((-(imm)) & 7) <= 4
+                rept    (-(imm)) & 7
                     rlca
                 endr
             else
-                rept    8 - ((-(n)) & 7)
+                rept    8 - ((-(imm)) & 7)
                     rrca
                 endr
             endif
         else
-            if      ((n) & 7) == 0
-            elif    ((n) & 7) <= 4
-                rept    (n) & 7
+            if      ((imm) & 7) == 0
+            elif    ((umm) & 7) <= 4
+                rept    (imm) & 7
                     rrca
                 endr
             else
-                rept    8 - ((n) & 7)
+                rept    8 - ((imm) & 7)
                     rlca
                 endr
             endif
@@ -100,42 +93,40 @@ __asm
 
     /** A レジスタを任意回数右ローテートします
      * - 'N' は回数を, 最後の 'A' は対象レジスタを示します
-     * @param n 回数
-     * - n <  0 なら左回転します
-     * - n == 0 なら何もしません
-     * - n >  4 ならば反対回転します
+     * @param A 破壊されるので明記します
+     * @param imm ローテート回数即値 (右回転が正, 左回転は負. 0 ならば何もしません)
      */
-    macro   RRCA_N  n
-        if      (n) < 0
-            if      ((-(n)) & 7) <= 4
-                rept    (-(n)) & 7
+    macro   RRCA_N  A, imm
+        if      (imm) < 0
+            if      ((-(imm)) & 7) <= 4
+                rept    (-(imm)) & 7
                     rrca
                 endr
             else
-                rept    8 - ((-(n)) & 7)
+                rept    8 - ((-(imm)) & 7)
                     rlca
                 endr
             endif
         else
-            if      ((n) & 7) == 0
-            elif    ((n) & 7) <= 4
-                rept    (n) & 7
+            if      ((imm) & 7) == 0
+            elif    ((imm) & 7) <= 4
+                rept    (imm) & 7
                     rlca
                 endr
             else
-                rept    8 - ((n) & 7)
+                rept    8 - ((imm) & 7)
                     rrca
                 endr
             endif
         endif
     endm
 
+
     // -------------------------------- MARK:8 bit 抽出
     /** A レジスタからパラメータを抽出します
      * @param A 破壊されるので明記します
-     * @param mask  マスクかける値 (0xff 相当ならば and 処理はしません)
-     * @param shift シフト(ローテート)値 (右回転が正, 左回転は負. 0 ならばシフトしません)
-     * @example PEXTA mask, shift
+     * @param mask  マスクかける即値 (0xff 相当ならば and 処理はしません)
+     * @param shift シフト(ローテート)回数即値 (右回転が正, 左回転は負. 0 ならばシフトしません)
      */
     macro   PEXTA A, mask, shift
         if      (mask) != 0xff
@@ -169,15 +160,15 @@ __asm
     // -------------------------------- MARK:8 bit 即値加減
 
     /** A レジスタに 8 bit 即値を加算します. ±1以内なら最適化します */
-    macro   ADDA    A, val
-        if ((val) & 0xff) == 0xff
+    macro   ADDA    A, imm
+        if ((imm) & 0xff) == 0xff
             dec     A
             exitm
         endif
-        if ((val) & 0xff) == 0x00
+        if ((imm) & 0xff) == 0x00
             exitm
         endif
-        if ((val) & 0xff) == 0x01
+        if ((imm) & 0xff) == 0x01
             inc     A
             exitm
         endif
@@ -185,19 +176,19 @@ __asm
     endm
 
     /** A レジスタに 8 bit 即値を減算します. ±1以内なら最適化します */
-    macro   SUBA    A, val
-        if ((val) & 0xff) == 0xff
+    macro   SUBA    A, imm
+        if ((imm) & 0xff) == 0xff
             inc     A
             exitm
         endif
-        if ((val) & 0xff) == 0x00
+        if ((imm) & 0xff) == 0x00
             exitm
         endif
-        if ((val) & 0xff) == 0x01
+        if ((imm) & 0xff) == 0x01
             dec     A
             exitm
         endif
-        sub     A,  val
+        sub     A,  imm
     endm
 
     /** 8 bit レジスタに 8 bit 即値を加算します
@@ -213,12 +204,12 @@ __asm
      *   |d| >= 3       15 A レジスタ破壊    22
      * @param r 移動したいレジスタ, (H,L,B,C,D,E)
      *          ※(HL) や A は推奨しません
-     * @param val  加算 8bit 値
+     * @param imm  加算値(8bit 即値)
      * @param A    A レジスタを破壊するので, 引数で明示します
      * @param need_old_r_to_A false/true. true にすると, A に元の r の値を返します
      */
-    macro   ADD8T r, val, A, need_old_r_to_A
-        if ((val) & 0xff) == 0xfd
+    macro   ADD8T r, imm, A, need_old_r_to_A
+        if ((imm) & 0xff) == 0xfd
             if need_old_r_to_A
                 ld      A,  r
             endif
@@ -227,14 +218,14 @@ __asm
             dec     r
             exitm
         endif
-        if ((val) & 0xff) == 0xfe
+        if ((imm) & 0xff) == 0xfe
             if need_old_r_to_A
             endif
             dec     r
             dec     r
             exitm
         endif
-        if ((val) & 0xff) == 0xff
+        if ((imm) & 0xff) == 0xff
             if need_old_r_to_A
                 // inc r でいけますよ
                 error macro_ADD8T_inc_r
@@ -242,14 +233,14 @@ __asm
             dec     r
             exitm
         endif
-        if ((val) & 0xff) == 0x00
+        if ((imm) & 0xff) == 0x00
             if need_old_r_to_A
                 // 値は変わらないので不要です
                 error macro_ADD8T_need_old_r_to_a_is_not_needed
             endif
             exitm
         endif
-        if ((val) & 0xff) == 0x01
+        if ((imm) & 0xff) == 0x01
             if need_old_r_to_A
                 // dec r でいけますよ
                 error macro_ADD8T_dec_r
@@ -257,7 +248,7 @@ __asm
             inc     r
             exitm
         endif
-        if ((val) & 0xff) == 0x02
+        if ((imm) & 0xff) == 0x02
             if need_old_r_to_A
                 ld      A,  r
             endif
@@ -265,7 +256,7 @@ __asm
             inc     r
             exitm
         endif
-        if ((val) & 0xff) == 0x03
+        if ((imm) & 0xff) == 0x03
             if need_old_r_to_A
                 ld      A,  r
             endif
@@ -276,10 +267,10 @@ __asm
         endif
         // ±4 以上の場合
         ld      A,  r
-        add     A,  0 + (val)
+        add     A,  0 + (imm)
         ld      r,  A
         if need_old_r_to_A
-            sub     A,  0 + (val)
+            sub     A,  0 + (imm)
         endif
     endm
 
@@ -289,37 +280,37 @@ __asm
      * - 処理時間は ADD8T を参照してください
      * @param r   移動したいレジスタ, (H,L,B,C,D,E)
      *            ※(HL) や A は推奨しません
-     * @param val 加算 8bit 値
+     * @param imm 加算値(8bit 即値)
      */
-    macro   ADD8 r, val
-        if ((val) & 0xff) == 0xfd
+    macro   ADD8 r, imm
+        if ((imm) & 0xff) == 0xfd
             dec     r
             dec     r
             dec     r
             exitm
         endif
-        if ((val) & 0xff) == 0xfe
+        if ((imm) & 0xff) == 0xfe
             dec     r
             dec     r
             exitm
         endif
-        if ((val) & 0xff) == 0xff
+        if ((imm) & 0xff) == 0xff
             dec     r
             exitm
         endif
-        if ((val) & 0xff) == 0x00
+        if ((imm) & 0xff) == 0x00
             exitm
         endif
-        if ((val) & 0xff) == 0x01
+        if ((imm) & 0xff) == 0x01
             inc     r
             exitm
         endif
-        if ((val) & 0xff) == 0x02
+        if ((imm) & 0xff) == 0x02
             inc     r
             inc     r
             exitm
         endif
-        if ((val) & 0xff) == 0x03
+        if ((imm) & 0xff) == 0x03
             inc     r
             inc     r
             inc     r
@@ -343,7 +334,7 @@ __asm
         ld      dst_h,  A
     endm
 
-    // -------------------------------- MARK:8+16 加算
+    // -------------------------------- MARK:16+8 加算
     /** 16bitレジスタ += A(unsigned)
      * - 5 bytes, 19(繰り上がり有り)/20(同無し) T-states
      * - 次のコード(4 bytes, 21 T-states)より速いです
@@ -359,10 +350,6 @@ __asm
      * @param dst_h H, D, B, IXH, IYH など
      * @param dst_l L, E, C, IXL, IYL など
      * @param A     A レジスタを破壊するので, 引数で明示します
-     * @note
-     * - A が符号付きの場合は, 次のように書きます.
-     *   EXT16T D, E, A
-     *   add    HL, DE
      */
     macro   ADD16_U8T    dst_h, dst_l, A
         local   ADD16_U8T_100
@@ -373,6 +360,25 @@ __asm
 ADD16_U8T_100:
     endm
 
+    /** 16bitレジスタ += A(signed)
+     * - 10 bytes, 33～38 T-states
+     * @note
+     * - 余計なレジスタを使っても良いなら,以下のコードが最速(5 bytes, 31 T-states)です:
+     *   EXT16T B, C, A
+     *   add    HL, BC
+     */
+    macro   ADD16_S8T   dst_h, dst_l, A
+        local   ADD16_S8T_POSITIVE
+        // A が負ならば, 符号拡張後の上位バイトは 0xff なので, HL から 0x100 を引きます
+        or      A,      A
+        jp      p,      ADD16_S8T_POSITIVE
+        dec     dst_h
+ADD16_S8T_POSITIVE:
+
+        // 後は符号なし加算と同じ
+        ADD16_U8T   dst_h, dst_l, A
+    endm
+
     /** 16bitレジスタ = 16bit即値 + A(unsigned)
      * - テーブル検索に使えます
      * - 7 bytes, 26 T-states
@@ -381,12 +387,8 @@ ADD16_U8T_100:
      *  ADD16_U8T(HL, A)        // 19/20
      * @param dst_h H, D, B, IXH, IYH など
      * @param dst_l L, E, C, IXL, IYL など
-     * @param imm16 16bit即値
+     * @param imm16 加算値(16bit 即値)
      * @param A     A レジスタを破壊するので, 引数で明示します
-     * @note
-     * - A が符号付きの場合は, 次のように書きます.
-     *   EXT16T D, E, A
-     *   add    HL, DE
      */
     macro   ADD_IMM16_U8T   dst_h, dst_l, imm16, A
         add     A,      0 + (imm16) % 256
@@ -396,6 +398,57 @@ ADD16_U8T_100:
         ld      dst_h,  A
     endm
 
+    // -------------------------------- MARK:16-8 減算
+    /** 16bitレジスタ -= A(unsigned)
+     * - 10 bytes, 30(A==0)/48(繰り上がり有り)/49(同無し) T-states
+     * @param dst_h H, D, B, IXH, IYH など
+     * @param dst_l L, E, C, IXL, IYL など
+     * @param A     A レジスタを破壊するので, 引数で明示します
+     * @note
+     * - 余計なレジスタを使っても良いなら,以下のコードが最速(5 bytes, 26 T-states)です:
+     *   ld     D, 0
+     *   ld     E, A
+     *   or     A, A
+     *   sbc    HL, DE
+     */
+    macro   SUB16_U8T    dst_h, dst_l, A
+        local   SUB16_U8T_SKIP
+        // A が 0 なら何もしません
+        // それ以外なら A を符号反転します.
+        // A, 符号拡張した場合, 上位バイトは 0xff になるので, H をデクリメントします
+        neg     A
+        jr      z,  SUB16_U8T_SKIP
+        dec     dst_h
+
+        // 後は符号なし加算と同じ
+        ADD16_U8T   dst_h, dst_l, A
+SUB16_U8T_SKIP:
+    endm
+
+    /** 16bitレジスタ -= A(signed)
+     * - 14 bytes, 47(ベスト)/62(ワースト) T-states
+     * @param dst_h H, D, B, IXH, IYH など
+     * @param dst_l L, E, C, IXL, IYL など
+     * @param A     A レジスタを破壊するので, 引数で明示します
+     * @note
+     * - 余計なレジスタを使っても良いなら,以下のコードが最速(7 bytes, 35 T-states)です:
+     *   EXT16T D, E, A
+     *   or     A, A
+     *   sbc    HL, DE
+     */
+    macro   SUB16_S8T    dst_h, dst_l, A
+        local   SUB16_U8T_POSITIVE
+        // A を符号反転します
+        // A が負になるならば, H をデクリメントします
+        // A の元値が -0x80 ならば neg A は 0x80 になり, vフラグが立ち, これを使って H のデクリメントを阻止します
+        neg     A
+        jp      p,  SUB16_U8T_POSITIVE
+        jp      v,  SUB16_U8T_POSITIVE
+        dec     dst_h
+SUB16_U8T_POSITIVE:
+        // 後は符号なし加算と同じ
+        ADD16_U8T   dst_h, dst_l, A
+    endm
 
     // -------------------------------- MARK:16 bit neg
 
@@ -474,89 +527,89 @@ ADD16_U8T_100:
     /** 16 bit レジスタに 16 bit 即値を加算します
      * - 最後の 'T' はテンポラリを意味します
      * - 処理時間 (T-states)
-     *    val  == 0      0
-     *   |val| == 1      6
-     *   |val| == 2     12
-     *   |val| == 3     18
+     *    imm16  == 0      0
+     *   |imm16| == 1      6
+     *   |imm16| == 2     12
+     *   |imm16| == 3     18
      *   それ以外       21 tmp レジスタ破壊
-     * @param HL   移動したいレジスタ (HL固定)
-     * @param val  加算値(16bit)
-     * @param tmp  テンポラリ レジスタ (BC or DE) 値が破壊されます
+     * @param HL    移動したいレジスタ (HL固定)
+     * @param imm16 加算値(16bit 即値)
+     * @param tmp16 テンポラリ レジスタ (BC or DE) 値が破壊されます
      */
-    macro   ADD16T  HL, val, tmp
-        if (val & 0xffff) == 0xfffd
+    macro   ADD16T  HL, imm16, tmp16
+        if (imm16 & 0xffff) == 0xfffd
             dec     HL
             dec     HL
             dec     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0xfffe
+        if ((imm16) & 0xffff) == 0xfffe
             dec     HL
             dec     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0xffff
+        if ((imm16) & 0xffff) == 0xffff
             dec     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0x0000
+        if ((imm16) & 0xffff) == 0x0000
             exitm
         endif
-        if ((val) & 0xffff) == 0x0001
-            inc     HL
-            exitm
-        endif
-        if ((val) & 0xffff) == 0x0002
-            inc     HL
+        if ((imm16) & 0xffff) == 0x0001
             inc     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0x0003
-            inc     HL
+        if ((imm16) & 0xffff) == 0x0002
             inc     HL
             inc     HL
             exitm
         endif
-        ld      tmp, 0 + (val)
-        ADD     HL, tmp
+        if ((imm16) & 0xffff) == 0x0003
+            inc     HL
+            inc     HL
+            inc     HL
+            exitm
+        endif
+        ld      tmp16, 0 + (imm16)
+        ADD     HL, tmp16
     endm
 
     /** 16 bit レジスタに 16 bit 即値を加算します
      * - 他のレジスタは破壊されません
      * - ±3以上の移動の場合はエラーになります
      * - 処理時間は ADD16T を参照してください
-     * @param HL   移動したいレジスタ (HL固定)
-     * @param val  加算値(16bit)
+     * @param HL    移動したいレジスタ (HL固定)
+     * @param imm16 加算値(16bit 即値)
      */
-    macro   ADD16 HL, val
-        if ((val) & 0xffff) == 0xfffd
+    macro   ADD16 HL, imm16
+        if ((imm16) & 0xffff) == 0xfffd
             dec     HL
             dec     HL
             dec     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0xfffe
+        if ((imm16) & 0xffff) == 0xfffe
             dec     HL
             dec     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0xffff
+        if ((imm16) & 0xffff) == 0xffff
             dec     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0x0000
+        if ((imm16) & 0xffff) == 0x0000
             exitm
         endif
-        if ((val) & 0xffff) == 0x0001
+        if ((imm16) & 0xffff) == 0x0001
             inc     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0x0002
+        if ((imm16) & 0xffff) == 0x0002
             inc     HL
             inc     HL
             exitm
         endif
-        if ((val) & 0xffff) == 0x0003
+        if ((imm16) & 0xffff) == 0x0003
             inc     HL
             inc     HL
             inc     HL
@@ -569,73 +622,73 @@ ADD16_U8T_100:
     /** SP レジスタに 16 bit 即値を加算します
      * - 最後の 'T' はテンポラリを意味します
      * - 処理時間 (T-states)
-     *    val == -4     24
-     *    val == -3     18
-     *    val == -2     12
-     *    val == -1      6
-     *    val == 0       0
-     *    val == 1       6
-     *    val == 2      10 tmp レジスタ破壊
-     *    val == 3      16 tmp レジスタ破壊
-     *    val == 4      20 tmp レジスタ破壊
-     *    val == 5      26 tmp レジスタ破壊
+     *    imm16 == -4     24
+     *    imm16 == -3     18
+     *    imm16 == -2     12
+     *    imm16 == -1      6
+     *    imm16 == 0       0
+     *    imm16 == 1       6
+     *    imm16 == 2      10 tmp レジスタ破壊
+     *    imm16 == 3      16 tmp レジスタ破壊
+     *    imm16 == 4      20 tmp レジスタ破壊
+     *    imm16 == 5      26 tmp レジスタ破壊
      *    それ以外      27 tmp レジスタ破壊(tmp == HL でなければなりません)
-     * @param val  加算値(16bit)
-     * @param tmp  破壊されるテンポラリ レジスタ(HL, DE, BC)
+     * @param imm16 加算値(16bit 即値)
+     * @param tmp16 破壊されるテンポラリ レジスタ(HL, DE, BC)
      */
-    macro   ADDSP16T  val, tmp
-        if ((val) & 0xffff) == 0xfffc   // 24
+    macro   ADDSP16T  imm16, tmp16
+        if ((imm16) & 0xffff) == 0xfffc   // 24
             dec     SP
             dec     SP
             dec     SP
             dec     SP
             exitm
         endif
-        if ((val) & 0xffff) == 0xfffd   // 18
+        if ((imm16) & 0xffff) == 0xfffd   // 18
             dec     SP
             dec     SP
             dec     SP
             exitm
         endif
-        if ((val) & 0xffff) == 0xfffe   // 12
+        if ((imm16) & 0xffff) == 0xfffe   // 12
             dec     SP
             dec     SP
             exitm
         endif
-        if ((val) & 0xffff) == 0xffff   // 6
+        if ((imm16) & 0xffff) == 0xffff   // 6
             dec     SP
             exitm
         endif
-        if ((val) & 0xffff) == 0x0000   // 0
+        if ((imm16) & 0xffff) == 0x0000   // 0
             exitm
         endif
-        if ((val) & 0xffff) == 0x0001   // 6
+        if ((imm16) & 0xffff) == 0x0001   // 6
             inc     SP
             exitm
         endif
-        if ((val) & 0xffff) == 0x0002   // 10
-            pop     tmp
+        if ((imm16) & 0xffff) == 0x0002   // 10
+            pop     tmp16
             exitm
         endif
-        if ((val) & 0xffff) == 0x0003   // 16
+        if ((imm16) & 0xffff) == 0x0003   // 16
             inc     SP
-            pop     tmp
+            pop     tmp16
             exitm
         endif
-        if ((val) & 0xffff) == 0x0004   // 20
-            pop     tmp
-            pop     tmp
+        if ((imm16) & 0xffff) == 0x0004   // 20
+            pop     tmp16
+            pop     tmp16
             exitm
         endif
-        if ((val) & 0xffff) == 0x0005   // 26
+        if ((imm16) & 0xffff) == 0x0005   // 26
             inc     SP
-            pop     tmp
-            pop     tmp
+            pop     tmp16
+            pop     tmp16
             exitm
         endif
-        ld      tmp, 0 + (val)          // 10+11+6=27
-        add     tmp, SP
-        ld      SP, tmp
+        ld      tmp16, 0 + (imm16)          // 10+11+6=27
+        add     tmp16, SP
+        ld      SP, tmp16
     endm
 
 
@@ -671,22 +724,21 @@ ADD16_U8T_100:
         rr      L
     endm
 
-
     // -------------------------------- MARK:テーブルジャンプ
 
     /**
      * テーブル ジャンプを検索して, ジャンプ先アドレスを HL に返します
      * - 58 T-states, 13 bytes
-     * @param A   番号. 破壊されるので明示します
-     * @param HL  HL が破壊されるので明示します
-     * @param table テーブル ジャンプのアドレス
+     * @param A         番号. 破壊されるので明示します
+     * @param HL        HL が破壊されるので明示します
+     * @param tab_addr   テーブル ジャンプのアドレス
      * @return HL ジャンプ先アドレスを返します
      */
     macro   TAB_JP_HL   A, HL, table
         add     A,  A
-        add     A,  table % 256
+        add     A,  tab_addr % 256
         ld      L,  A
-        adc     A,  table / 256
+        adc     A,  tab_addr / 256
         sub     A,  L
         ld      H,  A
 
@@ -700,11 +752,11 @@ ADD16_U8T_100:
      * テーブル ジャンプを検索して, ジャンプ先アドレスを DE に返します
      * - 54 T-states, 12 bytes
      */
-    macro   TAB_JP_DE   A, HL, table
+    macro   TAB_JP_DE   A, HL, tab_addr
         add     A,  A
-        add     A,  table % 256
+        add     A,  tab_addr % 256
         ld      L,  A
-        adc     A,  table / 256
+        adc     A,  tab_addr / 256
         sub     A,  L
         ld      H,  A
 
@@ -718,10 +770,10 @@ ADD16_U8T_100:
      * - テーブルは 256 バイト境界内になければなりません
      * - 44 T-states, 10 bytes
      */
-    macro   TAB_JP_HL_ALIGN256  A, HL, table
+    macro   TAB_JP_HL_ALIGN256  A, HL, tab_addr
         ADD     A,  A
-        ld      H,  table / 256
-        add     A,  table % 256
+        ld      H,  tab_addr / 256
+        add     A,  tab_addr % 256
         ld      L,  A
 
         ld      A,  (HL)
@@ -735,10 +787,10 @@ ADD16_U8T_100:
      * - テーブルは 256 バイト境界内になければなりません
      * - 40 T-states, 9 bytes
      */
-    macro   TAB_JP_DE_ALIGN256  A, HL, table
+    macro   TAB_JP_DE_ALIGN256  A, HL, tab_addr
         ADD     A,  A
-        ld      H,  table / 256
-        add     A,  table % 256
+        ld      H,  tabtabAddr / 256
+        add     A,  tabtabAddr % 256
         ld      L,  A
 
         ld      E,  (HL)

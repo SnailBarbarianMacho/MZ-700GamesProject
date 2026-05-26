@@ -14,10 +14,10 @@
 #define __aal
 #define __aal_macro
 
-#define AAL_DEF_VARS volatile int \
-    A, B, C, D, E, H, L, IXH, IXL, IYH, IYL, AF, BC, DE, HL, PC, SP, I, R, IX, IY,\
-    A_, B_, C_, D_, E_, H_, L_, AF_, BC_, DE_, HL_, \
-    z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po,\
+#define AAL_DEF_VARS \
+    volatile unsigned char A, B, C, D, E, F, H, L, A_, B_, C_, D_, E_, F_, H_, L_, IXH, IXL, IYH, IYL; \
+    volatile signed short int AF, BC, DE, HL, PC, SP, I, R, IX, IY, AF_, BC_, DE_, HL_; \
+    volatile int z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po,\
     z_jr, eq_jr, nz_jr, ne_jr, c_jr, lt_jr, nc_jr, ge_jr, \
     z_else_jr, eq_else_jr, nz_else_jr, ne_else_jr, c_else_jr, lt_else_jr, nc_else_jr, ge_else_jr, p_else_jr, m_else_jr, v_else_jr, nv_else_jr, pe_else_jr, po_else_jr,\
     z_jr_else_jr, eq_jr_else_jr, nz_jr_else_jr, ne_jr_else_jr, c_jr_else_jr, lt_jr_else_jr, nc_jr_else_jr, ge_jr_else_jr, \
@@ -35,6 +35,7 @@
 #define AAL_ENDR
 #define AAL_DB(...)
 #define AAL_DW(...)
+#define AAL_DS(size, ...)
 #define AAL_ENDM
 #define AAL_NO_RETURN
 #define AAL_FALL_THROUGH
@@ -48,9 +49,9 @@
 //#define rc>>= >>=       // キャリー付右ローテート(rr)
 //#define rc<<= >>=       // キャリー付左ローテート(rl)
 
-void defb(int, ...);
-void defw(int, ...);
-void ld(int, int);
+//void defb(int, ...);
+//void defw(int, ...);
+//void ld(int, int);
 void ldi(void);
 void ldd(void);
 void ldir(void);
@@ -59,60 +60,60 @@ void ex(int, int);
 void exx(void);
 void push(int, ...);
 void pop(int, ...);
-void and(int, int);
-void or(int, int);
-void xor(int, int);
-void cpl(int);
+//void and(int, int);
+//void or(int, int);
+//void xor(int, int);
+//void cpl(int);
 void not(int);
 void cp(int, int);
 void cpi(void);
 void cpd(void);
 void cpir(void);
 void cpdr(void);
-void add(int, int);
-void adc(int, int);
-void sub(int, int);
-void sbc(int, int);
-void inc(int);
-void dec(int);
+//void add(int, int);
+//void adc(int, int);
+//void sub(int, int);
+//void sbc(int, int);
+//void inc(int);
+//void dec(int);
 void neg(int);
 void daa(int);
 void bit(int, int);
 void set(int, int);
 void res(int, int);
-void bit_3(int, int, int);
-void set_3(int, int, int);
-void res_3(int, int, int);
+void bit3(int, int, int);
+void set3(int, int, int);
+void res3(int, int, int);
 void sla(int);
 void sla_n(int, int);
-void sla_2(int, int);
+void sla2(int, int);
 void sll(int);
 void sll_n(int, int);
-void sll_2(int, int);
+void sll2(int, int);
 void sra(int);
 void sra_n(int, int);
-void sra_2(int, int);
+void sra2(int, int);
 void srl(int);
 void srl_n(int, int);
-void srl_2(int, int);
+void srl2(int, int);
 void rlc(int);
 void rlc_n(int, int);
-void rlc_2(int, int);
+void rlc2(int, int);
 void rlca(int);
 void rlca_n(int, int);
 void rl(int);
 void rl_n(int, int);
-void rl_2(int, int);
+void rl2(int, int);
 void rla(int);
 void rla_n(int, int);
 void rrc(int);
 void rrc_n(int, int);
-void rrc_2(int, int);
+void rrc2(int, int);
 void rrca(int);
 void rrca_n(int, int);
 void rr(int);
 void rr_n(int, int);
-void rr_2(int, int);
+void rr2(int, int);
 void rra(int);
 void rra_n(int, int);
 void rld(int, int);
@@ -182,10 +183,10 @@ void ei(void);
 void im0(void);
 void im1(void);
 void im2(void);
-void scf(int);
-void ccf(int);
-void in(int, int);
-void out(int, int);
+//void scf(int);
+//void ccf(int);
+//void in(int, int);
+//void out(int, int);
 void ini(void);
 void ind(void);
 void inir(void);

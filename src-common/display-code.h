@@ -9,6 +9,8 @@
 #define DISPLAY_CODE_H_INCLUDED
 
 // ---------------------------------------------------------------- 文字のディスプレイ コード
+#define DC_SPACE        0x00
+
 #define DC_A            0x01
 #define DC_B            0x02
 #define DC_C            0x03
