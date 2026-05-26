@@ -32,13 +32,13 @@ SD6_EXCEPT_LEN_SZ	:= 24
 
 TOOLS   	:= ../tools
 CRT0 		:= crt0.asm
-NAME 		:= SoundTest3
+NAME 		:= sound-test3
 PROG_NAME 	:= 'SOUND TEST 3'
 PHP         := php
 CC      	:= zcc
 DEBUG   	:= -DDEBUG=1
 ORG     	:= 0x1200
-CFLAGS  	:= +mz -lndos -compiler=sdcc -OS3 $(DEBUG) \
+CFLAGS  	:= +mz -lndos -compiler=sdcc -Cs--sdcccall1 -OS3 $(DEBUG) \
 	-DSD6_EXCEPT_LEN=$(SD6_EXCEPT_LEN)
 LFLAGS      := +mz -mz80 -m\
 	-lndos\

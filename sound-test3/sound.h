@@ -219,18 +219,26 @@ void sd6Init(void);
 
 /**
  * SD6 - PFM方式6重和音サウンドを鳴らします
+ * @see SD6PLAY() ラッパーを使用してください
+ */
+u8 sd6play(const u32 param);
+
+/** パラメータの受け渡しを高速化するための, sd6Play() ラッパー
  * - 鳴ってる間は 他の作業はできません
  * - 音が鳴らない場合は, 減衰テーブルやサウンド テータが上位 RAM に存在してないか確認してください
- * @param param (キャンセル可能か<<8) | MML データ
- * - MML データは, 全 Beeper のデータを1本にまとめたものです.
- *   各 Beeper が適した音符を拾って鳴らします
- * - チャタリング防止のため, 演奏終了前は, F1/F2/F6 キーを離すまで待ちます
- * - キャンセル可能時は, F1/F2/F6 キーでキャンセルできます
- *   チャタリング防止のため, 演奏終了後は, F1/F2/F6 キーを離すまで待ちます
- * @return キャンセルしたキーを返します.
- *   KEY9_F1_MASK, KEY9_F2_MASK, KEY9_F4_MASK の bitwise or.
- *   キーを押さないで終了した場合は, 0 を返します
+ * @param data      u16   sd6-midi-conv.php で変換したデータのアドレス
+ * @param tempo     u8    テンポ. [0, 127]. 0 = 100%, 127=150%
+ * @param can_abort bool  中断可能フラグ. true ならば, F1～F4キーで演奏を中断できます
+ * - チャタリング防止のため, 演奏終了前は, F1～F4 キーを離すまで待ちます
+ * @return u8 演奏中断となったキーを返します.
+ * - KEY9_F1_MASK, KEY9_F2_MASK, KEY9_F3_MASK, KEY9_F4_MASK の bitwise or.
+ * - キーを押さないで終了した場合は, 0 を返します
+ * @see sd6play()
  */
-u8 sd6play(u32 param) __z88dk_fastcall;
+#define SD6PLAY(data, tempo, can_abort) sd6play(  \
+    ((((u32)(data)     ) & 0xffff) << 16) |  \
+    ((((u32)(tempo)    ) &   0x7f) << 0)  |  \
+    ((((u32)(can_abort)) &   0x01) << 8)     \
+)
 
 #endif // SOUND_H_INCLUDED
