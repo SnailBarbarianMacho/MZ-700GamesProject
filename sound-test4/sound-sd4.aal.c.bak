@@ -185,7 +185,7 @@ void SD4PLAY_NOTE_LEAD(
         sd4playNoteLead_initEnd, sd4playNoteLead_initEndSlur;
 
     // -------- 音符処理: 音長カウンタが 0 になったら, 次の音符を読みます
-    IXH_slc--; if (z) {                                   // 8+10
+    H_wlc--; if (z) {                                   // 8+10
     sd4playNoteLead_pop:
         pop(HL_wlchwl);                                 // 10   注意! L_hwl=音長, H_wlc=波長
 
@@ -727,7 +727,7 @@ void SD4PLAY_BEEPER_WAVE_BR(int B_wl, int C_hwl, int E_vol, int addr_wl_1) __aal
  * @param addr_vol_1    アドレス(自己書換): 音量
  * @param addr_wl_1     アドレス(自己書換): 波長
  */
-void SD4PLAY_BEEPER_WAVE_B(int B_wlc, int C_hwl, int addr_vol_1, int addr_wl_1) __aal_macro __naked
+void SD4PLAY_BEEPER_WAVE_B(int B_wl, int C_hwl, int addr_vol_1, int addr_wl_1) __aal_macro __naked
 {
     AAL_DEF_VARS;
     AAL_LOCAL(sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd);
@@ -776,10 +776,9 @@ void SD4PLAY_BEEPER_DRUM(
 
 
 // MARK: play()
-u8 sd4play(u32 param) __aal
-{                                                       // HL = data, D = 中断可能フラグ, E = テンポ[0, 127]
+u8 sd4play(u32 param) __aal __z88dk_fastcall
+{                                                       // HL = data, E = cancellable
     AAL_DEF_VARS;
-extern sd4play_tempo_1;
 extern sd4play_waitUntilKeyOff2;
 extern sd4play_vblk0, sd4play_vblk1;
 extern sd4play_setVols, sd4play_loop, sd4play_beeperLoop;
@@ -809,13 +808,10 @@ extern tmp;
         A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
     } while (nz_jr);
 
-    // ---- キャンセル許可フラグ == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みますE == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
-    bit(0, D); if (z_jr) {                              // D = 中断許可フラグ
+    // ---- E == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
+    E--; if (nz_jr) {                                   // E = キャンセル可能フラグ
         A = 0xfa; mem[MMIO_8255_PORTA] = A;
     }
-
-    // ---- テンポ
-    A = E; mem[sd4play_tempo_1 + 1] = A;                // E = テンポ[0, 127]
 
     // ---- 8253 初期化
     A = MMIO_8253_CTRL_CT0(MMIO_8253_CTRL_RL_L_MASK, MMIO_8253_CTRL_MODE0_MASK);
@@ -894,7 +890,7 @@ sd4play_loop:
             sd4play_beeper2_wl_1);
         SD4PLAY_NOTE_DRUM(             IYL,    L,
             sd4play_beeper3_drumCt, sd4play_beeper3_drumNr, sd4play_beeper3_drumAdd);
-sd4play_tempo_1: E = TEMPO;                             // 自己書換
+        E = TEMPO;
         A = mem[VRAM_TEXT]; ex(AF, AF); mem[MMIO_8253_CT0] = A;// /VBLK=L (ブランク中) になるまで待ち, 音を鳴らす
 
     // ---------------- Beeper ループ
@@ -921,18 +917,17 @@ sd4play_beeperLoop:
     ex(AF, AF);                                         // 4
     // F2, F4 キーでキャンセル
     A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK; jp_z(sd4play_loop);// 13+8+7+10 計88
-    jr(sd4play_waitUntilKeyOff2);                       // A = 戻値: 押下したキーが入ってます
+    L = A;                                              // 押下したキーが入ってます
+    jr(sd4play_waitUntilKeyOff2);
 
     // ---------------- 後始末
 sd4play_end:
-    A ^= A;                                             // A = 0 キーが押されなかった
+    L = 0x00;
     // F2, F4 キーが離れるまで待ちます
 sd4play_waitUntilKeyOff2:
-    ex(AF, AF); {
-        do {
-            A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
-        } while (nz_jr);
-    } ex(AF, AF);
+    do {
+        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
+    } while (nz_jr);
 
     // 8253 を元の設定に戻します
     A = MMIO_8253_CT0_MODE3; mem[MMIO_8253_CTRL] = A;
@@ -942,6 +937,6 @@ sd4play_waitUntilKeyOff2:
 sd4play_restoreSP: SP = 0x0000;                         // SP 復活
     pop(IX);
 
-    // A = 押下したキー, 又は 0
+    // L = 押下したキー
 }
 #pragma restore

@@ -37,7 +37,7 @@ PHP         := php
 CC      	:= zcc
 DEBUG   	:= -DDEBUG=1
 ORG     	:= 0x1200
-CFLAGS  	:= +mz -lndos -compiler=sdcc -OS3 $(DEBUG) \
+CFLAGS  	:= +mz -lndos -compiler=sdcc -Cs--sdcccall1 -OS3 $(DEBUG) \
 	-DSD4_EXCEPT_LEN=$(SD4_EXCEPT_LEN)
 LFLAGS      := +mz -mz80 -m\
 	-lndos\

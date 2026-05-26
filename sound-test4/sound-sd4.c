@@ -124,7 +124,7 @@ __asm
   // line 122
   ld DE, 0 + ADDR_SD4_VTAB
   // line 123
-  ld BC, 0 + SZ_SD4_VTAB + SZ_SD4_TAB
+  ld BC, 0 + SZ_SD4_VTAB+SZ_SD4_TAB
   // line 124
   ldir
   // line 126
@@ -134,7 +134,7 @@ __asm
   // line 128
   ldir
   // line 131
-  BANKH_VRAM_MMIO C
+  BANKH_VRAM_MMIO 
   // line 132
   ld HL, 0 + MMIO_ETC
   // line 133
@@ -144,7 +144,7 @@ __asm
   // line 135
   ld (HL), 0 + MMIO_8253_CT0_MODE3
   // line 136
-  BANKH_RAM C
+  BANKH_RAM 
 __endasm;
 }
 
@@ -178,7 +178,7 @@ __endasm;
 
 
 void SD4PLAY_NOTE_LEAD(
-    int reg_wlc, int reg_hwl, int reg_wlchwl, int reg_vol, int reg_slc,
+    int H_wlc, int L_hwl, int HL_wlchwl, int D_vol, int IXH_slc,
     int inc_vol, int dec_vol,
     int addr_rep_1,
     int addr_slide_0,
@@ -191,43 +191,44 @@ void SD4PLAY_NOTE_LEAD(
 )  __naked
 {
 __asm
-SD4PLAY_NOTE_LEAD macro reg_wlc, reg_hwl, reg_wlchwl, reg_vol, reg_slc, inc_vol, dec_vol, addr_rep_1, addr_slide_0, addr_mod_start_1, addr_mod_vol, addr_mod_vol_speed_1, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_mod_wl, addr_mod_wl_speed_1, addr_mod_wl_end_1, addr_mod_wl_inc_0, addr_wl_1, addr_mod_end, addr_end
-local SD4PLAY_NOTE_LEAD__0, SD4PLAY_NOTE_LEAD__1, SD4PLAY_NOTE_LEAD__2, SD4PLAY_NOTE_LEAD__3, SD4PLAY_NOTE_LEAD__4, SD4PLAY_NOTE_LEAD__5, SD4PLAY_NOTE_LEAD__6, SD4PLAY_NOTE_LEAD__7, SD4PLAY_NOTE_LEAD__8, SD4PLAY_NOTE_LEAD__9, SD4PLAY_NOTE_LEAD__10, SD4PLAY_NOTE_LEAD__11, SD4PLAY_NOTE_LEAD__12, SD4PLAY_NOTE_LEAD__13, SD4PLAY_NOTE_LEAD__14
+SD4PLAY_NOTE_LEAD macro H_wlc, L_hwl, HL_wlchwl, D_vol, IXH_slc, inc_vol, dec_vol, addr_rep_1, addr_slide_0, addr_mod_start_1, addr_mod_vol, addr_mod_vol_speed_1, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_mod_wl, addr_mod_wl_speed_1, addr_mod_wl_end_1, addr_mod_wl_inc_0, addr_wl_1, addr_mod_end, addr_end
+local SD4PLAY_NOTE_LEAD__else0, SD4PLAY_NOTE_LEAD__endif0, SD4PLAY_NOTE_LEAD__else1, SD4PLAY_NOTE_LEAD__endif1, SD4PLAY_NOTE_LEAD__else2, SD4PLAY_NOTE_LEAD__endif2, SD4PLAY_NOTE_LEAD__else3, SD4PLAY_NOTE_LEAD__endif3, SD4PLAY_NOTE_LEAD__else4, SD4PLAY_NOTE_LEAD__endif4, SD4PLAY_NOTE_LEAD__else5, SD4PLAY_NOTE_LEAD__endif5, SD4PLAY_NOTE_LEAD__else6, SD4PLAY_NOTE_LEAD__endif6, SD4PLAY_NOTE_LEAD__else7, SD4PLAY_NOTE_LEAD__endif7, SD4PLAY_NOTE_LEAD__else8, SD4PLAY_NOTE_LEAD__endif8, SD4PLAY_NOTE_LEAD__else9, SD4PLAY_NOTE_LEAD__endif9, SD4PLAY_NOTE_LEAD__else10, SD4PLAY_NOTE_LEAD__endif10, SD4PLAY_NOTE_LEAD__else11, SD4PLAY_NOTE_LEAD__endif11, SD4PLAY_NOTE_LEAD__else12, SD4PLAY_NOTE_LEAD__endif12, SD4PLAY_NOTE_LEAD__else13, SD4PLAY_NOTE_LEAD__endif13, SD4PLAY_NOTE_LEAD__else14, SD4PLAY_NOTE_LEAD__endif14
   // line 181
   extern sd4playNoteLead_pop0, sd4playNoteLead_pop, sd4playNoteLead_rep_2, sd4playNoteLead_initDw, sd4playNoteLead_initDw_1, sd4playNoteLead_initEnd, sd4playNoteLead_initEndSlur
   // line 188
-  dec reg_slc
-  jp nz, SD4PLAY_NOTE_LEAD__0 // if (z) {
+  dec IXH_slc
+  jp nz, SD4PLAY_NOTE_LEAD__endif0
       // line 189
 sd4playNoteLead_pop:
       // line 190
-      pop reg_wlchwl
+      pop HL_wlchwl
       // line 193
-      ld A, reg_hwl
+      ld A, L_hwl
       add A, A
-      jr c, SD4PLAY_NOTE_LEAD__1 // if (nc_jr) {
+      jr c, SD4PLAY_NOTE_LEAD__endif1
           // line 194
           add A, A
-          ld reg_slc, A
-          jr nc, SD4PLAY_NOTE_LEAD__2 // if (c_jr) {
+          ld IXH_slc, A
+          jr nc, SD4PLAY_NOTE_LEAD__endif2
               // line 197
               cp A, 0 + SD4_EXCEPT_LEN
-              jr nz, SD4PLAY_NOTE_LEAD__3 // if (z_jr) {
+              jr nz, SD4PLAY_NOTE_LEAD__endif3
                   // line 198
 addr_rep_1:
-                  ld HL, 0 + 0x0000
+                  ld HL, 0
                   dec (HL)
-                  jr nz, SD4PLAY_NOTE_LEAD__4 // if (z_jr) {
+                  jr nz, SD4PLAY_NOTE_LEAD__endif4
                       // line 199
                       dec L
                       dec L
                       dec L
-                      ld (addr_rep_1 + 1), HL
+                      ld (addr_rep_1+1), HL
                       // line 200
                       dec SP
                       // line 201
-                      jp sd4playNoteLead_pop0
-                  SD4PLAY_NOTE_LEAD__4: // } endif 
+                      jp 0 + sd4playNoteLead_pop0
+                  SD4PLAY_NOTE_LEAD__endif4:
+
                   // line 204
                   dec L
                   ld A, (HL)
@@ -236,11 +237,12 @@ addr_rep_1:
                   ld H, A
                   ld SP, HL
                   // line 205
-                  jp sd4playNoteLead_pop0
-              SD4PLAY_NOTE_LEAD__3: // } endif 
+                  jp 0 + sd4playNoteLead_pop0
+              SD4PLAY_NOTE_LEAD__endif3:
+
               // line 209
                 // line 210
-                cp A, 0 + SD4_EXCEPT_LEN + 4
+                cp A, 0 + SD4_EXCEPT_LEN+4
                 jp z, 0 + addr_end
               // line 214
                 // line 215
@@ -249,36 +251,37 @@ addr_rep_1:
                 ld (MMIO_8253_CT0), A
                 ex AF, AF
                 // line 216
-                ld A, reg_wlc
-                ld (addr_wl_1 + 1), A
+                ld A, H_wlc
+                ld (addr_wl_1+1), A
                 // line 217
-                ld reg_wlchwl, 0 + addr_mod_vol
-                ld (addr_mod_start_1 + 1), reg_wlchwl
+                ld HL_wlchwl, 0 + addr_mod_vol
+                ld (addr_mod_start_1+1), HL_wlchwl
                 // line 218
-                ld reg_wlchwl, 0 + (LEAD_VOL_MAX << 8) | inc_vol
+                ld HL_wlchwl, 0 + (LEAD_VOL_MAX<<8)|inc_vol
                 // line 219
-                ld reg_vol, 0 + LEAD_VOL_MIN_UP
+                ld D_vol, 0 + LEAD_VOL_MIN_UP
                 // line 220
-                jp sd4playNoteLead_initDw
-          SD4PLAY_NOTE_LEAD__2: // } endif 
+                jp 0 + sd4playNoteLead_initDw
+          SD4PLAY_NOTE_LEAD__endif2:
+
           // line 225
           cp A, 0 + SD4_EXCEPT_LEN
-          jp c, SD4PLAY_NOTE_LEAD__5 // if (nc) {
+          jp c, SD4PLAY_NOTE_LEAD__endif5
               // line 226
-              cp A, 0 + SD4_EXCEPT_LEN + 4 * 7
-              jp nc, SD4PLAY_NOTE_LEAD__6 // if (c) {
+              cp A, 0 + SD4_EXCEPT_LEN+4*7
+              jp nc, SD4PLAY_NOTE_LEAD__endif6
                   // line 227
                   dec SP
                   // line 228
-                  sub A, 0 + SD4_EXCEPT_LEN - 8
+                  sub A, 0 + SD4_EXCEPT_LEN-8
                   // line 229
                   rrca
                   rrca
                   // line 230
-                  ld HL, (addr_rep_1 + 1)
+                  ld HL, (addr_rep_1+1)
                   // line 231
                   inc L
-                  ld (sd4playNoteLead_rep_2 + 2), HL
+                  ld (sd4playNoteLead_rep_2+2), HL
 sd4playNoteLead_rep_2:
                   ld (0x0000), SP
                   // line 232
@@ -286,62 +289,68 @@ sd4playNoteLead_rep_2:
                   inc L
                   ld (HL), A
                   // line 233
-                  ld (addr_rep_1 + 1), HL
+                  ld (addr_rep_1+1), HL
                   // line 234
-                  jp sd4playNoteLead_pop0
-              SD4PLAY_NOTE_LEAD__6: // } endif 
-          SD4PLAY_NOTE_LEAD__5: // } endif 
+                  jp 0 + sd4playNoteLead_pop0
+              SD4PLAY_NOTE_LEAD__endif6:
+
+          SD4PLAY_NOTE_LEAD__endif5:
+
           // line 239
             // line 240
             dec SP
             // line 241
             xor A, A
-            ld (addr_wl_1 + 1), A
+            ld (addr_wl_1+1), A
             // line 242
-            ld reg_wlchwl, 0 + addr_mod_end
-            ld (addr_mod_start_1 + 1), reg_wlchwl
+            ld HL_wlchwl, 0 + addr_mod_end
+            ld (addr_mod_start_1+1), HL_wlchwl
             // line 243
-            ld reg_hwl, A
+            ld L_hwl, A
             // line 244
-            jp sd4playNoteLead_initEndSlur
-      SD4PLAY_NOTE_LEAD__1: // } endif 
+            jp 0 + sd4playNoteLead_initEndSlur
+      SD4PLAY_NOTE_LEAD__endif1:
+
       // line 247
       add A, A
-      ld reg_slc, A
-      jr nc, SD4PLAY_NOTE_LEAD__7 // if (c_jr) {
+      ld IXH_slc, A
+      jr nc, SD4PLAY_NOTE_LEAD__endif7
           // line 248
           cp A, 0 + SD4_EXCEPT_LEN
-          jp c, SD4PLAY_NOTE_LEAD__8 // if (nc) {
+          jp c, SD4PLAY_NOTE_LEAD__endif8
               // line 249
-              jr nz, SD4PLAY_NOTE_LEAD__9 // if (z_jr) {
+              jr nz, SD4PLAY_NOTE_LEAD__endif9
                   // line 252
                   ld A, 0 + OPCODE_JR
-                  ld (addr_slide_0 + 0), A
+                  ld (addr_slide_0+0), A
                   // line 253
                   dec SP
                   // line 254
-                  jp sd4playNoteLead_pop0
-              SD4PLAY_NOTE_LEAD__9: // } endif 
+                  jp 0 + sd4playNoteLead_pop0
+              SD4PLAY_NOTE_LEAD__endif9:
+
               // line 257
-              cp A, 0 + SD4_EXCEPT_LEN + 4 * 4
-              jp nc, SD4PLAY_NOTE_LEAD__10 // if (c) {
+              cp A, 0 + SD4_EXCEPT_LEN+4*4
+              jp nc, SD4PLAY_NOTE_LEAD__endif10
                   // line 259
-                  sub A, 0 + SD4_EXCEPT_LEN - (SZ_SD4_VTAB + 1)
+                  sub A, 0 + SD4_EXCEPT_LEN-(SZ_SD4_VTAB+1)
                   // line 260
-                  ld reg_wlc, 0 + ADDR_SD4_VTAB / 256
-                  ld reg_hwl, A
-                  ld A, (reg_wlchwl)
+                  ld H_wlc, 0 + ADDR_SD4_VTAB/256
+                  ld L_hwl, A
+                  ld A, (HL_wlchwl)
                   // line 261
-                  ld (addr_mod_wl_speed_1 + 1), A
+                  ld (addr_mod_wl_speed_1+1), A
                   // line 262
                   ld A, 0 + OPCODE_LD_A_N
-                  ld (addr_slide_0 + 0), A
+                  ld (addr_slide_0+0), A
                   // line 263
                   dec SP
                   // line 264
-                  jp sd4playNoteLead_pop0
-              SD4PLAY_NOTE_LEAD__10: // } endif 
-          SD4PLAY_NOTE_LEAD__8: // } endif 
+                  jp 0 + sd4playNoteLead_pop0
+              SD4PLAY_NOTE_LEAD__endif10:
+
+          SD4PLAY_NOTE_LEAD__endif8:
+
           // line 268
           ld A, (VRAM_TEXT)
           ex AF, AF
@@ -349,58 +358,61 @@ sd4playNoteLead_rep_2:
           ex AF, AF
           // line 269
 addr_slide_0:
-          jr nz, SD4PLAY_NOTE_LEAD__11 // if (z_jr) {
+          jr nz, SD4PLAY_NOTE_LEAD__endif11
               // line 272
-              ld A, reg_wlc
-              ld (addr_mod_wl_end_1 + 1), A
+              ld A, H_wlc
+              ld (addr_mod_wl_end_1+1), A
               // line 274
-              ld A, (addr_wl_1 + 1)
-              cp A, reg_wlc
+              ld A, (addr_wl_1+1)
+              cp A, H_wlc
               ld A, 0 + OPCODE_INC_A
-              jr c, SD4PLAY_NOTE_LEAD__12 // if (nc_jr) {
+              jr c, SD4PLAY_NOTE_LEAD__endif12
                   inc A
-              SD4PLAY_NOTE_LEAD__12: // } endif 
+              SD4PLAY_NOTE_LEAD__endif12:
+
               // line 275
-              ld (addr_mod_wl_inc_0 + 0), A
+              ld (addr_mod_wl_inc_0+0), A
               // line 276
-              ld reg_wlchwl, 0 + addr_mod_wl
-              ld (addr_mod_start_1 + 1), reg_wlchwl
+              ld HL_wlchwl, 0 + addr_mod_wl
+              ld (addr_mod_start_1+1), HL_wlchwl
               // line 277
-              ld A, (addr_wl_1 + 1)
+              ld A, (addr_wl_1+1)
               srl A
-              ld reg_hwl, A
+              ld L_hwl, A
               // line 278
-              jp sd4playNoteLead_initEndSlur
-          SD4PLAY_NOTE_LEAD__11: // } endif 
+              jp 0 + sd4playNoteLead_initEndSlur
+          SD4PLAY_NOTE_LEAD__endif11:
+
           // line 282
             // line 283
-            ld A, reg_wlc
-            ld (addr_wl_1  + 1), A
+            ld A, H_wlc
+            ld (addr_wl_1+1), A
             // line 284
-            ld reg_wlchwl, 0 + addr_mod_end
-            ld (addr_mod_start_1 + 1), reg_wlchwl
+            ld HL_wlchwl, 0 + addr_mod_end
+            ld (addr_mod_start_1+1), HL_wlchwl
             // line 285
             srl A
-            ld reg_hwl, A
+            ld L_hwl, A
             // line 286
-            ld reg_vol, 0 + LEAD_VOL_MAX
+            ld D_vol, 0 + LEAD_VOL_MAX
             // line 287
-            jp sd4playNoteLead_initEnd
-      SD4PLAY_NOTE_LEAD__7: // } endif 
+            jp 0 + sd4playNoteLead_initEnd
+      SD4PLAY_NOTE_LEAD__endif7:
+
       // line 291
       cp A, 0 + SD4_EXCEPT_LEN
-      jr c, SD4PLAY_NOTE_LEAD__13 // if (nc_jr) {
+      jr c, SD4PLAY_NOTE_LEAD__endif13
           // line 292
-          cp A, 0 + SD4_EXCEPT_LEN + 4 * 4
-          jp nc, SD4PLAY_NOTE_LEAD__14 // if (c) {
+          cp A, 0 + SD4_EXCEPT_LEN+4*4
+          jp nc, SD4PLAY_NOTE_LEAD__endif14
               // line 295
-              sub A, 0 + SD4_EXCEPT_LEN - SZ_SD4_VTAB
+              sub A, 0 + SD4_EXCEPT_LEN-SZ_SD4_VTAB
               // line 296
-              ld reg_wlc, 0 + ADDR_SD4_VTAB / 256
-              ld reg_hwl, A
-              ld A, (reg_wlchwl)
+              ld H_wlc, 0 + ADDR_SD4_VTAB/256
+              ld L_hwl, A
+              ld A, (HL_wlchwl)
               // line 297
-              ld (addr_mod_vol_speed_1 + 1), A
+              ld (addr_mod_vol_speed_1+1), A
               // line 298
               dec SP
               // line 299
@@ -411,9 +423,11 @@ sd4playNoteLead_pop0:
               ld (MMIO_8253_CT0), A
               ex AF, AF
               // line 301
-              jp sd4playNoteLead_pop
-          SD4PLAY_NOTE_LEAD__14: // } endif 
-      SD4PLAY_NOTE_LEAD__13: // } endif 
+              jp 0 + sd4playNoteLead_pop
+          SD4PLAY_NOTE_LEAD__endif14:
+
+      SD4PLAY_NOTE_LEAD__endif13:
+
       // line 308
         // line 309
         ld A, (VRAM_TEXT)
@@ -421,33 +435,33 @@ sd4playNoteLead_pop0:
         ld (MMIO_8253_CT0), A
         ex AF, AF
         // line 310
-        ld A, reg_wlc
-        ld (addr_wl_1 + 1), A
+        ld A, H_wlc
+        ld (addr_wl_1+1), A
         // line 311
-        ld reg_wlchwl, 0 + addr_mod_vol
-        ld (addr_mod_start_1 + 1), reg_wlchwl
+        ld HL_wlchwl, 0 + addr_mod_vol
+        ld (addr_mod_start_1+1), HL_wlchwl
         // line 312
-        ld reg_wlchwl, 0 + (LEAD_VOL_MIN_DW << 8) | dec_vol
+        ld HL_wlchwl, 0 + (LEAD_VOL_MIN_DW<<8)|dec_vol
         // line 313
-        ld reg_vol, 0 + LEAD_VOL_MAX
+        ld D_vol, 0 + LEAD_VOL_MAX
       // line 315
 sd4playNoteLead_initDw:
       // line 316
       srl A
-      ld (sd4playNoteLead_initDw_1 + 1), A
+      ld (sd4playNoteLead_initDw_1+1), A
       // line 317
-      ld A, reg_wlc
-      ld (addr_mod_vol_end_1 + 1), A
+      ld A, H_wlc
+      ld (addr_mod_vol_end_1+1), A
       // line 318
-      ld A, reg_hwl
-      ld (addr_mod_vol_inc_0 + 0), A
+      ld A, L_hwl
+      ld (addr_mod_vol_inc_0+0), A
       // line 319
 sd4playNoteLead_initDw_1:
-      ld reg_hwl, 0 + 0x00
+      ld L_hwl, 0
       // line 321
 sd4playNoteLead_initEnd:
       // line 322
-      ld reg_wlc, 0 + 1
+      ld H_wlc, 1
       // line 324
 sd4playNoteLead_initEndSlur:
       // line 325
@@ -455,7 +469,8 @@ sd4playNoteLead_initEndSlur:
       ex AF, AF
       ld (MMIO_8253_CT0), A
       ex AF, AF
-  SD4PLAY_NOTE_LEAD__0: // } endif 
+  SD4PLAY_NOTE_LEAD__endif0:
+
 endm
 __endasm;
 }
@@ -480,7 +495,7 @@ __endasm;
 
 
 void SD4PLAY_MOD_LEAD(
-    int reg_hwl, int reg_vol, int reg_slc,
+    int L_hwl, int D_vol, int IXH_slc,
     int addr_mod_start_1,
     int addr_mod_vol, int addr_mod_vol_speed_1, int addr_mod_vol_end_1, int addr_mod_vol_inc_0,
     int addr_mod_wl,  int addr_mod_wl_speed_1,  int addr_mod_wl_end_1,  int addr_mod_wl_inc_0,
@@ -489,49 +504,51 @@ void SD4PLAY_MOD_LEAD(
 )  __naked
 {
 __asm
-SD4PLAY_MOD_LEAD macro reg_hwl, reg_vol, reg_slc, addr_mod_start_1, addr_mod_vol, addr_mod_vol_speed_1, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_mod_wl, addr_mod_wl_speed_1, addr_mod_wl_end_1, addr_mod_wl_inc_0, addr_wl_1, addr_mod_end
-local SD4PLAY_MOD_LEAD__0, SD4PLAY_MOD_LEAD__1
+SD4PLAY_MOD_LEAD macro L_hwl, D_vol, IXH_slc, addr_mod_start_1, addr_mod_vol, addr_mod_vol_speed_1, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_mod_wl, addr_mod_wl_speed_1, addr_mod_wl_end_1, addr_mod_wl_inc_0, addr_wl_1, addr_mod_end
+local SD4PLAY_MOD_LEAD__else0, SD4PLAY_MOD_LEAD__endif0, SD4PLAY_MOD_LEAD__else1, SD4PLAY_MOD_LEAD__endif1
   // line 360
 addr_mod_start_1:
   jp 0 + addr_mod_end
   // line 363
 addr_mod_vol:
   // line 364
-  ld A, reg_slc
+  ld A, IXH_slc
 addr_mod_vol_speed_1:
-  and A, 0 + 0x00
-  jr nz, SD4PLAY_MOD_LEAD__0 // if (z_jr) {
+  and A, 0
+  jr nz, SD4PLAY_MOD_LEAD__endif0
       // line 365
-      ld A, reg_vol
+      ld A, D_vol
 addr_mod_vol_end_1:
-      cp A, 0 + 0x00
+      cp A, 0
       // line 366
-      jr z, SD4PLAY_MOD_LEAD__1 // if (nz_jr) {
+      jr z, SD4PLAY_MOD_LEAD__endif1
 addr_mod_vol_inc_0:
-          inc reg_vol
-      SD4PLAY_MOD_LEAD__1: // } endif 
-  SD4PLAY_MOD_LEAD__0: // } endif 
+          inc D_vol
+      SD4PLAY_MOD_LEAD__endif1:
+
+  SD4PLAY_MOD_LEAD__endif0:
+
   // line 368
-  jp addr_mod_end
+  jp 0 + addr_mod_end
   // line 371
 addr_mod_wl:
   // line 372
-  ld A, reg_slc
+  ld A, IXH_slc
 addr_mod_wl_speed_1:
-  and A, 0 + 0x00
+  and A, 0
   jr nz, 0 + addr_mod_end
     // line 373
-    ld A, (addr_wl_1 + 1)
+    ld A, (addr_wl_1+1)
 addr_mod_wl_end_1:
-    cp A, 0 + 0x00
+    cp A, 0
     // line 374
     jr z, 0 + addr_mod_end
 addr_mod_wl_inc_0:
     inc A
-    ld (addr_wl_1 + 1), A
+    ld (addr_wl_1+1), A
     // line 375
     srl A
-    ld reg_hwl, A
+    ld L_hwl, A
   // line 380
 addr_mod_end:
 endm
@@ -555,102 +572,106 @@ __endasm;
 
 
 void SD4PLAY_NOTE_BASE(
-    int reg_wlc, int reg_hwl, int reg_wlwl, int reg_vol, int reg_slc,
+    int B_wlc, int C_hwl, int BC_wlwl, int E_vol, int IXL_slc,
     int inc_vol, int dec_vol,
     int addr_mod_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0,
     int addr_wl_1
 )  __naked
 {
 __asm
-SD4PLAY_NOTE_BASE macro reg_wlc, reg_hwl, reg_wlwl, reg_vol, reg_slc, inc_vol, dec_vol, addr_mod_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_wl_1
-local SD4PLAY_NOTE_BASE__0, SD4PLAY_NOTE_BASE__1, SD4PLAY_NOTE_BASE__2, SD4PLAY_NOTE_BASE__3, SD4PLAY_NOTE_BASE__4, SD4PLAY_NOTE_BASE__5
+SD4PLAY_NOTE_BASE macro B_wlc, C_hwl, BC_wlwl, E_vol, IXL_slc, inc_vol, dec_vol, addr_mod_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_wl_1
+local SD4PLAY_NOTE_BASE__else0, SD4PLAY_NOTE_BASE__endif0, SD4PLAY_NOTE_BASE__else1, SD4PLAY_NOTE_BASE__endif1, SD4PLAY_NOTE_BASE__else2, SD4PLAY_NOTE_BASE__endif2, SD4PLAY_NOTE_BASE__else3, SD4PLAY_NOTE_BASE__endif3
   // line 408
   extern sd4playNoteBase_fl, sd4playNoteBase_initEnd
   // line 411
-  dec reg_slc
-  jr nz, SD4PLAY_NOTE_BASE__0 // if (z_jr) {
+  dec IXL_slc
+  jr nz, SD4PLAY_NOTE_BASE__endif0
       // line 412
-      pop reg_wlwl
+      pop BC_wlwl
       // line 415
-      ld A, reg_hwl
+      ld A, C_hwl
       add A, A
-      jr c, SD4PLAY_NOTE_BASE__3 // if (nc_jr) {
+      jr c, SD4PLAY_NOTE_BASE__else1
           // line 416
           add A, A
-          ld reg_slc, A
-          jr nc, SD4PLAY_NOTE_BASE__2 // if (c_jr) {
+          ld IXL_slc, A
+          jr nc, SD4PLAY_NOTE_BASE__endif2
               // line 419
-              ld A, reg_wlc
-              ld (addr_wl_1 + 1), A
+              ld A, B_wlc
+              ld (addr_wl_1+1), A
               // line 420
               srl A
-              ld reg_hwl, A
+              ld C_hwl, A
               // line 421
-              ld reg_vol, 0 + 0
+              ld E_vol, 0
               // line 422
               ld A, 0 + BASE_VOL_MAX
-              ld (addr_mod_vol_end_1 + 1), A
+              ld (addr_mod_vol_end_1+1), A
               // line 423
               ld A, 0 + inc_vol
-              ld (addr_mod_vol_inc_0 + 0), A
+              ld (addr_mod_vol_inc_0+0), A
               // line 424
               ld A, 0 + OPCODE_JR_NZ
               // line 425
-              jp sd4playNoteBase_initEnd
-          SD4PLAY_NOTE_BASE__2: // } endif 
+              jp 0 + sd4playNoteBase_initEnd
+          SD4PLAY_NOTE_BASE__endif2:
+
           // line 429
           dec SP
           // line 430
           xor A, A
-          ld (addr_wl_1 + 1), A
+          ld (addr_wl_1+1), A
           // line 431
-          ld reg_hwl, A
+          ld C_hwl, A
           // line 432
           ld A, 0 + OPCODE_JR
-      jp SD4PLAY_NOTE_BASE__1
-      SD4PLAY_NOTE_BASE__3: // } else {
+      jp SD4PLAY_NOTE_BASE__endif1
+      SD4PLAY_NOTE_BASE__else1:
           // line 434
           add A, A
-          ld reg_slc, A
+          ld IXL_slc, A
           // line 435
-          ld A, reg_wlc
-          ld (addr_wl_1 + 1), A
+          ld A, B_wlc
+          ld (addr_wl_1+1), A
           // line 436
-          ld reg_vol, 0 + BASE_VOL_MAX
+          ld E_vol, 0 + BASE_VOL_MAX
           // line 438
-          jr nc, SD4PLAY_NOTE_BASE__5 // if (c_jr) {
+          jr nc, SD4PLAY_NOTE_BASE__else3
               // line 441
               srl A
-              ld reg_hwl, A
+              ld C_hwl, A
               // line 442
               ld A, 0 + OPCODE_JR
-          jp SD4PLAY_NOTE_BASE__4
-          SD4PLAY_NOTE_BASE__5: // } else {
+          jp SD4PLAY_NOTE_BASE__endif3
+          SD4PLAY_NOTE_BASE__else3:
               // line 446
               rra
-              ld reg_hwl, A
+              ld C_hwl, A
               // line 447
               ld A, 0 + BASE_VOL_MIN_DW
-              ld (addr_mod_vol_end_1 + 1), A
+              ld (addr_mod_vol_end_1+1), A
               // line 448
               ld A, 0 + dec_vol
-              ld (addr_mod_vol_inc_0 + 0), A
+              ld (addr_mod_vol_inc_0+0), A
               // line 449
               ld A, 0 + OPCODE_JR_NZ
-SD4PLAY_NOTE_BASE__4: // } endif
-SD4PLAY_NOTE_BASE__1: // } endif
+          SD4PLAY_NOTE_BASE__endif3:
+
+      SD4PLAY_NOTE_BASE__endif1:
+
       // line 452
 sd4playNoteBase_initEnd:
       // line 453
-      ld (addr_mod_start_0 + 0), A
+      ld (addr_mod_start_0+0), A
       // line 454
-      ld reg_wlc, 0 + 1
+      ld B_wlc, 1
       // line 456
       ld A, (VRAM_TEXT)
       ex AF, AF
       ld (MMIO_8253_CT0), A
       ex AF, AF
-  SD4PLAY_NOTE_BASE__0: // } endif 
+  SD4PLAY_NOTE_BASE__endif0:
+
 endm
 __endasm;
 }
@@ -666,30 +687,31 @@ __endasm;
 
 
 void SD4PLAY_MOD_BASE(
-    int reg_vol, int reg_slc,
+    int E_vol, int IXL_slc,
     int addr_mod_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0
 )  __naked
 {
 __asm
-SD4PLAY_MOD_BASE macro reg_vol, reg_slc, addr_mod_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0
-local SD4PLAY_MOD_BASE__0
+SD4PLAY_MOD_BASE macro E_vol, IXL_slc, addr_mod_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0
+local SD4PLAY_MOD_BASE__else0, SD4PLAY_MOD_BASE__endif0
   // line 477
   extern sd4playModBase_end
   // line 480
-  ld A, reg_slc
-  and A, 0 + 0x01
+  ld A, IXL_slc
+  and A, 1
   // line 481
 addr_mod_start_0:
   jr nz, 0 + sd4playModBase_end
   // line 482
-  ld A, reg_vol
+  ld A, E_vol
 addr_mod_vol_end_1:
-  cp A, 0 + 0x00
+  cp A, 0
   // line 483
-  jr z, SD4PLAY_MOD_BASE__0 // if (nz_jr) {
+  jr z, SD4PLAY_MOD_BASE__endif0
 addr_mod_vol_inc_0:
-      inc reg_vol
-  SD4PLAY_MOD_BASE__0: // } endif 
+      inc E_vol
+  SD4PLAY_MOD_BASE__endif0:
+
   // line 487
 sd4playModBase_end:
 endm
@@ -717,7 +739,7 @@ __endasm;
 
 
 void SD4PLAY_NOTE_CHORD2(
-    int reg_wl0, int reg_wl1, int reg_wl01, int reg_vol, int reg_slc,
+    int B_wl0, int C_wl1, int BC_wl01, int D_vol, int IYH_slc,
     int inc_vol, int dec_vol,
     int addr_mod_wl_start_0,  int addr_mod_wl0_1,     int addr_mod_wl1_1,
     int addr_mod_vol_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0,
@@ -725,72 +747,74 @@ void SD4PLAY_NOTE_CHORD2(
 )  __naked
 {
 __asm
-SD4PLAY_NOTE_CHORD2 macro reg_wl0, reg_wl1, reg_wl01, reg_vol, reg_slc, inc_vol, dec_vol, addr_mod_wl_start_0, addr_mod_wl0_1, addr_mod_wl1_1, addr_mod_vol_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_beep_wl_1
-local SD4PLAY_NOTE_CHORD2__0, SD4PLAY_NOTE_CHORD2__1, SD4PLAY_NOTE_CHORD2__2, SD4PLAY_NOTE_CHORD2__3, SD4PLAY_NOTE_CHORD2__4
+SD4PLAY_NOTE_CHORD2 macro B_wl0, C_wl1, BC_wl01, D_vol, IYH_slc, inc_vol, dec_vol, addr_mod_wl_start_0, addr_mod_wl0_1, addr_mod_wl1_1, addr_mod_vol_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_beep_wl_1
+local SD4PLAY_NOTE_CHORD2__else0, SD4PLAY_NOTE_CHORD2__endif0, SD4PLAY_NOTE_CHORD2__else1, SD4PLAY_NOTE_CHORD2__endif1, SD4PLAY_NOTE_CHORD2__else2, SD4PLAY_NOTE_CHORD2__endif2, SD4PLAY_NOTE_CHORD2__else3, SD4PLAY_NOTE_CHORD2__endif3
   // line 520
   extern sd4playNoteChord2_initDw, sd4playNoteChord2_initEnd
   // line 523
-  dec reg_slc
-  jp nz, SD4PLAY_NOTE_CHORD2__0 // if (z) {
+  dec IYH_slc
+  jp nz, SD4PLAY_NOTE_CHORD2__endif0
       // line 524
       dec SP
       pop AF
       // line 527
       add A, A
-      jr c, SD4PLAY_NOTE_CHORD2__1 // if (nc_jr) {
+      jr c, SD4PLAY_NOTE_CHORD2__endif1
           // line 528
           add A, A
-          ld reg_slc, A
-          jr nc, SD4PLAY_NOTE_CHORD2__2 // if (c_jr) {
+          ld IYH_slc, A
+          jr nc, SD4PLAY_NOTE_CHORD2__endif2
               // line 533
-              pop reg_wl01
+              pop BC_wl01
               // line 534
-              ld A, reg_wl0
-              ld (addr_mod_wl0_1 + 1), A
+              ld A, B_wl0
+              ld (addr_mod_wl0_1+1), A
               // line 535
-              ld A, reg_wl1
-              ld (addr_mod_wl1_1 + 1), A
+              ld A, C_wl1
+              ld (addr_mod_wl1_1+1), A
               // line 536
-              ld reg_vol, 0 + 0
+              ld D_vol, 0
               // line 537
-              ld reg_wl01, 0 + (CHORD_VOL_MAX << 8) | inc_vol
+              ld BC_wl01, 0 + (CHORD_VOL_MAX<<8)|inc_vol
               // line 538
-              jp sd4playNoteChord2_initDw
-          SD4PLAY_NOTE_CHORD2__2: // } endif 
+              jp 0 + sd4playNoteChord2_initDw
+          SD4PLAY_NOTE_CHORD2__endif2:
+
           // line 542
           xor A, A
-          ld (addr_beep_wl_1 + 1), A
+          ld (addr_beep_wl_1+1), A
           // line 543
-          ld reg_wl1, A
+          ld C_wl1, A
           // line 544
           ld A, 0 + OPCODE_JR
           // line 545
-          jp sd4playNoteChord2_initEnd
-      SD4PLAY_NOTE_CHORD2__1: // } endif 
+          jp 0 + sd4playNoteChord2_initEnd
+      SD4PLAY_NOTE_CHORD2__endif1:
+
       // line 547
       add A, A
-      ld reg_slc, A
+      ld IYH_slc, A
       // line 548
-      pop reg_wl01
+      pop BC_wl01
       // line 549
-      ld A, reg_wl0
-      ld (addr_mod_wl0_1 + 1), A
+      ld A, B_wl0
+      ld (addr_mod_wl0_1+1), A
       // line 550
-      ld A, reg_wl1
-      ld (addr_mod_wl1_1 + 1), A
+      ld A, C_wl1
+      ld (addr_mod_wl1_1+1), A
       // line 551
-      ld reg_vol, 0 + CHORD_VOL_MAX
+      ld D_vol, 0 + CHORD_VOL_MAX
       // line 552
-      jp nc, SD4PLAY_NOTE_CHORD2__4 // if (c) {
+      jp nc, SD4PLAY_NOTE_CHORD2__else3
           // line 555
           ld A, 0 + OPCODE_JR
-          ld (addr_mod_vol_start_0 + 0), A
+          ld (addr_mod_vol_start_0+0), A
           // line 556
           ld A, 0 + OPCODE_LD_A_N
-      jp SD4PLAY_NOTE_CHORD2__3
-      SD4PLAY_NOTE_CHORD2__4: // } else {
+      jp SD4PLAY_NOTE_CHORD2__endif3
+      SD4PLAY_NOTE_CHORD2__else3:
           // line 560
-          ld reg_wl01, 0 + (CHORD_VOL_MIN_DW << 8) | dec_vol
+          ld BC_wl01, 0 + (CHORD_VOL_MIN_DW<<8)|dec_vol
           // line 561
 sd4playNoteChord2_initDw:
           // line 562
@@ -799,29 +823,31 @@ sd4playNoteChord2_initDw:
           ld (MMIO_8253_CT0), A
           ex AF, AF
           // line 563
-          ld A, reg_wl0
-          ld (addr_mod_vol_end_1   + 1), A
+          ld A, B_wl0
+          ld (addr_mod_vol_end_1+1), A
           // line 564
-          ld A, reg_wl1
-          ld (addr_mod_vol_inc_0   + 0), A
+          ld A, C_wl1
+          ld (addr_mod_vol_inc_0+0), A
           // line 565
           ld A, 0 + OPCODE_JR_NZ
-          ld (addr_mod_vol_start_0 + 0), A
+          ld (addr_mod_vol_start_0+0), A
           // line 566
           ld A, 0 + OPCODE_LD_A_N
-SD4PLAY_NOTE_CHORD2__3: // } endif
+      SD4PLAY_NOTE_CHORD2__endif3:
+
       // line 568
 sd4playNoteChord2_initEnd:
       // line 569
-      ld (addr_mod_wl_start_0 + 0), A
+      ld (addr_mod_wl_start_0+0), A
       // line 570
-      ld reg_wl0, 0 + 1
+      ld B_wl0, 1
       // line 572
       ld A, (VRAM_TEXT)
       ex AF, AF
       ld (MMIO_8253_CT0), A
       ex AF, AF
-  SD4PLAY_NOTE_CHORD2__0: // } endif 
+  SD4PLAY_NOTE_CHORD2__endif0:
+
 endm
 __endasm;
 }
@@ -843,49 +869,51 @@ __endasm;
 
 
 void SD4PLAY_MOD_CHORD2(
-    int reg_hwl, int reg_vol, int reg_slc,
+    int C_hwl, int D_vol, int IYH_slc,
     int addr_mod_wl_start_0,  int addr_mod_wl0_1,     int addr_mod_wl1_1,
     int addr_mod_vol_start_0, int addr_mod_vol_end_1, int addr_mod_vol_inc_0,
     int addr_beep_wl_1
 )  __naked
 {
 __asm
-SD4PLAY_MOD_CHORD2 macro reg_hwl, reg_vol, reg_slc, addr_mod_wl_start_0, addr_mod_wl0_1, addr_mod_wl1_1, addr_mod_vol_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_beep_wl_1
-local SD4PLAY_MOD_CHORD2__0, SD4PLAY_MOD_CHORD2__1
+SD4PLAY_MOD_CHORD2 macro C_hwl, D_vol, IYH_slc, addr_mod_wl_start_0, addr_mod_wl0_1, addr_mod_wl1_1, addr_mod_vol_start_0, addr_mod_vol_end_1, addr_mod_vol_inc_0, addr_beep_wl_1
+local SD4PLAY_MOD_CHORD2__else0, SD4PLAY_MOD_CHORD2__endif0, SD4PLAY_MOD_CHORD2__else1, SD4PLAY_MOD_CHORD2__endif1
   // line 601
   extern sd4playModChord_end
   // line 604
 addr_mod_wl_start_0:
   jr 0 + sd4playModChord_end
   // line 607
-  ld A, reg_slc
-  and A, 0 + 2
+  ld A, IYH_slc
+  and A, 2
 addr_mod_wl0_1:
-  ld A, 0 + 0x00
+  ld A, 0
   // line 608
-  jr nz, SD4PLAY_MOD_CHORD2__0 // if (z_jr) {
+  jr nz, SD4PLAY_MOD_CHORD2__endif0
 addr_mod_wl1_1:
-      ld A, 0 + 0x00
-  SD4PLAY_MOD_CHORD2__0: // } endif 
+      ld A, 0
+  SD4PLAY_MOD_CHORD2__endif0:
+
   // line 609
-  ld (addr_beep_wl_1 + 1), A
+  ld (addr_beep_wl_1+1), A
   rra
-  ld reg_hwl, A
+  ld C_hwl, A
   // line 612
-  ld A, reg_slc
-  and A, 0 + 1
+  ld A, IYH_slc
+  and A, 1
   // line 613
 addr_mod_vol_start_0:
   jr nz, 0 + sd4playModChord_end
   // line 614
-  ld A, reg_vol
+  ld A, D_vol
 addr_mod_vol_end_1:
-  cp A, 0 + 0x00
+  cp A, 0
   // line 615
-  jr z, SD4PLAY_MOD_CHORD2__1 // if (nz_jr) {
+  jr z, SD4PLAY_MOD_CHORD2__endif1
 addr_mod_vol_inc_0:
-      inc reg_vol
-  SD4PLAY_MOD_CHORD2__1: // } endif 
+      inc D_vol
+  SD4PLAY_MOD_CHORD2__endif1:
+
   // line 618
 sd4playModChord_end:
 endm
@@ -902,31 +930,31 @@ __endasm;
 
 
 
-void SD4PLAY_NOTE_DRUM(int reg_sl, int reg_tmp,
+void SD4PLAY_NOTE_DRUM(int IYL_sl, int L_tmp,
     int addr_drum_ct_1, int addr_drum_nr_1, int addr_drum_add_0)  __naked
 {
 __asm
-SD4PLAY_NOTE_DRUM macro reg_sl, reg_tmp, addr_drum_ct_1, addr_drum_nr_1, addr_drum_add_0
-local SD4PLAY_NOTE_DRUM__0, SD4PLAY_NOTE_DRUM__1, SD4PLAY_NOTE_DRUM__2, SD4PLAY_NOTE_DRUM__3, SD4PLAY_NOTE_DRUM__4
+SD4PLAY_NOTE_DRUM macro IYL_sl, L_tmp, addr_drum_ct_1, addr_drum_nr_1, addr_drum_add_0
+local SD4PLAY_NOTE_DRUM__else0, SD4PLAY_NOTE_DRUM__endif0, SD4PLAY_NOTE_DRUM__else1, SD4PLAY_NOTE_DRUM__endif1, SD4PLAY_NOTE_DRUM__else2, SD4PLAY_NOTE_DRUM__endif2, SD4PLAY_NOTE_DRUM__else3, SD4PLAY_NOTE_DRUM__endif3
   // line 636
   extern sd4PlayModDrum_ct_1, sd4PlayModDrum_end
   // line 638
-  dec reg_sl
-  jp nz, SD4PLAY_NOTE_DRUM__0 // if (z) {
+  dec IYL_sl
+  jp nz, SD4PLAY_NOTE_DRUM__endif0
       // line 639
       dec SP
       pop AF
       // line 640
-      ld reg_tmp, A
-      and A, 0 + 0xfc
-      ld reg_sl, A
+      ld L_tmp, A
+      and A, 252
+      ld IYL_sl, A
       // line 641
-      xor A, reg_tmp
+      xor A, L_tmp
       // line 642
-      jr z, SD4PLAY_NOTE_DRUM__1 // if (nz_jr) {
+      jr z, SD4PLAY_NOTE_DRUM__endif1
           // line 643
-          add A, 0 + (ADDR_SD4_DRUM / 256 - 1)
-          ld (addr_drum_nr_1 + 1), A
+          add A, 0 + (ADDR_SD4_DRUM/256-1)
+          ld (addr_drum_nr_1+1), A
           // line 644
           ld A, (VRAM_TEXT)
           ex AF, AF
@@ -934,37 +962,41 @@ local SD4PLAY_NOTE_DRUM__0, SD4PLAY_NOTE_DRUM__1, SD4PLAY_NOTE_DRUM__2, SD4PLAY_
           ex AF, AF
           // line 645
           ld A, 0 + OPCODE_RES_0_L
-          ld (addr_drum_ct_1  + 1), A
+          ld (addr_drum_ct_1+1), A
           // line 646
           ld A, 0 + OPCODE_OR_HL
-          ld (addr_drum_add_0 + 0), A
+          ld (addr_drum_add_0+0), A
           // line 647
-          ld A, 0 + 2
-          ld (sd4PlayModDrum_ct_1 + 1), A
-      SD4PLAY_NOTE_DRUM__1: // } endif 
+          ld A, 2
+          ld (sd4PlayModDrum_ct_1+1), A
+      SD4PLAY_NOTE_DRUM__endif1:
+
       // line 650
-      jp sd4PlayModDrum_end
-  SD4PLAY_NOTE_DRUM__0: // } endif 
+      jp 0 + sd4PlayModDrum_end
+  SD4PLAY_NOTE_DRUM__endif0:
+
   // line 653
 sd4PlayModDrum_ct_1:
-  ld A, 0 + 0x00
+  ld A, 0
   or A, A
-  jr z, SD4PLAY_NOTE_DRUM__2 // if (nz_jr) {
+  jr z, SD4PLAY_NOTE_DRUM__endif2
       // line 654
       dec A
-      ld (sd4PlayModDrum_ct_1 + 1), A
+      ld (sd4PlayModDrum_ct_1+1), A
       // line 655
-      jr z, SD4PLAY_NOTE_DRUM__4 // if (nz_jr) {
+      jr z, SD4PLAY_NOTE_DRUM__else3
           // line 656
           ld A, 0 + OPCODE_SET_0_L
-          ld (addr_drum_ct_1  + 1), A
-      jp SD4PLAY_NOTE_DRUM__3
-      SD4PLAY_NOTE_DRUM__4: // } else {
+          ld (addr_drum_ct_1+1), A
+      jp SD4PLAY_NOTE_DRUM__endif3
+      SD4PLAY_NOTE_DRUM__else3:
           // line 658
           xor A, A
-          ld (addr_drum_add_0 + 0), A
-SD4PLAY_NOTE_DRUM__3: // } endif
-  SD4PLAY_NOTE_DRUM__2: // } endif 
+          ld (addr_drum_add_0+0), A
+      SD4PLAY_NOTE_DRUM__endif3:
+
+  SD4PLAY_NOTE_DRUM__endif2:
+
   // line 662
 sd4PlayModDrum_end:
 endm
@@ -981,29 +1013,31 @@ __endasm;
 
 
 
-void SD4PLAY_BEEPER_WAVE_R(int reg_wlc, int reg_hwl, int reg_vol, int addr_wl_1)  __naked
+void SD4PLAY_BEEPER_WAVE_R(int H_wlc, int L_hwl, int D_vol, int addr_wl_1)  __naked
 {
 __asm
-SD4PLAY_BEEPER_WAVE_R macro reg_wlc, reg_hwl, reg_vol, addr_wl_1
-local SD4PLAY_BEEPER_WAVE_R__0, SD4PLAY_BEEPER_WAVE_R__1, SD4PLAY_BEEPER_WAVE_R__2
+SD4PLAY_BEEPER_WAVE_R macro H_wlc, L_hwl, D_vol, addr_wl_1
+local SD4PLAY_BEEPER_WAVE_R__else0, SD4PLAY_BEEPER_WAVE_R__endif0, SD4PLAY_BEEPER_WAVE_R__else1, SD4PLAY_BEEPER_WAVE_R__endif1
   // line 681
-  dec reg_wlc
-  jp nz, SD4PLAY_BEEPER_WAVE_R__1 // if (z) {
+  dec H_wlc
+  jp nz, SD4PLAY_BEEPER_WAVE_R__else0
       // line 682
 addr_wl_1:
-      ld reg_wlc, 0 + 0x00
-  jp SD4PLAY_BEEPER_WAVE_R__0
-  SD4PLAY_BEEPER_WAVE_R__1: // } else {
+      ld H_wlc, 0
+  jp SD4PLAY_BEEPER_WAVE_R__endif0
+  SD4PLAY_BEEPER_WAVE_R__else0:
       // line 685
-      ld A, reg_wlc
-      cp A, reg_hwl
+      ld A, H_wlc
+      cp A, L_hwl
       // line 686
-      jr nc, SD4PLAY_BEEPER_WAVE_R__2 // if (c_jr) {
+      jr nc, SD4PLAY_BEEPER_WAVE_R__endif1
           ex AF, AF
-          add A, reg_vol
+          add A, D_vol
           ex AF, AF
-      SD4PLAY_BEEPER_WAVE_R__2: // } endif 
-SD4PLAY_BEEPER_WAVE_R__0: // } endif
+      SD4PLAY_BEEPER_WAVE_R__endif1:
+
+  SD4PLAY_BEEPER_WAVE_R__endif0:
+
 endm
 __endasm;
 }
@@ -1017,32 +1051,34 @@ __endasm;
 
 
 
-void SD4PLAY_BEEPER_WAVE_BR(int reg_wl, int reg_hwl, int reg_vol, int addr_wl_1)  __naked
+void SD4PLAY_BEEPER_WAVE_BR(int B_wl, int C_hwl, int E_vol, int addr_wl_1)  __naked
 {
 __asm
-SD4PLAY_BEEPER_WAVE_BR macro reg_wl, reg_hwl, reg_vol, addr_wl_1
-local SD4PLAY_BEEPER_WAVE_BR__0
+SD4PLAY_BEEPER_WAVE_BR macro B_wl, C_hwl, E_vol, addr_wl_1
+local SD4PLAY_BEEPER_WAVE_BR__else0, SD4PLAY_BEEPER_WAVE_BR__endif0
   // line 704
-local sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd
+  local sd4play_beeperWaveBr
+  local sd4play_beeperWaveBrEnd
   // line 705
   extern sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd
   // line 708
-  djnz B, 0 + sd4play_beeperWaveBr
+  djnz B,0 + sd4play_beeperWaveBr
     // line 709
 addr_wl_1:
-    ld reg_wl, 0 + 0x00
+    ld B_wl, 0
     jr 0 + sd4play_beeperWaveBrEnd
   // line 711
 sd4play_beeperWaveBr:
     // line 713
-    ld A, reg_wl
-    cp A, reg_hwl
+    ld A, B_wl
+    cp A, C_hwl
     // line 714
-    jr nc, SD4PLAY_BEEPER_WAVE_BR__0 // if (c_jr) {
+    jr nc, SD4PLAY_BEEPER_WAVE_BR__endif0
         ex AF, AF
-        add A, reg_vol
+        add A, E_vol
         ex AF, AF
-    SD4PLAY_BEEPER_WAVE_BR__0: // } endif 
+    SD4PLAY_BEEPER_WAVE_BR__endif0:
+
   // line 716
 sd4play_beeperWaveBrEnd:
 endm
@@ -1058,33 +1094,35 @@ __endasm;
 
 
 
-void SD4PLAY_BEEPER_WAVE_B(int reg_wl, int reg_hwl, int addr_vol_1, int addr_wl_1)  __naked
+void SD4PLAY_BEEPER_WAVE_B(int B_wlc, int C_hwl, int addr_vol_1, int addr_wl_1)  __naked
 {
 __asm
-SD4PLAY_BEEPER_WAVE_B macro reg_wl, reg_hwl, addr_vol_1, addr_wl_1
-local SD4PLAY_BEEPER_WAVE_B__0
+SD4PLAY_BEEPER_WAVE_B macro B_wlc, C_hwl, addr_vol_1, addr_wl_1
+local SD4PLAY_BEEPER_WAVE_B__else0, SD4PLAY_BEEPER_WAVE_B__endif0
   // line 733
-local sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd
+  local sd4play_beeperWaveBr
+  local sd4play_beeperWaveBrEnd
   // line 734
   extern sd4play_beeperWaveBr, sd4play_beeperWaveBrEnd
   // line 737
-  djnz B, 0 + sd4play_beeperWaveBr
+  djnz B,0 + sd4play_beeperWaveBr
     // line 738
 addr_wl_1:
-    ld reg_wl, 0 + 0x00
+    ld B_wlc, 0
     jr 0 + sd4play_beeperWaveBrEnd
   // line 740
 sd4play_beeperWaveBr:
     // line 742
-    ld A, reg_wl
-    cp A, reg_hwl
+    ld A, B_wlc
+    cp A, C_hwl
     // line 743
-    jr nc, SD4PLAY_BEEPER_WAVE_B__0 // if (c_jr) {
+    jr nc, SD4PLAY_BEEPER_WAVE_B__endif0
         ex AF, AF
 addr_vol_1:
-        add A, 0 + 0x00
+        add A, 0
         ex AF, AF
-    SD4PLAY_BEEPER_WAVE_B__0: // } endif 
+    SD4PLAY_BEEPER_WAVE_B__endif0:
+
   // line 745
 sd4play_beeperWaveBrEnd:
 endm
@@ -1103,20 +1141,21 @@ __endasm;
 
 
 
+
 void SD4PLAY_BEEPER_DRUM(
-    int reg_wav_h, int reg_wav_l, int reg_wav_hl, int reg_ct,
+    int H_wav_h, int L_wav_l, int HL_wav_hl, int E_ct,
     int addr_drum_ct_1, int addr_drum_nr_1, int addr_drum_add_0)  __naked
 {
 __asm
-SD4PLAY_BEEPER_DRUM macro reg_wav_h, reg_wav_l, reg_wav_hl, reg_ct, addr_drum_ct_1, addr_drum_nr_1, addr_drum_add_0
-  // line 767
-  ld reg_wav_l, reg_ct
-addr_drum_ct_1:
-  set 0, reg_wav_l
+SD4PLAY_BEEPER_DRUM macro H_wav_h, L_wav_l, HL_wav_hl, E_ct, addr_drum_ct_1, addr_drum_nr_1, addr_drum_add_0
   // line 768
-addr_drum_nr_1:
-  ld reg_wav_h, 0 + (ADDR_SD4_DRUM - 1) / 256 + 1
+  ld L_wav_l, E_ct
+addr_drum_ct_1:
+  set 0, L_wav_l
   // line 769
+addr_drum_nr_1:
+  ld H_wav_h, 0 + (ADDR_SD4_DRUM-1)/256+1
+  // line 770
   ex AF, AF
 addr_drum_add_0:
   nop
@@ -1127,219 +1166,233 @@ __endasm;
 
 
 
-u8 sd4play(u32 param)  __z88dk_fastcall
+u8 sd4play(u32 param) 
 {
 __asm
-  // line 781
-  extern sd4play_waitUntilKeyOff1
   // line 782
-  extern sd4play_waitUntilKeyOff2
+  extern sd4play_tempo_1
   // line 783
-  extern sd4play_vblk0, sd4play_vblk1
+  extern sd4play_waitUntilKeyOff2
   // line 784
-  extern sd4play_setVols, sd4play_loop, sd4play_beeperLoop
+  extern sd4play_vblk0, sd4play_vblk1
   // line 785
-  extern sd4play_rep_1, sd4play_leadSlide_0
+  extern sd4play_setVols, sd4play_loop, sd4play_beeperLoop
   // line 786
-  extern sd4play_modLead_start
+  extern sd4play_rep_1, sd4play_leadSlide_0
   // line 787
-  extern sd4play_modLead_vol, sd4play_modLead_volSpeed_1, sd4play_modLead_vol_1, sd4play_modLead_volEnd_1, sd4play_modLead_volInc_0
+  extern sd4play_modLead_start
   // line 788
-  extern sd4play_modLead_wl, sd4play_modLead_wlSpeed_1, sd4play_modLead_wlEnd_1, sd4play_modLead_wlInc_0
+  extern sd4play_modLead_vol, sd4play_modLead_volSpeed_1, sd4play_modLead_vol_1, sd4play_modLead_volEnd_1, sd4play_modLead_volInc_0
   // line 789
-  extern sd4play_modLead_end
+  extern sd4play_modLead_wl, sd4play_modLead_wlSpeed_1, sd4play_modLead_wlEnd_1, sd4play_modLead_wlInc_0
   // line 790
-  extern sd4play_modBase_start, sd4play_modBase_volEnd_1, sd4play_modBase_volInc_0
+  extern sd4play_modLead_end
   // line 791
-  extern sd4play_modChord_wlStart, sd4play_modChord_wl0, sd4play_modChord_wl1
+  extern sd4play_modBase_start, sd4play_modBase_volEnd_1, sd4play_modBase_volInc_0
   // line 792
-  extern sd4play_modChord_volStart, sd4play_modChord_volEnd, sd4play_modChord_volInc
+  extern sd4play_modChord_wlStart, sd4play_modChord_wl0, sd4play_modChord_wl1
   // line 793
-  extern sd4play_beeper0_wl_1
+  extern sd4play_modChord_volStart, sd4play_modChord_volEnd, sd4play_modChord_volInc
   // line 794
-  extern sd4play_beeper1_wl_1
+  extern sd4play_beeper0_wl_1
   // line 795
-  extern sd4play_beeper2_wl_1
+  extern sd4play_beeper1_wl_1
   // line 796
-  extern sd4play_beeper3_drumCt, sd4play_beeper3_drumNr, sd4play_beeper3_drumAdd
+  extern sd4play_beeper2_wl_1
   // line 797
-  extern sd4play_end
+  extern sd4play_beeper3_drumCt, sd4play_beeper3_drumNr, sd4play_beeper3_drumAdd
   // line 798
-  extern sd4play_restoreSP
+  extern sd4play_end
   // line 799
+  extern sd4play_restoreSP
+  // line 800
   extern tmp
-  // line 802
-  push IX
   // line 803
-  BANKH_VRAM_MMIO C
-  // line 806
-  ld A, 0 + 0xf9
-  ld (MMIO_8255_PORTA), A
+  push IX
+  // line 804
+  BANKH_VRAM_MMIO 
   // line 807
-sd4play_waitUntilKeyOff1:
+  ld A, 249
+  ld (MMIO_8255_PORTA), A
   // line 808
-  ld A, (MMIO_8255_PORTB)
-  cpl
-  and A, 0 + KEY9_F2_MASK | KEY9_F4_MASK
-  jr nz, 0 + sd4play_waitUntilKeyOff1
-  // line 811
-  dec E
-  jr z, sd4play__0 // if (nz_jr) {
-      // line 812
-      ld A, 0 + 0xfa
+  sd4play__loop_top0: // do {
+      // line 809
+      ld A, (MMIO_8255_PORTB)
+      cpl
+      and A, 0 + KEY9_F2_MASK|KEY9_F4_MASK
+  sd4play__loop_end0:
+  jr nz, sd4play__loop_top0 // } while (nz_jr)
+  sd4play__loop_exit0: // loop exit
+
+  // line 813
+  bit 0, D
+  jr nz, sd4play__endif1
+      // line 814
+      ld A, 250
       ld (MMIO_8255_PORTA), A
-  sd4play__0: // } endif 
-  // line 816
-  ld A, 0 + MMIO_8253_CTRL_CT0(MMIO_8253_CTRL_RL_L_MASK, MMIO_8253_CTRL_MODE0_MASK)
-  // line 817
+  sd4play__endif1:
+
+  // line 818
+  ld A, E
+  ld (sd4play_tempo_1+1), A
+  // line 821
+  ld A, 0 + MMIO_8253_CTRL_CT0(MMIO_8253_CTRL_RL_L_MASK,MMIO_8253_CTRL_MODE0_MASK)
+  // line 822
   ld (MMIO_8253_CTRL), A
-  // line 819
+  // line 824
 #if  0   
 L00:
   ld A, (VRAM_TEXT)
-  // line 821
+  // line 826
   ld A, 0 + 56/2
   ld (MMIO_8253_CT0), A
-  // line 822
+  // line 827
   ex (SP), HL
   ex (SP), HL
   ex (SP), HL
   ex (SP), HL
-  // line 823
+  // line 828
   jr 0 + L00
-  // line 824
+  // line 829
 #endif 
-  // line 838
-  ld (sd4play_restoreSP + 1), SP
+  // line 843
+  ld (sd4play_restoreSP+1), SP
   ld SP, HL
-  // line 839
-  xor A, A
-  // line 840
-  ld (sd4PlayModDrum_ct_1        + 1), A
-  // line 841
-  ld (sd4play_beeper3_drumAdd    + 0), A
-  // line 842
-  ld (sd4play_modLead_volSpeed_1 + 1), A
   // line 844
-  inc A
+  xor A, A
   // line 845
+  ld (sd4PlayModDrum_ct_1+1), A
+  // line 846
+  ld (sd4play_beeper3_drumAdd+0), A
+  // line 847
+  ld (sd4play_modLead_volSpeed_1+1), A
+  // line 849
+  inc A
+  // line 850
   ld IXH, A
   ld IXL, A
   ld IYL, A
   ld IYH, A
-  // line 846
-  ld HL, 0 + ADDR_SD4_REP + 0xff
-  ld (sd4play_rep_1 + 1), HL
-  // line 847
+  // line 851
+  ld HL, 0 + ADDR_SD4_REP+0xff
+  ld (sd4play_rep_1+1), HL
+  // line 852
   ld A, 0 + OPCODE_JR
-  ld (sd4play_leadSlide_0 + 0), A
-  // line 850
+  ld (sd4play_leadSlide_0+0), A
+  // line 855
   xor A, A
   ld HL, 0 + MMIO_8255_PORTC
-  // line 851
+  // line 856
 sd4play_vblk1:
   or A, (HL)
   jp p, 0 + sd4play_vblk1
-  // line 852
+  // line 857
   ld A, (VRAM_TEXT)
-  // line 853
+  // line 858
   xor A, A
   ex AF, AF
-  // line 857
-sd4play_loop:
-  // line 858
-  ld A, (VRAM_TEXT)
-  ex AF, AF
-  ld (MMIO_8253_CT0), A
-  ex AF, AF
   // line 862
+sd4play_loop:
+  // line 863
+  ld A, (VRAM_TEXT)
+  ex AF, AF
+  ld (MMIO_8253_CT0), A
+  ex AF, AF
+  // line 867
   SD4PLAY_NOTE_LEAD H, L, HL, D, IXH, OPCODE_INC_D, OPCODE_DEC_D, sd4play_rep_1, sd4play_leadSlide_0, sd4play_modLead_start, sd4play_modLead_vol, sd4play_modLead_volSpeed_1, sd4play_modLead_volEnd_1, sd4play_modLead_volInc_0, sd4play_modLead_wl, sd4play_modLead_wlSpeed_1, sd4play_modLead_wlEnd_1, sd4play_modLead_wlInc_0, sd4play_beeper0_wl_1, sd4play_modLead_end, sd4play_end
-  // line 869
+  // line 874
   SD4PLAY_NOTE_BASE B, C, BC, E, IXL, OPCODE_INC_E, OPCODE_DEC_E, sd4play_modBase_start, sd4play_modBase_volEnd_1, sd4play_modBase_volInc_0, sd4play_beeper1_wl_1
-  // line 872
+  // line 877
   SD4PLAY_MOD_LEAD L, D, IXH, sd4play_modLead_start, sd4play_modLead_vol, sd4play_modLead_volSpeed_1, sd4play_modLead_volEnd_1, sd4play_modLead_volInc_0, sd4play_modLead_wl, sd4play_modLead_wlSpeed_1, sd4play_modLead_wlEnd_1, sd4play_modLead_wlInc_0, sd4play_beeper0_wl_1, sd4play_modLead_end
-  // line 878
+  // line 883
   SD4PLAY_MOD_BASE E, IXL, sd4play_modBase_start, sd4play_modBase_volEnd_1, sd4play_modBase_volInc_0
-  // line 880
+  // line 885
   ld A, (VRAM_TEXT)
   ex AF, AF
   ld (MMIO_8253_CT0), A
   ex AF, AF
-  // line 881
-  exx
-  // line 882
-  SD4PLAY_NOTE_CHORD2 B, C, BC, D, IYH, OPCODE_INC_D, OPCODE_DEC_D, sd4play_modChord_wlStart, sd4play_modChord_wl0, sd4play_modChord_wl1, sd4play_modChord_volStart, sd4play_modChord_volEnd, sd4play_modChord_volInc, sd4play_beeper2_wl_1
   // line 886
+  exx
+  // line 887
+  SD4PLAY_NOTE_CHORD2 B, C, BC, D, IYH, OPCODE_INC_D, OPCODE_DEC_D, sd4play_modChord_wlStart, sd4play_modChord_wl0, sd4play_modChord_wl1, sd4play_modChord_volStart, sd4play_modChord_volEnd, sd4play_modChord_volInc, sd4play_beeper2_wl_1
+  // line 891
   SD4PLAY_MOD_CHORD2 C, D, IYH, sd4play_modChord_wlStart, sd4play_modChord_wl0, sd4play_modChord_wl1, sd4play_modChord_volStart, sd4play_modChord_volEnd, sd4play_modChord_volInc, sd4play_beeper2_wl_1
-  // line 890
+  // line 895
   SD4PLAY_NOTE_DRUM IYL, L, sd4play_beeper3_drumCt, sd4play_beeper3_drumNr, sd4play_beeper3_drumAdd
-  // line 892
+  // line 897
+sd4play_tempo_1:
   ld E, 0 + TEMPO
-  // line 893
+  // line 898
   ld A, (VRAM_TEXT)
   ex AF, AF
   ld (MMIO_8253_CT0), A
-  // line 896
+  // line 901
 sd4play_beeperLoop:
-  // line 897
-    // line 898
+  // line 902
+    // line 903
     xor A, A
     ex AF, AF
-    // line 899
-    exx
-    // line 901
-    SD4PLAY_BEEPER_WAVE_R H, L, D, sd4play_beeper0_wl_1
-    // line 902
-    SD4PLAY_BEEPER_WAVE_BR B, C, E, sd4play_beeper1_wl_1
-    // line 903
-    exx
     // line 904
+    exx
+    // line 906
+    SD4PLAY_BEEPER_WAVE_R H, L, D, sd4play_beeper0_wl_1
+    // line 907
+    SD4PLAY_BEEPER_WAVE_BR B, C, E, sd4play_beeper1_wl_1
+    // line 908
+    exx
+    // line 909
     SD4PLAY_BEEPER_WAVE_BR B, C, D, sd4play_beeper2_wl_1
-    // line 905
-    SD4PLAY_BEEPER_DRUM H, L, HL, E, sd4play_beeper3_drumCt, sd4play_beeper3_drumNr, sd4play_beeper3_drumAdd
     // line 910
-    ld H, 0 + ADDR_SD4_VTAB / 256
+    SD4PLAY_BEEPER_DRUM H, L, HL, E, sd4play_beeper3_drumCt, sd4play_beeper3_drumNr, sd4play_beeper3_drumAdd
+    // line 915
+    ld H, 0 + ADDR_SD4_VTAB/256
     ld L, A
-    // line 911
+    // line 916
     ld A, (VRAM_TEXT)
     ld A, (HL)
     ld (MMIO_8253_CT0), A
-    // line 912
+    // line 917
     inc E
     jp nz, 0 + sd4play_beeperLoop
-  // line 915
-  exx
-  // line 916
-  ex AF, AF
-  // line 918
-  ld A, (MMIO_8255_PORTB)
-  cpl
-  and A, 0 + KEY9_F2_MASK | KEY9_F4_MASK
-  jp z, 0 + sd4play_loop
-  // line 919
-  ld L, A
   // line 920
-  jr 0 + sd4play_waitUntilKeyOff2
+  exx
+  // line 921
+  ex AF, AF
   // line 923
-sd4play_end:
-  // line 924
-  ld L, 0 + 0x00
-  // line 926
-sd4play_waitUntilKeyOff2:
-  // line 927
   ld A, (MMIO_8255_PORTB)
   cpl
-  and A, 0 + KEY9_F2_MASK | KEY9_F4_MASK
-  jr nz, 0 + sd4play_waitUntilKeyOff2
+  and A, 0 + KEY9_F2_MASK|KEY9_F4_MASK
+  jp z, 0 + sd4play_loop
+  // line 924
+  jr 0 + sd4play_waitUntilKeyOff2
+  // line 927
+sd4play_end:
+  // line 928
+  xor A, A
   // line 930
+sd4play_waitUntilKeyOff2:
+  // line 931
+  ex AF, AF
+    // line 932
+    sd4play__loop_top2: // do {
+        // line 933
+        ld A, (MMIO_8255_PORTB)
+        cpl
+        and A, 0 + KEY9_F2_MASK|KEY9_F4_MASK
+    sd4play__loop_end2:
+    jr nz, sd4play__loop_top2 // } while (nz_jr)
+    sd4play__loop_exit2: // loop exit
+
+  ex AF, AF
+  // line 938
   ld A, 0 + MMIO_8253_CT0_MODE3
   ld (MMIO_8253_CTRL), A
-  // line 932
-  BANKH_RAM C
-  // line 934
+  // line 940
+  BANKH_RAM 
+  // line 942
 sd4play_restoreSP:
-  ld SP, 0 + 0x0000
-  // line 935
+  ld SP, 0
+  // line 943
   pop IX
 __endasm;
 }

@@ -1,51 +1,48 @@
-/**** This file is made by ../tools/aal80.php.  DO NOT MODIFY! ****/
-
-
-
-
-
-
+/**
+ * 三重和音サウンド テスト
+ *
+ * @author Snail Barbarian Macho (NWK)
+ */
+#include "../src-common/aal80.h"
 #include "../src-common/common.h"
 #include "../src-common/hard.h"
 #include "sound.h"
 
 #pragma disable_warning 85
 #pragma save
-static void puts(u8 const * const str)  __naked
+static void puts(u8 const * const str) __aal __naked
 {
-__asm
-  // line 17
-  ld DE, HL
-  // line 18
-  jp 21
-__endasm;
-}
+    AAL_DEF_VARS;
 
+    DE = HL;
+    jp(0x0015);                 // CALL MSG
+
+    AAL_NO_RETURN;
+}
 #pragma restore
 
 
-static void bankRomVramMmio(void)  __naked
+static void bankRomVramMmio(void) __aal __naked
 {
-__asm
-  // line 29
-  BANKL_ROM_BANKH_VRAM_MMIO 
-  // line 30
-  jp 6
-__endasm;
-}
+    AAL_DEF_VARS;
 
+    BANKL_ROM_BANKH_VRAM_MMIO();
+    jp(0x0006);                 // CALL LETNL
+
+    AAL_NO_RETURN;
+}
 
 
 #if 1
 #include "music/chronos.h"
 #else
 static u8 const sd4_chronos_0[] = {
-#if 0   
+#if 0   // 無音
     SD4_L_REST(0x100), SD4_B_REST(0x100), SD4_C2_REST(0x100), SD4_D_REST(0x100),
     SD4_L_REST(0x100), SD4_B_REST(0x100), SD4_C2_REST(0x100), SD4_D_REST(0x100),
 #endif
-#if 0   
-    
+#if 0   // Lead 音量
+    // Lead ◢■◣ デフォルト速度
     SD4_L_UP(0x80, SD4_B1), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_FL(0x80, SD4_B1), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_DW(0x80, SD4_B1), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
@@ -56,19 +53,19 @@ static u8 const sd4_chronos_0[] = {
     SD4_L_FL(0x80, SD4_C6), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_DW(0x80, SD4_C6), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
 
-    
+    // Lead ◢■◣ 速度1/8
     SD4_L_ENV_SPEED_R8,
     SD4_L_UP(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_FL(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_DW(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
 
-    
+    // Lead ◢■◣ 速度1/2
     SD4_L_ENV_SPEED_R2,
     SD4_L_UP(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_FL(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_DW(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
 
-    
+    // Lead 高速再生
     SD4_L_FL(0x04, SD4_C3), SD4_B_REST(0x60), SD4_C2_REST(0x60), SD4_D_REST(0x60),
     SD4_L_FL(0x04, SD4_D3),
     SD4_L_FL(0x04, SD4_E3),
@@ -96,35 +93,35 @@ static u8 const sd4_chronos_0[] = {
     SD4_L_DW(0x04, SD4_B3),
     SD4_L_DW(0x04, SD4_C4),
 #endif
-#if 0   
-    
+#if 0   // Lead スライド
+    // スライドなし
     SD4_L_FL(0x80, SD4_C4),  SD4_B_REST(0x80),  SD4_C2_REST(0x80),  SD4_D_REST(0x80),
 
-    
-    
+    // スラー
+    //SD4_L_SLIDE_SPEED_R1,
     SD4_L_SLIDE_OFF,
     SD4_L_UP(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_FL(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_FL(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
     SD4_L_FL(0x80, SD4_C4), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
 
-    
+    // スライド速度1/1
     SD4_L_SLIDE_SPEED_R1,
     SD4_L_FL(0x80, SD4_C5), SD4_B_REST(0x100), SD4_C2_REST(0x100), SD4_D_REST(0x100),
     SD4_L_FL(0x80, SD4_C4),
 
-    
+    // スライド速度1/4
     SD4_L_SLIDE_SPEED_R4,
     SD4_L_FL(0xc0, SD4_C5), SD4_B_REST(0xc0), SD4_C2_REST(0xc0), SD4_D_REST(0xc0),
     SD4_L_FL(0xc0, SD4_C4), SD4_B_REST(0xc0), SD4_C2_REST(0xc0), SD4_D_REST(0xc0),
 
-    
+    // スライドなし
     SD4_L_SLIDE_OFF,
     SD4_L_FL(0x80, SD4_C5), SD4_B_REST(0x100), SD4_C2_REST(0x100), SD4_D_REST(0x100),
     SD4_L_FL(0x80, SD4_C4),
 #endif
-#if 0   
-    
+#if 0   // Base
+    // Base ◢■◣
     SD4_L_REST(0xc0), SD4_B_UP(0xc0, SD4_C2), SD4_C2_REST(0xc0),               SD4_D_REST(0xc0),
     SD4_L_REST(0x80), SD4_B_FL(0x80, SD4_C2), SD4_C2_REST(0x80),               SD4_D_REST(0x80),
     SD4_L_REST(0xc0), SD4_B_DW(0xc0, SD4_C2), SD4_C2_REST(0xc0),               SD4_D_REST(0xc0),
@@ -135,36 +132,36 @@ static u8 const sd4_chronos_0[] = {
     SD4_L_REST(0x80), SD4_B_FL(0x80, SD4_C6), SD4_C2_REST(0x80),               SD4_D_REST(0x80),
     SD4_L_REST(0x80), SD4_B_DW(0x80, SD4_C6), SD4_C2_REST(0x80),               SD4_D_REST(0x80),
 
-    
+    // Base 高速再生
     SD4_L_REST(0x60), SD4_B_FL(0x04, SD4_C3), SD4_C2_REST(0x60), SD4_D_REST(0x60),
-                  SD4_B_FL(0x04, SD4_D3),
-                  SD4_B_FL(0x04, SD4_E3),
-                  SD4_B_FL(0x04, SD4_F3),
-                  SD4_B_FL(0x04, SD4_G3),
-                  SD4_B_FL(0x04, SD4_A3),
-                  SD4_B_FL(0x04, SD4_B3),
-                  SD4_B_FL(0x04, SD4_C4),
+    /**/              SD4_B_FL(0x04, SD4_D3),
+    /**/              SD4_B_FL(0x04, SD4_E3),
+    /**/              SD4_B_FL(0x04, SD4_F3),
+    /**/              SD4_B_FL(0x04, SD4_G3),
+    /**/              SD4_B_FL(0x04, SD4_A3),
+    /**/              SD4_B_FL(0x04, SD4_B3),
+    /**/              SD4_B_FL(0x04, SD4_C4),
 
-                  SD4_B_UP(0x04, SD4_C3),
-                  SD4_B_UP(0x04, SD4_D3),
-                  SD4_B_UP(0x04, SD4_E3),
-                  SD4_B_UP(0x04, SD4_F3),
-                  SD4_B_UP(0x04, SD4_G3),
-                  SD4_B_UP(0x04, SD4_A3),
-                  SD4_B_UP(0x04, SD4_B3),
-                  SD4_B_UP(0x04, SD4_C4),
+    /**/              SD4_B_UP(0x04, SD4_C3),
+    /**/              SD4_B_UP(0x04, SD4_D3),
+    /**/              SD4_B_UP(0x04, SD4_E3),
+    /**/              SD4_B_UP(0x04, SD4_F3),
+    /**/              SD4_B_UP(0x04, SD4_G3),
+    /**/              SD4_B_UP(0x04, SD4_A3),
+    /**/              SD4_B_UP(0x04, SD4_B3),
+    /**/              SD4_B_UP(0x04, SD4_C4),
 
-                  SD4_B_DW(0x04, SD4_C3),
-                  SD4_B_DW(0x04, SD4_D3),
-                  SD4_B_DW(0x04, SD4_E3),
-                  SD4_B_DW(0x04, SD4_F3),
-                  SD4_B_DW(0x04, SD4_G3),
-                  SD4_B_DW(0x04, SD4_A3),
-                  SD4_B_DW(0x04, SD4_B3),
-                  SD4_B_DW(0x04, SD4_C4),
+    /**/              SD4_B_DW(0x04, SD4_C3),
+    /**/              SD4_B_DW(0x04, SD4_D3),
+    /**/              SD4_B_DW(0x04, SD4_E3),
+    /**/              SD4_B_DW(0x04, SD4_F3),
+    /**/              SD4_B_DW(0x04, SD4_G3),
+    /**/              SD4_B_DW(0x04, SD4_A3),
+    /**/              SD4_B_DW(0x04, SD4_B3),
+    /**/              SD4_B_DW(0x04, SD4_C4),
 #endif
-#if 0   
-    
+#if 0   // Chord2
+    // Chord2 ◢■◣
     SD4_L_REST(0xc0), SD4_B_REST(0xc0),       SD4_C2_UP(0xc0, SD4_C2, SD4_C2), SD4_D_REST(0xc0),
     SD4_L_REST(0x80), SD4_B_REST(0x80),       SD4_C2_FL(0x80, SD4_C2, SD4_C2), SD4_D_REST(0x80),
     SD4_L_REST(0xc0), SD4_B_REST(0xc0),       SD4_C2_DW(0xc0, SD4_C2, SD4_C2), SD4_D_REST(0xc0),
@@ -175,12 +172,12 @@ static u8 const sd4_chronos_0[] = {
     SD4_L_REST(0x80), SD4_B_REST(0x80),       SD4_C2_FL(0x80, SD4_C6, SD4_C6), SD4_D_REST(0x80),
     SD4_L_REST(0x80), SD4_B_REST(0x80),       SD4_C2_DW(0x80, SD4_C6, SD4_C6), SD4_D_REST(0x80),
 
-    
+    // Chord2 アルペジオ
     SD4_L_REST(0x80), SD4_B_REST(0x80),       SD4_C2_UP(0x80, SD4_C4, SD4_E4), SD4_D_REST(0x80),
     SD4_L_REST(0x80), SD4_B_REST(0x80),       SD4_C2_FL(0x80, SD4_C4, SD4_E4), SD4_D_REST(0x80),
     SD4_L_REST(0x80), SD4_B_REST(0x80),       SD4_C2_DW(0x80, SD4_C4, SD4_E4), SD4_D_REST(0x80),
 
-    
+    // Chord2 高速再生
     SD4_L_REST(0x60), SD4_B_REST(0x60), SD4_C2_FL(0x04, SD4_C3, SD4_C3), SD4_D_REST(0x60),
                                         SD4_C2_FL(0x04, SD4_D3, SD4_D3),
                                         SD4_C2_FL(0x04, SD4_E3, SD4_E3),
@@ -210,7 +207,7 @@ static u8 const sd4_chronos_0[] = {
     SD4_L_REST(0x40), SD4_B_REST(0x40), SD4_C2_REST(0x40),               SD4_D_REST(0x40),
 #endif
 #if 0
-    
+    // Drum
     SD4_L_REST(0x40),  SD4_B_REST(0x40),  SD4_C2_REST(0x40), SD4_D_REST(0x40),
 
     SD4_L_REST(0x100), SD4_B_REST(0x100), SD4_C2_REST(0x100),
@@ -224,7 +221,7 @@ static u8 const sd4_chronos_0[] = {
     SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_1(0x04),
     SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_1(0x04),
 
-    
+    //SD4_L_FL(0x100, SD4_C3), SD4_B_FL(0x100, SD4_C3), SD4_C2_FL(0x100, SD4_C3, SD4_C3),
     SD4_L_FL(0x100, SD4_C3), SD4_B_REST(0x100), SD4_C2_REST(0x100),
     SD4_D_1(0x20), SD4_D_1(0x20), SD4_D_1(0x20), SD4_D_1(0x20),
     SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_1(0x04),
@@ -264,7 +261,7 @@ static u8 const sd4_chronos_0[] = {
     SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_3(0x04), SD4_D_1(0x04),
     SD4_D_1(0x04), SD4_D_1(0x04), SD4_D_3(0x04), SD4_D_1(0x04),
 #endif
-#if 0 
+#if 0 //とりあえず全部出してみる
     SD4_L_REST(0x40),       SD4_B_REST(0x40),       SD4_C2_REST(0x40),               SD4_D_REST(0x40),
     SD4_L_DW(0x40, SD4_C3), SD4_B_REST(0x40),       SD4_C2_REST(0x40),               SD4_D_1(0x40),
     SD4_L_DW(0x40, SD4_C3), SD4_B_REST(0x40),       SD4_C2_REST(0x40),               SD4_D_2(0x40),
@@ -280,8 +277,8 @@ static u8 const sd4_chronos_0[] = {
     SD4_L_FL(0x80, SD4_C3), SD4_B_FL(0x80, SD4_G3), SD4_C2_FL(0x80, SD4_C4, SD4_E4), SD4_D_1(0x80),
     SD4_L_FL(0x80, SD4_C3), SD4_B_FL(0x80, SD4_G3), SD4_C2_FL(0x80, SD4_C4, SD4_E4), SD4_D_1(0x80),
 #endif
-#if 1 
-    
+#if 1 // リピート
+    // 2回リピート
     SD4_L_REP_2,
         SD4_L_FL(0x40, SD4_C3), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
         SD4_L_FL(0x40, SD4_D3),
@@ -289,7 +286,7 @@ static u8 const sd4_chronos_0[] = {
 
     SD4_L_REST(0x20),       SD4_B_REST(0x20), SD4_C2_REST(0x20), SD4_D_REST(0x20),
 
-    
+    // 8回リピート
     SD4_L_REP_8,
         SD4_L_FL(0x10, SD4_C3), SD4_B_REST(0x20), SD4_C2_REST(0x20), SD4_D_REST(0x20),
         SD4_L_FL(0x10, SD4_D3),
@@ -297,7 +294,7 @@ static u8 const sd4_chronos_0[] = {
 
     SD4_L_REST(0x20),       SD4_B_REST(0x20), SD4_C2_REST(0x20), SD4_D_REST(0x20),
 
-    
+    // 2重ネスト
     SD4_L_REP_2,
         SD4_L_REP_3,
             SD4_L_FL(0x40, SD4_E3), SD4_B_REST(0x80), SD4_C2_REST(0x80), SD4_D_REST(0x80),
@@ -307,7 +304,7 @@ static u8 const sd4_chronos_0[] = {
         SD4_L_FL(0x40, SD4_A3),
     SD4_L_ENDR,
 #endif
-    
+    // 終了
     SD4_L_END,
 };
 #endif
@@ -336,4 +333,4 @@ void main(void)
         return;
     }
     puts("END.\x0d");
-}   
+}   // return するとモニターROMに戻る...筈!
