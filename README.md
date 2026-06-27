@@ -29,17 +29,20 @@
 * **8253-test** <br>
   8253の動作を理解するための実験コード (適時書き換えられます)
 * **sound-test1** <br>
-  サウンド テスト1 (3音源, OR合成)
+  サウンド テスト1 (SD3 - PFM+OR 3音源)
   https://www.youtube.com/watch?v=Qs5GZ-hzjp4
 * **sound-test2** <br>
-  サウンド テスト2 (3音源, OR合成, 波形誤差拡散)
+  サウンド テスト2 (3音源, PFM+OR合成, 波形誤差拡散, 失敗作)
 * **sound-test3** <br>
-  サウンド テスト3 (6音源, OR合成)
+  サウンド テスト3 (SD6 - PFM+OR 6音源)
 * **sound-test4** <br>
-  サウンド テスト4 (4音源, PWM)
+  サウンド テスト4 (SD4 - PWM 4音源)
 * **ST-2** <br>
-  習作 縦シューティングゲーム.<br>
+  習作 縦シューティング ゲーム.<br>
   https://www.youtube.com/watch?v=PG0ijYIvdNw
+* **Baryon** <br>
+  3D レール シューター<br>
+  https://www.youtube.com/watch?v=eU8QhuCyoiM
 * 以後, 妻が許せばゲームを増やす予定<br>
 
 # Requirement
