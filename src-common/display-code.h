@@ -218,6 +218,18 @@
 #define DC_YEN          0xdd    // ￥
 #define DC_SNAKE        0xdf
 
+#define DC_REGIST_H     0xe3    // 抵抗(水平)
+#define DC_COIL_L       0xe4    // コイル(左)
+#define DC_COIL_M       0xe5    // コイル(中)
+#define DC_COIL_R       0xe6    // コイル(右)
+#define DC_DIODE_R      0xe7    // ダイオード(矢印が右)
+#define DC_DIODE_L      0xe8    // ダイオード(矢印が左)
+#define DC_TRANSISTOR_NPN 0xe9  // トランジスタ(NPN)
+#define DC_TRANSISTOR_PNP 0xea  // トランジスタ(PNP)
+#define DC_CAPACITOR_H  0xec    // コンデンサ(水平)
+#define DC_CAPACITOR_V  0xed    // コンデンサ(垂直)
+#define DC_REGIST_V     0xee    // 抵抗(垂直)
+
 // セミ グラフィック  +------ 左上
 //                    |+----- 右上
 //                    ||+---- 左下

@@ -160,14 +160,14 @@ void call_pe(int);
 void call_po(int);
 void rst(int);
 void ret(void);
-void ret_z(void);
+void ret_z(void);   // ==
 void ret_eq(void);  // ==
-void ret_nz(void);
+void ret_nz(void);  // !=
 void ret_ne(void);  // !=
-void ret_c(void);
-void ret_lt(void);  // <
-void ret_nc(void);
-void ret_ge(void);  // >
+void ret_c(void);   // unsigned <
+void ret_lt(void);  // unsigned <
+void ret_nc(void);  // unsigned >
+void ret_ge(void);  // unsigned >
 void ret_p(void);
 void ret_m(void);
 void ret_v(void);
