@@ -379,7 +379,7 @@ class ScoreMergeUtils {
             $spaces[$ch] = str_pad('', $max_str_len, ' ');
             $out .= str_pad($track_tab[$ch]['name'], $max_str_len, ' ');
         }
-        $out .= "\nstatic u8 const $var_name" . $nr. "[] = {";
+        $out .= "\nstatic u8 const $var_name" . "[] = {";
 
         // -------- (5) 配列に適時改行を入れて結合.
         //foreach($spaces as $key => $space) { echo($key . "=>" . strlen($space). "\n"); } 空白文字数を調べる

@@ -30,17 +30,7 @@
 
 #define TEMPO               0       // [0, 128]          128にすると1.5倍速になります.
 #define CHORD_VOL_SPEED_R   7       // 0, 1, 3, 7, 15, ...  Chord のエンベロープ音量変化速度
-// Lead(Echo)の遅延. 次の3つから選択します
-void LEAD_ECHO_DELAY(void) __aal_macro __naked
-{
-    AAL_DEF_VARS;
 
-    //cp(A, 3);     // 遅延小
-    //cp(A, 2);     // 遅延中
-    A--;          // 遅延大
-
-    AAL_ENDM;
-}
 
 // Lead/Chord/Base の音量比率を設定します. 最大 63 未満になるようにしてください
 #define LEAD_VOL_MAX        22
@@ -806,7 +796,7 @@ extern tmp;
     // ---- F2, F4 キーが離れるまで待ちます
     A = 0xf9; mem[MMIO_8255_PORTA] = A;                 // A = key strobe 9
     do {
-        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
+        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK | KEY9_F5_MASK;
     } while (nz_jr);
 
     // ---- キャンセル許可フラグ == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みますE == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
@@ -920,7 +910,7 @@ sd4play_beeperLoop:
         exx();                                          // 4
     ex(AF, AF);                                         // 4
     // F2, F4 キーでキャンセル
-    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK; jp_z(sd4play_loop);// 13+8+7+10 計88
+    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK | KEY9_F5_MASK; jp_z(sd4play_loop);// 13+8+7+10 計88
     jr(sd4play_waitUntilKeyOff2);                       // A = 戻値: 押下したキーが入ってます
 
     // ---------------- 後始末
@@ -930,12 +920,12 @@ sd4play_end:
 sd4play_waitUntilKeyOff2:
     ex(AF, AF); {
         do {
-            A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F2_MASK | KEY9_F4_MASK;
+            A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK | KEY9_F5_MASK;
         } while (nz_jr);
-    } ex(AF, AF);
 
-    // 8253 を元の設定に戻します
-    A = MMIO_8253_CT0_MODE3; mem[MMIO_8253_CTRL] = A;
+        // 8253 を元の設定に戻します
+        A = MMIO_8253_CT0_MODE3; mem[MMIO_8253_CTRL] = A;
+    } ex(AF, AF);
 
     BANKH_RAM();                                        // バンク切替
 

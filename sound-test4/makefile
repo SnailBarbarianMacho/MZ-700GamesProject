@@ -55,6 +55,7 @@ all: bin/$(NAME).mzt
 -include $(GAME_DEPENDS_PROG)
 -include $(GAME_DEPENDS_MUSIC)
 
+# リンク+バイナリ生成
 bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@echo Linking ... [$@]
 	@$(CC) $(LFLAGS) -o $(NAME).bin $(OBJS)
@@ -63,6 +64,7 @@ bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@$(PHP) $(TOOLS)/bin2mzt.php $(NAME).code_data.bin $(PROG_NAME) $(ORG) $(ORG) $@
 	@$(PHP) $(TOOLS)/mzt2wav.php $@ bin/$(NAME).wav
 
+# ソースをコンパイル
 %.c: %.aal.c
 	@echo Converting ... [$<]
 	@$(PHP) $(TOOLS)/aal80.php $< $@
@@ -71,7 +73,8 @@ bin/$(NAME).mzt: $(OBJS) $(CRT0)
 	@echo Compiling ... [$<]
 	@$(CC) $(CFLAGS) $(DEBUG) $(OPT) -o $@ -c $<
 
-%.h: %.mid
+# 音楽データ変換
+$(MUSIC_DIR)/%.h: $(MUSIC_DIR)/%.mid
 	@echo Converting midi file ... [$<]
 	@$(PHP) $(TOOLS)/sd4-midi-conv.php $< $@ --exceptLengths=$(SD4_EXCEPT_LEN)#$(SD4_EXCEPT_LEN_SZ) --verbose
 

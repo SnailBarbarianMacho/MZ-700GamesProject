@@ -15,8 +15,8 @@ class ScoreUtils {
     // ---------------------------------------------------------------- 楽譜分割
     // MARK: divideScore()
     /** 必要に応じて楽譜を複数に分割します(小節単位など)
-     * - 休符は分割されますが, 休符以外は分割できません(エラー)
-     * @param split_len 分割したい長さ(単位は $midi_reader )
+     * - 音符が分割単位を跨ぐ場合, 休符は分割されますが, 休符以外はエラーとなります
+     * @param split_len 分割したい長さ(単位は $midi_reader)
      * @return 成功したら加工済データ(Score の配列). 失敗したら null
      */
     public static function divideScore(
@@ -32,7 +32,7 @@ class ScoreUtils {
                 //echo("ch[$r_track->ch] source[$source_nr]\n");
                 $note_nr = 0;
                 for ($time = $split_len; $time < $play_time; $time += $split_len) {
-                    $note_nr = divideRestNoteByTime_($r_source->notes, $note_nr, $time);
+                    $note_nr = \nwk\sound\ScoreUtils::divideRestNoteByTime_($r_source->notes, $note_nr, $time);
                     if ($note_nr === false) {
                         $error->errorScore($r_track->ch, $source_nr, null, "時間 $time で分割できませんでした");
                         break;
@@ -94,7 +94,7 @@ class ScoreUtils {
                 }
                 // 今の休符の前に音譜を挿入します
                 array_splice($r_notes, $note_idx, 0, 1); //オブジェクトを直接挿入すると分解されてしまうのでとりあえず '1'
-                $r_notes[$note_idx] = new \nwk\midi\Note(
+                $r_notes[$note_idx] = new \nwk\sound\Note(
                     \nwk\sound\Note::SCALE_R,
                     0,
                     $r_note->time,

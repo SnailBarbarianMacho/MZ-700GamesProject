@@ -258,7 +258,7 @@ static u8 const sd6_chronos_0[] = {
 void main(void)
 {
     sd6Init();
-    u8 c = SD6PLAY(sd6_chronos_0, 0, true);
+    u8 c = SD6PLAY(chronos, 0, true);
 
     bankRomVramMmio();
     if (c & KEY9_F1_MASK) {

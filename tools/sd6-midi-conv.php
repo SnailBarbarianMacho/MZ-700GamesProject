@@ -78,8 +78,10 @@ const OPT_CHANNELS         = 'channels';
 const OPT_BARS             = 'bars';
 const OPT_EXCEPT_LENGTHS   = 'exceptLengths';
 const OPT_DEBUG_SCORE_DUMP = 'debugScoreDump';
+const BAR_MAX = 1000;
 
-// MARK: 引数解析 --------------------------------
+// ----------------------------------------------------------------
+// MARK: 引数解析
 $error = new \nwk\utils\Error();
 $debugdump = false;
 $b_verbose = false;
@@ -101,7 +103,7 @@ if (count($args) !== 2 || isset($options[OPT_HELP]) || isset($options['h'])) {
         "  -h, --" . OPT_HELP . "\n" .
         "  -v, --" . OPT_VERBOSE . "\n" .
         "  --" . OPT_CHANNELS . "=n       指定※したチャンネル [1, 16] のみ変換します(省略時:all)\n" . // 例:「4」「1,2」\n"
-        "  --" . OPT_BARS .     "=n           指定※した小節 [2, 256] のみ変換します(省略時:all)\n" .
+        "  --" . OPT_BARS .     "=n           指定※した小節 [2, " . BAR_MAX . "] のみ変換します(省略時:all)\n" .
         "  --" . OPT_EXCEPT_LENGTHS . "=n  指定※した音長から連続する7つの音長さ (4の倍数, [4, 256]) を特別な命令に利用します(default:180#24, つまり180,184,188,192,196,209,224). 変更したら,SD6ルーチンも変更が必要です\n" .
         "    ※範囲指定は [0-9,-#]の他, 文字列「all」,「none」 が使えます.\n" .
         "    例: 「-1,4-6,8#2,11-」ならば「0,1,4,5,6,8,9,11,12,...」を意味します\n" .
@@ -140,32 +142,33 @@ foreach($except_lens as $i => $len) {
     }
 }
 if ($b_verbose) {
-    echo('  except_lengths:' . \nwk\utils\Utils::getRangeListString($except_lens, $opt === 'all') . "\n");
+    echo('  例外とする音長:' . \nwk\utils\Utils::getRangeListString($except_lens, $opt === 'all') . "\n");
 }
 
 $bar_start = \nwk\sound\MidiReader::BAR_OFFSET;
-$bar_end   = 256;
+$bar_end   = BAR_MAX;
 if (isset($options[OPT_BARS])) {
-    $bars = \nwk\utils\Utils::getRangeList($options[OPT_BARS], \nwk\sound\MidiReader::BAR_OFFSET, 1000);
+    $bars = \nwk\utils\Utils::getRangeList($options[OPT_BARS], \nwk\sound\MidiReader::BAR_OFFSET, BAR_MAX);
     //print_r($bars);
     if ($bars === false) {
-        $error->error("Invalid option: --" . OPT_BARS);
+        $error->error("Invalid option: --" . OPT_BARS . " 小節の範囲指定が間違ってます: " . $options[OPT_BARS]);
         exit(1);
     }
     if (count($bars) === 0) {
-        $error->error("Invalid option: --" . OPT_BARS . " 小節を全て省略することはできません");
+        $error->error("Invalid option: --" . OPT_BARS . " 小節を全て省略することはできません: " . $options[OPT_BARS]);
         exit(1);
     }
     if (!\nwk\utils\Utils::isRangeListContinuous($bars)) {
-        $error->error("Invalid option: --" . OPT_BARS . " 小節の範囲は連続しなければなりません");
+        $error->error("Invalid option: --" . OPT_BARS . " 小節の範囲は連続しなければなりません: " . $options[OPT_BARS]);
         exit(1);
     }
     $bar_start = $bars[0];
     $bar_end   = end($bars);
 }
 if ($b_verbose) {
-    echo("  bars: $bar_start-$bar_end\n");
+    echo("  変換する小節の範囲: [$bar_start, $bar_end]\n");
 }
+// MIDI では最初の小説は BAR_OFFSET からですが, これを 0 からにします
 $bar_start -= \nwk\sound\MidiReader::BAR_OFFSET;
 $bar_end   -= \nwk\sound\MidiReader::BAR_OFFSET;
 
@@ -174,16 +177,19 @@ if (isset($options[OPT_DEBUG_SCORE_DUMP])) {
 }
 
 
-// MARK: ファイル チェック --------------------------------
+// ----------------------------------------------------------------
+// MARK: ファイル チェック
 // ---- ファイル名チェック
 $in_midi_file = $argv[1];
 $out_c_file   = $argv[2];
+$out_c_file_pathinfo = pathinfo($out_c_file);
+
 $error->setFilename($in_midi_file);
 
-// midi ファイル名の末端が '_barX' ならば, X 小節(bar)単位に分割します
+// midi ファイル名の末端が '_barXxY' ならば, X 小節(bar)単位に分割します
 $div_bars = PHP_INT_MAX;
 $matches  = [];
-if (preg_match('/_bar([0-9]+)$/', pathinfo($in_midi_file, PATHINFO_FILENAME), $matches) === 1) {
+if (preg_match('/[_-]bar(\d+)x(\d+)$/', pathinfo($in_midi_file, PATHINFO_FILENAME), $matches) === 1) {
     $div_bars = (int)$matches[1];
     if ($div_bars < 1) {
         $error->error("Invalid value div_bars\n");
@@ -198,7 +204,8 @@ if (file_exists($in_midi_file) === false) {
 }
 
 
-// MARK: MIDI ファイル読込 --------------------------------
+// ----------------------------------------------------------------
+// MARK: MIDI ファイル読込
 $midi_data = file_get_contents($in_midi_file);
 if ($midi_data === false) {
     $error->error("File read error\n");
@@ -217,14 +224,21 @@ if ($debugdump) {
     $midi_reader->debugScoreDump($score);
 }
 
-// MARK: データ加工 --------------------------------
-$div_len = ($div_bars === PHP_INT_MAX) ? PHP_INT_MAX : $midi_reader->getBarLen() * $div_bars;
+
+// ----------------------------------------------------------------
+// MARK: データ加工
+$div_time = ($div_bars === PHP_INT_MAX) ? PHP_INT_MAX : $midi_reader->getBarTime() * $div_bars;
 // unset($data[4]); デバッグ用にわざと一部データを消す
-$score_arr = \nwk\sound\ScoreUtils::divideScore($midi_reader, $score, $div_len, $error);
+$score_arr = \nwk\sound\ScoreUtils::divideScore($midi_reader, $score, $div_time, $error);
+
+if ($div_bars !== PHP_INT_MAX) {
+    if ($b_verbose) {
+        echo("  分割する小節の長さ: $div_bars  その時間: $div_time\n");
+    }
+}
+
 if (!$error->getNrErrors()) {
 
-    $out_str = "/**** This file is made by $argv[0]. DO NOT MODIFY! ****/\n";
-    //$out_str .= $midi_reader->createScoreInfo();
     $total_play_time = $midi_reader->getTotalPlayTime();
     $bar_time        = $midi_reader->getBarTime();
     $nr_bars         = (int)ceil($total_play_time / $bar_time);
@@ -232,8 +246,36 @@ if (!$error->getNrErrors()) {
     $min_len       = $time_resolution / 8;
     $max_len       = $time_resolution * 8;
 
+    // 分割出力の場合, ダミーCヘッダを出力します
+    if (2 <= count($score_arr)) {
+        $out_str = "/**** This file is made by $argv[0]. DO NOT MODIFY! ****/\n/* This is dummy header */\n";
+        file_put_contents($out_c_file, $out_str);
+    }
+
     foreach ($score_arr as $score_nr => $r_score) {
-        //echo("score[$score_nr]\n");
+
+        // 出力Cヘッダ名
+        $out_c_file_ = $out_c_file;
+        if ($div_bars !== PHP_INT_MAX) {
+            $out_c_file_ = $out_c_file_pathinfo['dirname'] . '/' . $out_c_file_pathinfo['filename'] . '-' . $score_nr . '.' .$out_c_file_pathinfo['extension'];
+        }
+
+        // 変数名は出力Cヘッダ名から
+        $var_name = pathinfo($argv[2], PATHINFO_FILENAME);
+        $var_name = str_replace(['.', '-'], '_', $var_name);
+        if (2 <= count($score_arr)) {
+            $var_name .= '_' . $score_nr; // 連番
+        }
+
+        if ($b_verbose) {
+            if (2 <= count($score_arr)) {
+                echo("-------- $score_nr/" . count($score_arr) . "\n");
+            }
+        }
+
+        $out_str = "/**** This file is made by $argv[0]. DO NOT MODIFY! ****/\n";
+        //$out_str .= $midi_reader->createScoreInfo();
+
         \nwk\sound\ScoreUtils::checkTracks( $r_score, TRACK_TAB, $channels, $bar_time, $total_play_time, $error);// トラック,音階調査
         if ($error->getNrErrors()) { break; }
         \nwk\sound\ScoreUtils::extractBars( $r_score, $bar_start, $bar_end, $nr_bars, $bar_time, $error);   // 小節の抽出
@@ -264,24 +306,27 @@ if (!$error->getNrErrors()) {
         if ($b_verbose) {
             echo("  compressed notes: " . count($merged_notes) . "\n");
         }
-        $str   = \nwk\sound\ScoreMergeUtils::genHistgramString($merged_notes, TRACK_TAB); // ヒストグラム文字列作成
         $bytes = setNoteString_($merged_notes); // 文字列作成
-        $in_filename = pathinfo($argv[1], PATHINFO_FILENAME);
-        $in_filename = str_replace(['.', '-'], '_', $in_filename);
-        $var_name = 'sd6_' . $in_filename . '_'; // 変数名
+
+        $str   = \nwk\sound\ScoreMergeUtils::genHistgramString($merged_notes, TRACK_TAB); // ヒストグラム文字列作成
         $str  .= \nwk\sound\ScoreMergeUtils::genInfoString($max_repeat_times, $max_repeat_level, $bytes); // その他情報文字列作成
         $str  .= \nwk\sound\ScoreMergeUtils::genFormattedSourceString($var_name, $midi_reader, $merged_notes, DATA_BAR_TIME, TRACK_TAB, $score_nr); // 整形
         $str  .= "\n    SD6_L_END\n};\n";
         //echo("---- score[$score_nr]\n"); $midi_reader->debugScoreDump($r_score);
         $out_str .= $str;
+
+        file_put_contents($out_c_file_, $out_str);
     }
 }
 
-// MARK: 出力 --------------------------------
+
+// ----------------------------------------------------------------
+// MARK: レポート出力して終了
 $error->report();
-file_put_contents($out_c_file, $out_str);
 exit (0);
 
+
+// ----------------------------------------------------------------
 // MARK: setNoteString_()
 /** 音符からマクロ文字列を作成します
  * @param $r_merged_notes マージしたMergedNoteの配列
@@ -291,7 +336,7 @@ function setNoteString_(array &$r_merged_notes): int
 {
     $bytes = 1; // SD6_END
 
-    foreach($r_merged_notes as &$r_merged_note) {
+    foreach ($r_merged_notes as &$r_merged_note) {
         $scale = str_replace('#', 'S', $r_merged_note->r_note->data_scale);
         $len = $r_merged_note->len;
         $r_track_work = $r_merged_note->r_track_work;
@@ -417,7 +462,7 @@ function setNoteString_(array &$r_merged_notes): int
             $r_merged_note->strs[] = "SD6_L_ENDR";
             $bytes += 1;
         }
+    } // foreach ($r_merged_notes)
 
-    }
     return $bytes;
 }

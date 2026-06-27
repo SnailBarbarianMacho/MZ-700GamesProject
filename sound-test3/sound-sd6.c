@@ -948,206 +948,206 @@ __endasm;
 }
 
 
+STATIC_ASSERT((ADDR_SD6_DRUM & 0xff) == 0x00, "ADDR_SD6_DRUMは, 0x0100 境界でなければなりません");
 
 
 u8 sd6play(const u32 param) 
 {
 __asm
-  // line 629
-  extern sd6play_waitUntilKeyOff2
   // line 630
-  extern sd6play_tempo_1
+  extern sd6play_waitUntilKeyOff2
   // line 631
-  extern sd6play_rep_1
+  extern sd6play_tempo_1
   // line 632
-  extern sd6play_setVols, sd6play_loop, sd6play_beeperLoop
+  extern sd6play_rep_1
   // line 633
-  extern sd6play_beeper0_wl_1, sd6play_slide0, sd6play_modVolSpeed0_1
+  extern sd6play_setVols, sd6play_loop, sd6play_beeperLoop
   // line 634
-  extern sd6play_beeper1_wl_1
+  extern sd6play_beeper0_wl_1, sd6play_slide0, sd6play_modVolSpeed0_1
   // line 635
-  extern sd6play_beeper2_wl
+  extern sd6play_beeper1_wl_1
   // line 636
-  extern sd6play_beeper3_wl
+  extern sd6play_beeper2_wl
   // line 637
-  extern sd6play_beeper4_wl
+  extern sd6play_beeper3_wl
   // line 638
-  extern sd6play_beeper5_drumNr
+  extern sd6play_beeper4_wl
   // line 639
-  extern sd6play_beeper1_sync, sd6play_beeper1_syncEnd
+  extern sd6play_beeper5_drumNr
   // line 640
-  extern sd6play_end
+  extern sd6play_beeper1_sync, sd6play_beeper1_syncEnd
   // line 641
-  extern sd6play_restoreSP_1
+  extern sd6play_end
   // line 642
+  extern sd6play_restoreSP_1
+  // line 643
   extern tmp
-  // line 645
-  push IX
   // line 646
+  push IX
+  // line 647
   BANKH_VRAM_MMIO 
-  // line 649
+  // line 650
   ld A, 249
   ld (MMIO_8255_PORTA), A
-  // line 650
+  // line 651
   sd6play__loop_top0: // do {
-      // line 651
+      // line 652
       ld A, (MMIO_8255_PORTB)
       cpl
-      and A, 0 + KEY9_F1_MASK|KEY9_F2_MASK|KEY9_F3_MASK|KEY9_F4_MASK
+      and A, 0 + KEY9_F1_MASK|KEY9_F2_MASK|KEY9_F3_MASK|KEY9_F4_MASK|KEY9_F5_MASK
   sd6play__loop_end0:
   jr nz, sd6play__loop_top0 // } while (nz_jr)
   sd6play__loop_exit0: // loop exit
 
-  // line 655
+  // line 656
   bit 0, D
   jr nz, sd6play__endif1
-      // line 656
+      // line 657
       ld A, 250
       ld (MMIO_8255_PORTA), A
   sd6play__endif1:
 
-  // line 660
-  ld A, E
-  or A, 0 + ADDR_SD6_DRUM&0xff
   // line 661
+  ld A, E
+  // line 662
   ld (sd6play_tempo_1+1), A
-  // line 675
+  // line 676
   ld (sd6play_restoreSP_1+1), SP
   ld SP, HL
-  // line 676
-  xor A, A
   // line 677
+  xor A, A
+  // line 678
   ld C, 0 + BEEPER1_WL_CT_VAL
   ld (sd6play_beeper1_wl_1+1), A
-  // line 678
-  inc A
   // line 679
+  inc A
+  // line 680
   ld IXH, A
   ld IXL, A
   ld IYL, A
   ld IYH, A
-  // line 680
+  // line 681
   ld A, 7
   ld (sd6play_modVolSpeed0_1+1), A
-  // line 681
+  // line 682
   ld A, 0 + OPCODE_JR
   ld (sd6play_slide0), A
-  // line 682
+  // line 683
   ld HL, 0 + ADDR_SD6_REP+0xff
   ld (sd6play_rep_1+1), HL
-  // line 683
+  // line 684
 #if  BEEPER1_SYNC
   ld (sd6play_beeper1_sync), A
-  // line 685
+  // line 686
 #endif 
-  // line 689
+  // line 690
 sd6play_loop:
-  // line 692
+  // line 693
   SD6PLAY_NOTE_LEAD B, IXH, H, L, HL, sd6play_rep_1, sd6play_setVols + 1, sd6play_beeper0_wl_1, sd6play_slide0, sd6play_modVolSpeed0_1, sd6play_beeper1_sync, sd6play_end
-  // line 695
+  // line 696
   SD6PLAY_NOTE_BASE D, IXL, H, L, HL, sd6play_setVols, sd6play_beeper2_wl
-  // line 697
+  // line 698
 sd6play_setVols:
   ld HL, 0
-  // line 698
-  exx
   // line 699
-  SD6PLAY_NOTE_CHORD2 B, C, BC, IYH, H, L, HL, D, sd6play_beeper3_wl, sd6play_beeper4_wl
+  exx
   // line 700
-  SD6PLAY_NOTE_DRUM IYL, L, sd6play_beeper5_drumNr
+  SD6PLAY_NOTE_CHORD2 B, C, BC, IYH, H, L, HL, D, sd6play_beeper3_wl, sd6play_beeper4_wl
   // line 701
-sd6play_tempo_1:
+  SD6PLAY_NOTE_DRUM IYL, L, sd6play_beeper5_drumNr
   // line 702
+sd6play_tempo_1:
+  // line 703
   ld HL, 0 + ADDR_SD6_DRUM|0
-  // line 705
-sd6play_beeperLoop:
   // line 706
-    // line 707
+sd6play_beeperLoop:
+  // line 707
+    // line 708
     exx
-    // line 710
-    ld E, 0 + PULSE_L
     // line 711
-    SD6PLAY_BEEPER_WAVE_BR B, E, H, sd6play_beeper0_wl_1
+    ld E, 0 + PULSE_L
     // line 712
-    SD6PLAY_BEEPER_WAVE_R C, E, H, sd6play_beeper1_wl_1
+    SD6PLAY_BEEPER_WAVE_BR B, E, H, sd6play_beeper0_wl_1
     // line 713
-    SD6PLAY_BEEPER_WAVE_R D, E, L, sd6play_beeper2_wl
+    SD6PLAY_BEEPER_WAVE_R C, E, H, sd6play_beeper1_wl_1
     // line 714
+    SD6PLAY_BEEPER_WAVE_R D, E, L, sd6play_beeper2_wl
+    // line 715
     ld A, E
     exx
     ld E, A
-    // line 715
-    SD6PLAY_BEEPER_WAVE_BR B, E, D, sd6play_beeper3_wl
     // line 716
-    SD6PLAY_BEEPER_WAVE_R C, E, D, sd6play_beeper4_wl
+    SD6PLAY_BEEPER_WAVE_BR B, E, D, sd6play_beeper3_wl
     // line 717
+    SD6PLAY_BEEPER_WAVE_R C, E, D, sd6play_beeper4_wl
+    // line 718
     SD6PLAY_BEEPER_DRUM HL, E, sd6play_beeper5_drumNr
-    // line 719
+    // line 720
     ld A, E
     ld (MMIO_8253_CTRL), A
-    // line 720
+    // line 721
     inc L
     jp nz, 0 + sd6play_beeperLoop
-  // line 723
+  // line 724
   exx
-  // line 726
+  // line 727
   ld A, IXH
   and A, 3
   LEAD_ECHO_DELAY 
   jr nz, sd6play__endif2
-      // line 728
-#if  BEEPER1_SYNC                                        
       // line 729
+#if  BEEPER1_SYNC                                        
+      // line 730
 sd6play_beeper1_sync:
       jr 0 + sd6play_beeper1_syncEnd
-        // line 730
-        ld C, 0 + BEEPER1_WL_CT_VAL
         // line 731
+        ld C, 0 + BEEPER1_WL_CT_VAL
+        // line 732
         ld A, 0 + OPCODE_JR
         ld (sd6play_beeper1_sync), A
-      // line 733
-sd6play_beeper1_syncEnd:
       // line 734
+sd6play_beeper1_syncEnd:
+      // line 735
 #endif 
       ld A, (sd6play_beeper0_wl_1+1)
       ld (sd6play_beeper1_wl_1+1), A
   sd6play__endif2:
 
-  // line 738
+  // line 739
   ld A, (MMIO_8255_PORTB)
   cpl
-  and A, 0 + KEY9_F1_MASK|KEY9_F2_MASK|KEY9_F3_MASK|KEY9_F4_MASK
+  and A, 0 + KEY9_F1_MASK|KEY9_F2_MASK|KEY9_F3_MASK|KEY9_F4_MASK|KEY9_F5_MASK
   jp z, 0 + sd6play_loop
-  // line 739
+  // line 740
   jr 0 + sd6play_waitUntilKeyOff2
-  // line 742
-sd6play_end:
   // line 743
+sd6play_end:
+  // line 744
   xor A, A
-  // line 745
-sd6play_waitUntilKeyOff2:
   // line 746
+sd6play_waitUntilKeyOff2:
+  // line 747
   ex AF, AF
-    // line 747
+    // line 748
     sd6play__loop_top3: // do {
-        // line 748
+        // line 749
         ld A, (MMIO_8255_PORTB)
         cpl
-        and A, 0 + KEY9_F1_MASK|KEY9_F2_MASK|KEY9_F3_MASK|KEY9_F4_MASK
+        and A, 0 + KEY9_F1_MASK|KEY9_F2_MASK|KEY9_F3_MASK|KEY9_F4_MASK|KEY9_F5_MASK
     sd6play__loop_end3:
     jr nz, sd6play__loop_top3 // } while (nz_jr)
     sd6play__loop_exit3: // loop exit
 
-    // line 752
+    // line 753
     ld A, 0 + MMIO_8253_CT0_MODE3
     ld (MMIO_8253_CTRL), A
   ex AF, AF
-  // line 755
+  // line 756
   BANKH_RAM 
-  // line 757
+  // line 758
 sd6play_restoreSP_1:
   ld SP, 0
-  // line 758
+  // line 759
   pop IX
 __endasm;
 }

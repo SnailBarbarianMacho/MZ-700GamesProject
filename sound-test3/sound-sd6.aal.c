@@ -621,6 +621,7 @@ addr_drum_nr_1: bit(0/*ドラム波形テーブル ビット位置*/, mem[HL_wav
     AAL_ENDM;
 }
 
+STATIC_ASSERT((ADDR_SD6_DRUM & 0xff) == 0x00, "ADDR_SD6_DRUMは, 0x0100 境界でなければなりません");
 
 // MARK: play()
 u8 sd6play(const u32 param) __aal
@@ -648,7 +649,7 @@ extern tmp;
     // ---- F1 ～ F4 キーが離れるまで待ちます
     A = 0xf9; mem[MMIO_8255_PORTA] = A;                 // A = key strobe 9
     do {
-        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK;
+        A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK | KEY9_F5_MASK;
     } while(nz_jr);
 
     // ---- キャンセル許可フラグ == false ならば, キャンセルできないように, 無効な Key Strobe を仕込みます
@@ -657,7 +658,7 @@ extern tmp;
     }
 
     // ---- テンポ
-    A = E; A |= ADDR_SD6_DRUM & 0xff;                   // E = テンポ[0, 127]
+    A = E;  // E = テンポ[0, 127]  //A |= ADDR_SD6_DRUM & 0xff; ADDR_SD6_DRUMは, 0x0100 境界なのでこの処理不要
     mem[sd6play_tempo_1 + 1] = A;                       // 自己書換
 
     // ---- レジスタ, ワーク初期化
@@ -735,17 +736,17 @@ sd6play_beeper1_syncEnd:
         A = mem[sd6play_beeper0_wl_1 + 1]; mem[sd6play_beeper1_wl_1 + 1] = A;
     }
     // F1 ～ F4 キーでキャンセル
-    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK; jp_z(sd6play_loop);
+    A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK | KEY9_F5_MASK; jp_z(sd6play_loop);
     jr(sd6play_waitUntilKeyOff2);                       // A = 戻値: 押下したキーが入ってます
 
     // ---------------- 後始末
 sd6play_end:
-    A ^= A;                                             // A = 戻値: 0
+    A ^= A;                                             // A = 0 キーが押されなかった
     // F1 ～ F4 キーが離れるまで待ちます
 sd6play_waitUntilKeyOff2:
     ex(AF, AF); {
         do {
-            A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK;
+            A = mem[MMIO_8255_PORTB]; not(A); A &= KEY9_F1_MASK | KEY9_F2_MASK | KEY9_F3_MASK | KEY9_F4_MASK | KEY9_F5_MASK;
         } while (nz_jr);
 
         // 8253 を元の設定に戻します
@@ -757,6 +758,6 @@ sd6play_waitUntilKeyOff2:
 sd6play_restoreSP_1: SP = 0x0000;                       // SP 復活
     pop(IX);
 
-    // L = 押下したキー
+    // A = 押下したキー, 又は 0
 }
 #pragma restore

@@ -1,4 +1,4 @@
-# SoundTest3 6音源 / 6 sound sources  <!-- omit in toc -->
+# SoundTest3 (SD6 - PFM+OR 6音源) <!-- omit in toc -->
 
 * 1982年頃 ZX Spextrum では既に6音源が実現されてると聞いたので, MZ-700 でも挑戦しました
 

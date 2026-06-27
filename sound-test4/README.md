@@ -1,4 +1,4 @@
-# SoundTest4 4音源 PWM / 4 sound sources PWM  <!-- omit in toc -->
+# SoundTest4 (SD4 - PWM 4音源) <!-- omit in toc -->
 
 * 1ビット音源でも, PWM を使えば自然な音を鳴らすことが可能です. MZ-700 で実現しました
 
