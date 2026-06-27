@@ -8,7 +8,8 @@ declare(strict_types = 1);
  * - --prog は ソース(.aal.c, .c)からオブジェクト(.o)を作る依存リストと,
  *   オブジェクトのリストと,
  *   clean 時の削除リストを作成
- *   例: game/src/ OBJS CLEAN_FILES
+ *   例: --prog game/src/ OBJS CLEAN_FILES
+ *   ↓
  *   game/system/a.c: game/system/a.aal.c game/system/sys.h
  *   game/system/b.c: game/system/b.aal.c game/system/sys.h game/cg/c.txt game/text/t.txt
  *   game/system/c.c: game/system/c.aal.c game/system/sys.h
@@ -19,19 +20,24 @@ declare(strict_types = 1);
  *   CLEAN_FILES := game/obj/a.o game/obj/b.o game/obj/c.o game/src/system/c.c
  *
  * - --cg は各 cgedit データ(.cgedit.txt, .cgedit.json) から複数のヘッダ(.h)を作る依存リストを作成
- *   例: -cgedit game/cg/ CG_FUNC
+ *   例: --cg game/resources/cg2/ CG_FUNC
+ *   ↓
  *   game/cg/a.h game/cg/b.h: game/cg/a.cgedit.txt game/cg/a.cgedit.json
  *      $(call CG_FUNC)
  *   game/cg/c.h game/cg/d.h: game/cg/b.cgedit.txt game/cg/b.cgedit.json
  *      $(call CG_FUNC)
  *
- * - --music は各楽譜(.mid)からヘッダ(.h)を作る依存リストを作成
- *   例: -music game/music/
- *   game/music/test.h: game/music/test.mid
- *   game/music/foo.h: game/music/foo.mid
+ * - --music は MIDI ファイル(.mid)からヘッダ(.h)を作る依存リストを作成
+ *    midi ファイル名の末端が '-barXxY' ならば, X 小節(bar)単位に Y個分割します
+ *   ドラムデータ等からデータを作る依存ファイルは, 今のところありません
+ *   例: --music game/music-sd6/ する場合, 中に test.mid と foo-bar10x2.mid がある場合
+ *   ↓
+ *   game/music-sd6/test.h: game/music-sd6/test.mid
+ *   game/music-sd6/foo-bar10x2.h sd6/foo-bar10x2-0.h game/music-sd6/foo-bar10x2-1.h: game/music-sd6/foo-bar10x2.mid
  *
  * - --text は各テキスト(.txt)からヘッダ(.h)を作る依存リストを作成
- *   例: -text game/text/
+ *   例: --text game/text/text-ending/
+ *   ↓
  *   game/text/branch-ahead.h: game/text/branch-ahead.txt
  *   game/text/game-over.h: game/text/game-over.txt
  *
@@ -202,8 +208,21 @@ if ($music_dir !== '') {
     foreach ($it as $pathname => $info) {
         if (str_ends_with($pathname, '.mid')) {
             $pathname = adjustPathname_($pathname);
+            // ファイル名末端が「xxx-barXxY.mid」ならば, 曲をX小節単位にY個分割するので,
+            // midi ファイルは「xxx-N.h」の複数個のヘッダが依存します
+            $pathinfo = pathinfo($pathname);
             $pathname_h = str_replace('.mid', '.h', $pathname);
-            $out_str .= $pathname_h . ': ' . $pathname . "\n";
+            $matches = [];
+            if (preg_match('/^(.*)[_-]bar(\d+)x(\d+)$/', $pathinfo['filename'], $matches) === 1) {
+                //print_r("$pathname " . $matches[1] . ' ' . $matches[2] .  ' ' . $matches[3] . "\n");
+                $out_str .= $pathname_h;
+                for ($i = 0; $i < $matches[3]; $i++) {
+                    $out_str .= ' ' . $pathinfo['dirname'] . '/' .  $matches[1] . "-$i.h";
+                }
+                $out_str .= ': ' . $pathname . "\n";
+            } else {
+                $out_str .= $pathname_h . ': ' . $pathname . "\n";
+            }
         }
     }
 }

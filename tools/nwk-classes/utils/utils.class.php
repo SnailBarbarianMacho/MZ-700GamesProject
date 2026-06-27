@@ -134,10 +134,17 @@ Class Utils
     // MARK: getRangeList()
     /** 範囲文字列を配列に変更します
      * @param $range_str 範囲文字列
-     * - [0-9,-#]の他, 文字列「all」,「none」 が使えます
-     * - 重複, はみ出しは無視します
+     * - 次の書き方ができます:
+     *   - 数字 (0以上)
+     *   - ハイフンで範囲
+     *   - シャープで長さ
+     *   - 以上はカンマで区切って組み合わせることができます
+     *   - そのほか文字列「all」は min-max 全て, 「none」は空集合です
+     * - 重複は無視します
+     * - はみ出しはクリッピングします
      * - 不正文字列ならエラー
-     * @param $max 範囲の最大値
+     * @param $min 範囲の最小値 (0未満はエラー)
+     * @param $max 範囲の最大値 (0未満はエラー)
      * @returns 範囲を変換した配列. エラー発生時は false
      * @example
      * getRangeListt('-1,4-6,8#2,11-', 0, 12);
@@ -153,7 +160,7 @@ Class Utils
      */
     public static function getRangeList(string $range_str, int $min, int $max): array|false
     {
-        if (!is_string($range_str) || !is_integer($max)) {
+        if (!is_string($range_str) || !is_integer($min) || !is_integer($max) || $min < 0 || $max < 0) {
             return false;
         }
 
@@ -263,12 +270,12 @@ Class Utils
     /** getRangeList() で得た配列が, 連続してるか調査します */
     public static function isRangeListContinuous(array $range_list): bool
     {
-        $v = $range_list[0] + 1;
+        $v = $range_list[0];
         for($i = 1; $i < count($range_list); $i++) {
+            $v++;
             if ($v !== $range_list[$i]) {
                 return false;
             }
-            $v++;
         }
         return true;
     }

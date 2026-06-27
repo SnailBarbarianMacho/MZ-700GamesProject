@@ -3,22 +3,8 @@
 declare(strict_types = 1);
 /**
  * テキスト文字列をディスプレイ コードの配列に変換します
- *
- * 使えるタグは,
- *   {sp}{lf}{lf2}
- *   {small-}
- *   {1dot}
- *   {↓}{↑}{→}{←}
- *   {man↓}{man↑}{man→}{man←}
- *   {ufo}{snake}
- *   {nicochan1}{nicochan0}
- *   {col=fg_color,bg_color}
- *   {col=fg_color}          ※ bg_color=0 の場合
- *   {moveRight=n}
- *   {moveDown=n}
- *
- * 使い方は, Usage: 行を参照してください
- *
+ * - 使える文字やタグは, 定数 TAB を参照してください
+ * - 使い方は, Usage: 行を参照してください
  */
 
 // --------------------------------
@@ -130,6 +116,18 @@ const TAB = [
     '{man↓}'  => 'DC_MAN_DOWN', '{man↑}' => 'DC_MAN_UP', '{man→}' => 'DC_MAN_RIGHT', '{man←}' => 'DC_MAN_LEFT',
     '{ufo}'    => 'DC_UFO',      '{snake}' => 'DC_SNAKE',
     '{nicochan1}' => 'DC_NICOCHAN_1', '{nicochan0}' => 'DC_NICOCHAN_0',
+
+    "{resistorH}" => 'DC_REGIST_H',
+    "{resistorV}" => 'DC_REGIST_V',
+    "{capacitorH}" => 'DC_CAPACITOR_H',
+    "{capacitorV}" => 'DC_CAPACITOR_V',
+    "{diodeR}" => 'DC_DIODE_R',
+    "{diodeL}" => 'DC_DIODE_L',
+    "{transistorPNP}" => 'DC_TRANSISTOR_PNP',
+    "{transistorNPN}" => 'DC_TRANSISTOR_NPN',
+    "{coilL}" => 'DC_COIL_L',
+    "{coilM}" => 'DC_COIL_M',
+    "{coilR}" => 'DC_COIL_R',
 
     '日' => 'DC_KANJI_SUN', '月' => 'DC_KANJI_MON', '火' => 'DC_KANJI_TUE',
     '水' => 'DC_KANJI_WED', '木' => 'DC_KANJI_THU', '金' => 'DC_KANJI_FRI',
