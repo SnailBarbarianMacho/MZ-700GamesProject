@@ -15,6 +15,8 @@ require_once('nwk-classes/utils/utils.class.php');
  // -------------------------------- 引数チェック
 $args = [];
 $errs = '';
+const GAP_MIN = 0;
+const GAP_MAX = 100;
 
 $options = \nwk\utils\Utils::getOpt($argv,
     array('h', 'g:'),
@@ -33,8 +35,8 @@ if (isset($options['gap']) || isset($options['g'])) {
     $gap = isset($options['gap']) ? $options['gap'] : $options['g'];
     //echo($gap."\n");
 }
-if (!is_numeric($gap) || $gap < 0 || 100 < $gap) {
-    fwrite(STDERR, "Gap range from [0, 10] sec (default: 0)\n");
+if (!is_numeric($gap) || $gap < GAP_MIN || GAP_MAX < $gap) {
+    fwrite(STDERR, "Gap range from [" . GAP_MIN . ',' . GAP_MAX . "] sec (default: " . GAP_MIN . ")\n");
     exit(1);
 }
 
@@ -92,6 +94,6 @@ function usage($argv)
     fwrite(STDERR, "  -h, --help\n");
     fwrite(STDERR, "     Show this message\n");
     fwrite(STDERR, "  -gxxx, --gap=xxx\n");
-    fwrite(STDERR, "     Insert gap(second)[0, 10]\n");
+    fwrite(STDERR, "     Insert gap(second)[" . GAP_MIN . ',' . GAP_MAX . "]\n");
     exit(1);
 }
