@@ -39,10 +39,10 @@
   サウンド テスト4 (SD4 - PWM 4音源)
 * **ST-2** <br>
   習作 縦シューティング ゲーム.<br>
-  https://www.youtube.com/watch?v=PG0ijYIvdNw
+  動画は Youtube にあります: https://www.youtube.com/watch?v=PG0ijYIvdNw
 * **Baryon** <br>
   3D レール シューター<br>
-  https://www.youtube.com/watch?v=eU8QhuCyoiM
+  動画は Youtube にあります: https://www.youtube.com/watch?v=eU8QhuCyoiM
 * 以後, 妻が許せばゲームを増やす予定<br>
 
 # Requirement
