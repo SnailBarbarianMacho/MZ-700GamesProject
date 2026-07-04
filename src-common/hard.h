@@ -246,6 +246,12 @@ __asm
     out     (IO_BANKL_ROM_BANKH_VRAM_MMIO), A   // 値はなんでもいい
     endm
 
+    /** メモリを全て RAM にします */
+    macro   BANK_ALL_RAM
+    out     (IO_BANKL_RAM), A   // 値はなんでもいい
+    out     (IO_BANKH_RAM), A   // 値はなんでもいい
+    endm
+
     // -------------------------------- PCG-700
     /** PCG-700 を無効化します(WE = '0', SSW = '1')
      * - 0xe010 に書き込みするので, メモリ上位を VRAM/MMIO にして (BANKH_VRAM_MMIO) 使ってください
