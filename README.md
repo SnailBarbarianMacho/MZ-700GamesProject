@@ -45,6 +45,7 @@
   動画は Youtube にあります: https://www.youtube.com/watch?v=eU8QhuCyoiM
 * 以後, 妻が許せばゲームを増やす予定<br>
 
+
 # Requirement
 
 * バイナリを用意しています. 遊ぶだけなら, 必要なのはエミュレータ (または 実機) のみです
@@ -60,7 +61,8 @@
   gd と mbstring を有効化してください <br>
   環境変数 PATH を通してください
 * **gmake 4.4** <br>
-  Mingw-w64 から入手します https://www.mingw-w64.org/ <br>
+  https://www.mingw-w64.org/ の MinGW-W64 から入手します.<br>
+  x86_64-16.1.0-release-win32-seh-msvcrt-xxxxx をダウンロードして展開します.<br>
   bin/mingnu32_make.exe を make.exe にリネームして, これ以外は削除します.<br>
   環境変数 PATH を通してください
 * **exomizer 3.1.1** https://bitbucket.org/magli143/exomizer/wiki/Home<br>
@@ -69,6 +71,7 @@
   圧縮ツール. zx0.exe を tools/ に置いてください
 * **salvador** https://github.com/emmanuel-marty/salvador<br>
   圧縮ツール. ビルドして完成した salvador.exe を tools/ に置いてください
+
 
 # Build
 
@@ -89,18 +92,20 @@
 
 * それぞれ, make clean や meke release が用意されてます<br>
 
+
 # EmuZ-700 あんちょこ Cheat Sheet
 
 * エミュレータのおすすめ設定
   * [Device]->[Sound]->[Play CMT Noise] のチェックを外す
   * [Device]->[Sound]->[Play CMT Sound] のチェックを外す
-    * これらの設定にすると, エミュレータは, カセットのモーターが回っている間はフルスピードでエミュレーションを実行するので, 速く読み込みます
+    * これらの設定にすると, エミュレータは, カセットのモーターが回っている間はフルスピードで実行するので, 速く読み込みます
   * [Device]->[Joystick]->[AM7J Adapter] を選択
   * XInput に対応した Joystick を使用してください
 * MZT ファイルのロードと実行
   1. [Control]->[Reset] でリセットします
   2. MZT または WAV ファイルをセットします [CMT]->[Play]
   3. エミュレータのモニター上で 'L[CR]' をタイプします
+
 
 # History
 
@@ -112,17 +117,21 @@
 * 2024.09.14 sd4 公開
 * 2025.09.08 ram-check 公開
 * 2026.01.03 8253-test 公開
+* 2026.06.27 Baryon 公開
+
 
 # Author
 
 * SnailBarbarianMacho (NWK)
 
+
 # License
 
 * This project is under [MIT license]<br>
   except <br>
-  - deexo3.c (original by uniabis) is under [zlib license]
-  - dezx0.c (original by Einar Saukas & Urusergi) is under [BSD 3-Clause License]
+  - Exomizer3 (original by uniabis) is under [zlib license]
+  - ZX0 (original by Einar Saukas & Urusergi) is under [BSD 3-Clause License]
+  - Upkr (original by exoticorn) is [Unlicense License]
 * このプロジェクトの成果物のスクリーンショットや動画は, 私の承諾なしに, 自由に作成・改変して配布できます<br>
   でも出会ったらビールを奢ってください
 
