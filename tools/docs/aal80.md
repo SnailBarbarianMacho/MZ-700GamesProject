@@ -73,7 +73,7 @@
 ```
 php aal80.php foo.aal.c foo.c
 ```
-- SDCC の旧インライン アセンブラ形式 (__asm ～ __endasm;) で出力します<br>
+- SDCC の旧インライン アセンブラ形式 (__asm ～ __endasm;) で出力します<br/>
   そのうち一般的な書式 (asm("～"))にするかも
 
 # ソースの書き方
@@ -88,7 +88,9 @@ php aal80.php foo.aal.c foo.c
 ### C の関数
 - 関数単位で書きます. 関数内で C とインライン アセンブラを混在するような書き方はできません
 - 関数定義の前後に, 必要に応じて「引数未使用警告」「戻値未設定警告」を抑止する pragma を入れておきます
-- 関数定義に「__aal」修飾子を追加します
+- 戻値～関数名までは改行禁止です. でないと, 関数検出に失敗します (正規表現の手抜き)
+- 関数定義に「__aal」修飾子を引数リストの後に追加します
+- その他使用可能な修飾子は「__z88dk_fastcall」,「__sdcccall(1)」,「__naked」のみ
 - 関数の最初の行は「AAL_DEF_VARS」を記述します (無いとエラー)
 ```c
 #pragma save
@@ -117,7 +119,8 @@ void fooBar(void) __aal __naked
 ### マクロ定義
 - 関数のように書きます
 - 関数名は必ず UPPER_SNAKE_CASE でなければなりません (でないとエラー)
-- 関数定義に「__aal_macro」修飾子を追加します
+- 関数定義に「__aal_macro」修飾子を引数リストの後に追加します
+- その他の修飾子は「__naked」を必ず追加してください. 他の修飾子は使えません
 - 関数引数がある場合は, すべて int 型にしてください (パーサの手抜きのため)
 - レジスタ名で始まる引数名はレジスタとして解釈されます( [レジスタ](#レジスタ) 参照 )
 - マクロの最初の行は「AAL_DEF_VARS」を記述します (無いとエラー)
@@ -126,7 +129,7 @@ void fooBar(void) __aal __naked
 #pragma save
 #pragma disable_warning 85          // 引数未使用警告抑止
 #pragma disable_warning 59          // 戻値未設定警告抑止
-char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文字, __aal_macro 修飾子を付ける, 引数はすべて int
+char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro __naked // 関数名は大文字, __aal_macro, __naked 修飾子を付ける, 引数はすべて int
 {
   AAL_DEF_VARS; // 先頭に必ず AAL_DEF_VARS を付けます
   A_reg = val;
@@ -150,7 +153,7 @@ char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文�
   |a.レジスタ名                    |A B C D E H L IXH IXL IYH IYL I R AF BC DE HL PC SP IX IY のいずれか.マクロ引数には使わないでください||
   |b.レジスタ名にアンダースコア    |裏レジスタであることを強調するのに使えます. マクロ引数には使わないでください|A_ HL_|
   |c.レジスタ名にアンダースコアに\w|レジスタに意味付けるに使えます|A_counter HL_objPtr|
-- AAL_DEF_VARS には a. と b. が C のローカル変数として事前定義されてます.<br>
+- AAL_DEF_VARS には a. と b. が C のローカル変数として事前定義されてます.<br/>
   c. は定義されてないので int HL_fooBar_baz; のように定義しておいてください (aal80 はこの行は無視します)
 
 ### メモリ, ポート
@@ -245,7 +248,7 @@ char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文�
 
 ### 論理演算
 - and(), or(). xor() 関数はありません
-- 単項演算子 ~ には対応しません (A = ~A; と書いても判りづらいため)<br>
+- 単項演算子 ~ には対応しません (A = ~A; と書いても判りづらいため)<br/>
   not() を使ってください
 - cpl() はありません. not() を使ってください
 - not() 命令は, 引数に「A」の明示が必要です
@@ -266,7 +269,7 @@ char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文�
 ##### 8bit シフト
 - 8bit の右シフト演算子 (>>=) は, 符号無し (srl) 扱いです
 - A レジスタの左シフトは add 命令のほうが高速ですが, ここでは最適化されません
-- 複数回シフト命令もあります (sla_n() 等のように, 末尾に "_n" が付きます)<br>
+- 複数回シフト命令もあります (sla_n() 等のように, 末尾に "_n" が付きます)<br/>
   imm に数値を指定すると, 8以上の値はエラーになります
 ```c
   sla(r);   sla(mem[HL]);   sla_n(r, imm);   sla_n(mem[HL], imm);    r <<= imm; sla2(mem[IX+d], r);未
@@ -276,11 +279,11 @@ char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文�
 ```
 
 ##### 16bit シフト
-- 16bit のシフトは 2 個の命令に分解されます<br>
+- 16bit のシフトは 2 個の命令に分解されます<br/>
   例えば, sla(HL) は, sla(L) と rl(H) になります
 - 16bit の右シフト演算子 (>>=) は, 符号付き (sra) 扱いです
 - HL レジスタの左シフトは add 命令のほうが高速ですが, ここでは最適化されません
-- 複数回シフト命令もあります (sla_n() 等のように, 末尾に "_n" が付きます)<br>
+- 複数回シフト命令もあります (sla_n() 等のように, 末尾に "_n" が付きます)<br/>
   imm に数値を指定すると, 8以上の値はエラーになります
 ```c
   sla(rr);   sla_n(rr, imm);   rr <<= imm;
@@ -290,7 +293,7 @@ char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文�
 ```
 
 ##### ローテート
-- 複数回ローテートに展開される命令もあります (rlc_n() 等の様に, 末尾に "_n" が付きます)<br>
+- 複数回ローテートに展開される命令もあります (rlc_n() 等の様に, 末尾に "_n" が付きます)<br/>
   imm に数値を指定すると, 8以上の値はエラーになります
 - rlca() 等の命令は, 引数に「A」の明示が必要です
 - rlc(A) と書いても, rlca() 命令にはなりません
@@ -313,8 +316,8 @@ char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文�
 
  |種類|*cc*|
  |----|----|
- |jp_*cc* (絶対条件ジャンプ)<br>call_*cc* (条件コール)<br>ret_*cc* (条件リターン)|z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po<br>eq は z, ne は nz, lt は c, ge は nc と同じ|
- |jr_*cc* (相対条件ジャンプ)|z, eq, nz, ne, c, lt, nc, ge<br>eq は z, ne は nz, lt は c, ge は nc と同じ|
+ |jp_*cc* (絶対条件ジャンプ)<br/>call_*cc* (条件コール)<br/>ret_*cc* (条件リターン)|z, eq, nz, ne, c, lt, nc, ge, p, m, v, nv, pe, po<br/>eq は z, ne は nz, lt は c, ge は nc と同じ|
+ |jr_*cc* (相対条件ジャンプ)|z, eq, nz, ne, c, lt, nc, ge<br/>eq は z, ne は nz, lt は c, ge は nc と同じ|
 
 
 ```c
@@ -399,7 +402,7 @@ char FOO_BAR(int A_reg, int val, int HL_test) __aal_macro // 関数名は大文�
  |1回で抜ける |false|
  |djnz 命令   |B--, --B|
 
-- break はループから抜けます. continue は<span style="color: red;">ループ末端</span>にジャンプします. <br>
+- break はループから抜けます. continue は<span style="color: red;">ループ末端</span>にジャンプします. <br/>
 - 無限ループは, <span style="color: red;">while(true) <文></span> を使用してください
 ```c
   do {
