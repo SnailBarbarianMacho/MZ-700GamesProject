@@ -35,12 +35,17 @@ if (file_exists($in_size) === false) {
 // ファイル サイズ チェック
 $filesize = filesize($in_size);
 $percent = (int)($filesize * 100 / $max_size);
-$percent2 = min((int)($percent / 2), 50);
 $col = "\e[32m";                                // 緑 ... OK
 if (     $percent >= 98) { $col = "\e[31m"; }   // 赤 ... ギリギリ
 else if ($percent >= 95) { $col = "\e[33m"; }   // 黄 ... やばい
 $col_off = "\e[0m";
-$bar = '[' . $col . str_repeat('*', $percent2) . $col_off . str_repeat('-', 50 - $percent2) . ']';
+if ($percent <= 100) {
+    $percent2 = min((int)($percent / 2), 50);
+    $bar = '[' . $col . str_repeat('#', $percent2) . $col_off . str_repeat('-', 50 - $percent2) . ']';
+} else {
+    $percent2 = min((int)($percent / 2), 100);
+    $bar = '[' . $col . str_repeat('#', 50) . str_repeat('+', $percent2 - 50) . $col_off . ']';
+}
 $out = "[$in_size]: $bar";
 if ($filesize === false || $filesize > $max_size) {
     $out .= sprintf("0x%04x($col%d%%$col_off)-".$col."0x%04x$col_off=0x%04x", $filesize, $percent, $filesize - $max_size, $max_size);

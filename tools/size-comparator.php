@@ -33,12 +33,17 @@ if ($ref_filesize === false) {
 }
 
 $percent = (int)($cmp_filesize * 100 / $ref_filesize);
-$percent2 = min((int)($percent / 2), 50);
 $col = "\e[32m";                                // 緑 ... そこそこ圧縮
 if (     $percent > 100) { $col = "\e[35m"; }   // 紫 ... むしろ大きくなってる
 else if ($percent >= 80) { $col = "\e[33m"; }   // 黄 ... あまり圧縮効いてない
 $col_off = "\e[0m";
-$bar = '[' . $col . str_repeat('=', $percent2) . $col_off . str_repeat('-', 50 - $percent2) . ']';
+if ($percent <= 100) {
+    $percent2 = min((int)($percent / 2), 50);
+    $bar = '[' . $col . str_repeat('=', $percent2) . $col_off . str_repeat('<', 50 - $percent2) . ']';
+} else {
+    $percent2 = min((int)($percent / 2), 100);
+    $bar = '[' . $col . str_repeat('=', 50) . str_repeat('>', $percent2 - 50) . $col_off . ']';
+}
 $out = "[$cmp_filename]: $bar" .
     sprintf("0x%04x/0x%04x=$col%d%%$col_off", $cmp_filesize, $ref_filesize, $percent) .
     " of [$ref_filename]\n";
