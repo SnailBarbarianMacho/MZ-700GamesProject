@@ -46,7 +46,7 @@ static const u8 INPUT_TAB_[] = {
 static void inputKey_(void) __z88dk_fastcall __naked
 {
 __asm
-    BANKH_VRAM_MMIO C           // バンク切替
+    BANKH_VRAM_MMIO             // バンク切替
 
     // -------- 古いデータを保存, 準備
     ld      A, (_input_)
@@ -54,11 +54,11 @@ __asm
 
     ld      HL, 0 + _INPUT_TAB_
     ld      DE, 0 + MMIO_8255_PORTA
-    ld      C,  0x00           // input_
+    ld      C,  0x00            // input_
 
     // -------- Write strobe
 STROBE_LOOP:
-    ld      A,  (HL)             // strobe
+    ld      A,  (HL)            // strobe
     or      A
     jr      z,  STROBE_LOOP_END
     inc     HL
@@ -88,7 +88,7 @@ KEY_LOOP_END:
 STROBE_LOOP_END:
     ld      A,  C
     ld      (_input_), A
-    BANKH_RAM C                 // バンク切替
+    BANKH_RAM                   // バンク切替
     ret
 __endasm;
 }
@@ -99,7 +99,7 @@ static void inputAM7J_(void) __z88dk_fastcall __naked
 {
 __asm
     // broken: HL,DE,AF     BCや裏レジスタは保存されます
-    BANKH_VRAM_MMIO C           // バンク切替
+    BANKH_VRAM_MMIO             // バンク切替
 
     // -------- JA2 立下がり検出
     ld      HL, 0 + MMIO_ETC
@@ -209,7 +209,7 @@ JEND2:
 #endif
 AM7J_END:
     ld      (_input_joy_), A
-    BANKH_RAM C                 // バンク切替
+    BANKH_RAM                   // バンク切替
     ret
 
 #if 0
@@ -426,7 +426,7 @@ void inputMZ1X03ButtonVSyncAxis1(u8 const mz1x03_sensitivity) __aal __z88dk_fast
     // - (7) (4 - s) 行の転送 (= 7296 - s * 1824 T-states) だけ待つ
     // - (8) 軸を読み取り, b とする
     // - (9) a, b の値から左右を判定する
-    AAL_DEF_VARS;                                    // L = mz1x03_sensitivity(0～3)
+    AAL_DEF_VARS;                                       // L = mz1x03_sensitivity(0～3)
     extern  inputMZ1X03_button_1;
     extern  inputMZ1X03_vSyncLoop;
     extern  inputMZ1X03_wait1Loop;
@@ -434,7 +434,7 @@ void inputMZ1X03ButtonVSyncAxis1(u8 const mz1x03_sensitivity) __aal __z88dk_fast
     extern  inputMZ1X03_notDetected;
     extern  _input_joy_;
 
-    BANKH_VRAM_MMIO(C);                                 // バンク切替
+    BANKH_VRAM_MMIO();                                  // バンク切替
 
     E = L;                                              // E = mz1x03_sensitivity(0～3)
     // 現在 /VBLK = 'H' な筈なので, そのままボタンが読める筈!
@@ -498,13 +498,13 @@ inputMZ1X03_readA:
     rrca(A);                                            //      0000_00YX
     mem[_input_joy_] = A;
 
-    BANKH_RAM(C);                                       // バンク切替
+    BANKH_RAM();                                        // バンク切替
     // --------- (7296 - s * 1824) T-states だけ待つ
     return;
 
 inputMZ1X03_notDetected:
     A = INPUT_MASK_NC; mem[_input_joy_] = A;
-    BANKH_RAM(C);
+    BANKH_RAM();
 }
 #pragma restore
 
@@ -520,7 +520,7 @@ void inputMZ1X03Axis2(void) __aal __naked
     cp(A, INPUT_MASK_NC); ret_z();                      // 非検出なので処理なし
     E = A;                                              //      0000_00YX
 
-    BANKH_VRAM_MMIO(C);                                 // バンク切替
+    BANKH_VRAM_MMIO();                                  // バンク切替
 inputMZ1X03_readB:
     A = mem[MMIO_ETC];                                  //      ****_*yx*
 
@@ -532,7 +532,7 @@ inputMZ1X03_readB:
     D = 0x00; E = A; HL += DE;
     A = mem[HL];                                        //      00UD_RL00
 inputMZ1X03_button_1: A |= 0x00;                        //      00UD_RLBA 自己書換
-    BANKH_RAM(C);                                       // バンク切替
+    BANKH_RAM();                                        // バンク切替
     mem[_input_joy_] = A;
     return;
 

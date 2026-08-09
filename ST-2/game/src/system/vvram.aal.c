@@ -60,7 +60,7 @@ __asm
         push    DE
     endm
 
-    BANKH_VRAM_MMIO C                  // バンク切替
+    BANKH_VRAM_MMIO                    // バンク切替
 
     // ---------------- デバッグ用カウント計測
 #if DEBUG
@@ -124,7 +124,7 @@ VBLK_SYNC1:
     jp      A, m,    VBLK_SYNC1
 #endif
 
-    BANKH_RAM C                             // バンク切替
+    BANKH_RAM                               // バンク切替
 __endasm;
 }
 
@@ -149,7 +149,7 @@ static void vvramTransMain_(const u8 lines) __aal __z88dk_fastcall
 
    A = L; A &= A; ret_z();                             // A = ループ カウンタ
     mem[vvramTrans_restoreSP_1 + 1] = SP;               // スタック保存
-    BANKH_VRAM_MMIO(C);                                 // バンク切替
+    BANKH_VRAM_MMIO();                                  // バンク切替
 
     // 10 バイト転送 x 4 で 1行分転送します
 vvramTrans_loop:
@@ -233,7 +233,7 @@ vvramTrans_atbDst3_1:   SP = 0x0000;                    // 転送先(自己書�
     }
 
 vvramTrans_restoreSP_1: SP = 0x0000;                    // スタック復帰(自己書換)
-    BANKH_RAM(C);
+    BANKH_RAM(); 
 }
 #pragma restore
 
@@ -277,7 +277,7 @@ void vvramInit(void) __aal __z88dk_fastcall __naked
     // CT1 は モード2 (ct=262),
     // CT2 は モード0 (ct=65535)
     // で運用します
-    BANKH_VRAM_MMIO(C);                                 // バンク切替
+    BANKH_VRAM_MMIO();                                  // バンク切替
 
     // -------- V カウンタの設定(1)
     HL = MMIO_8253_CTRL;
@@ -317,7 +317,7 @@ void vvramInit(void) __aal __z88dk_fastcall __naked
     L = MMIO_8253_CT1 & 0xff;                           //  7
     mem[HL] = E; mem[HL] = D;                           //  7+7 カウンタ 1 L->H 順に書いてでカウント開始
 
-    BANKH_RAM(C);                                       // バンク切替
+    BANKH_RAM();                                        // バンク切替
 
 //vvramInitRestoreSP_1: SP = 0x0000;                      // 設定復帰
 
@@ -332,7 +332,7 @@ void vvramInit(void) __aal __z88dk_fastcall __naked
 static u8 vvramGetVCounter_(void) __z88dk_fastcall
 {
 __asm
-    BANKH_VRAM_MMIO C                                   // バンク切替
+    BANKH_VRAM_MMIO                                     // バンク切替
     // カウンタ ラッチ モードを使ってデータを読みだす
     ld      HL, 0 + MMIO_8253_CTRL
     ld      (HL), 0 + MMIO_8253_CTRL_RL_LATCH_MASK | MMIO_8253_CTRL_CT1_MASK
@@ -340,7 +340,7 @@ __asm
     ld      A,  (HL)                                    // ct1 L
     ld      H,  (HL)                                    // ct1 H
     ld      L,  A
-    BANKH_RAM C                                         // バンク切替
+    BANKH_RAM                                           // バンク切替
     // HL = 1～262
 #if 0 // カウンタと /VBLK の対比をチェックするデバッグ(VRAM_GET_VCOUNTER_TEST1でブレークをかける)
 #define VCT 260
@@ -548,7 +548,7 @@ void vramFill(const u16 code) __z88dk_fastcall
     // 1/60 sec でクリアされます.
 __asm
     ld      (VRAM_FILL_SP_RESTORE + 1), SP              // SP 保存(自己書換)
-    BANKH_VRAM_MMIO C                                   // バンク切替
+    BANKH_VRAM_MMIO                                     // バンク切替
 
     ld      BC, HL                                      // ATB + TEXT
     ld      SP, 0 + VRAM_TEXT_ADDR(10, 0)
@@ -577,7 +577,7 @@ VRAM_FILL_LOOP:
         dec A
         jr  nz, VRAM_FILL_LOOP
 
-    BANKH_RAM C                                         // バンク切替
+    BANKH_RAM                                           // バンク切替
 VRAM_FILL_SP_RESTORE:
     ld      SP, 0x0000                                  // SP 復活
 __endasm;
@@ -717,7 +717,7 @@ __asm
     ld      SP, 0 + ADDR_TMP_SP                         // 臨時スタックポインタ
 
     ld      A, C                                        // h 保存
-    BANKH_VRAM_MMIO C                                   // バンク切替(C 破壊)
+    BANKH_VRAM_MMIO                                     // バンク切替(C 破壊)
     ld      C, A                                        // h 復帰
 
     // -------- TEXT
@@ -772,7 +772,7 @@ RVRAM_DRAW_RECT_ATB_LOOP_Y:
     //exx   よく考えてみたら最後の exx は不要
 
     // -------- 終了
-    BANKH_RAM C                                         // バンク切替
+    BANKH_RAM                                           // バンク切替
 VRAM_DRAW_RECT_SP_RESTORE:
     ld      SP, 0x0000                                  // SP 復帰
 __endasm;

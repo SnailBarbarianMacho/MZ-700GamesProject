@@ -11,6 +11,7 @@ all:
 	@cd SoundTest3 && make
 	@cd SoundTest4 && make
 	@cd ST-2 && make
+	@echo All builds completed successfully!
 
 release:
 	@cd test && make
@@ -23,6 +24,8 @@ release:
 	@cd Sound-test3 && make
 	@cd Sound-test4 && make
 	@cd ST-2 && make release
+#	@cd Baryon && make release
+	@echo All release builds completed successfully!
 
 clean:
 	@cd test && make clean
@@ -35,3 +38,4 @@ clean:
 	@cd SoundTest3 && make clean
 	@cd SoundTest4 && make clean
 	@cd ST-2 && make clean
+	@echo All clean operations completed successfully!

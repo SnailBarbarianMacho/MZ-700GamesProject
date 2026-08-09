@@ -77,9 +77,9 @@ void scoreInit(void) __z88dk_fastcall
 static u8 cursorBlank(void) __naked
 {
 __asm
-    BANKH_VRAM_MMIO C           // バンク切替
+    BANKH_VRAM_MMIO             // バンク切替
     LD      A, (MMIO_8255_PORTC)
-    BANKH_RAM C                 // バンク切替
+    BANKH_RAM                   // バンク切替
     AND     A, 0 + MMIO_8255_PORTC_556OUT_MASK
     LD      L, A
     RET

@@ -138,7 +138,7 @@ void sdSetEnabled(const bool bEnabled) __z88dk_fastcall __naked
     // (MMIO_8253_CTRL) = MMIO_8253_CT0_MODE3;
 __asm
     // ---------------- 準備
-    BANKH_VRAM_MMIO C          // バンク切替
+    BANKH_VRAM_MMIO                 // バンク切替
 
     // ---------------- 制御
     ld      A, L
@@ -156,7 +156,7 @@ SOUND_SET_ENABLED:
     ld      (HL), A
 
     // ---------------- 後始末
-    BANKH_RAM C                    // バンク切替
+    BANKH_RAM                       // バンク切替
     ret
 __endasm;
 }
@@ -195,7 +195,7 @@ void sdMake(const u16 interval) __z88dk_fastcall __naked
     // if (!HL) { (MMIO_8253_CTRL) = MMIO_8253_CT0_MODE3; }
 __asm
     // ---------------- 準備
-    BANKH_VRAM_MMIO C          // バンク切替
+    BANKH_VRAM_MMIO            // バンク切替
 
     // ---------------- 音程 0x0000 の場合の処理
     // 音程が 0 ならば音を止めて, 優先順位を最低にします
@@ -219,7 +219,7 @@ SDM_NON_ZERO:
 
     // ---------------- 後始末
 SDM_END:
-    BANKH_RAM C                  // バンク切替
+    BANKH_RAM                    // バンク切替
     ret
 __endasm;
 }
@@ -238,7 +238,7 @@ __asm
     ld      H, (HL)
     ld      L, A                // HL = 音程
 
-    BANKH_VRAM_MMIO C           // バンク切替
+    BANKH_VRAM_MMIO             // バンク切替
 
     // ---------------- 音程 0x0000 の場合の処理
     // 音程が 0 ならば音を止めて, 優先順位を最低にします
@@ -261,7 +261,7 @@ SD1_NON_ZERO:
 
     // ---------------- 後始末
 SD1_END:
-    BANKH_RAM C                 // バンク切替
+    BANKH_RAM                   // バンク切替
     ret
 __endasm;
 }
@@ -406,7 +406,7 @@ __asm
     pop     HL                                          // L= キャンセル可能フラグ
 
     ld      SP, 0 + ADDR_TMP_SP                         // バンク切替による 臨時 SP
-    BANKH_VRAM_MMIO C                                   // バンク切替
+    BANKH_VRAM_MMIO                                     // バンク切替
 
     // 音長カウンタの初期化
     exx
@@ -453,7 +453,7 @@ SD3_END:
     ld      A, 0 + MMIO_8253_CT0_MODE3
     ld      (MMIO_8253_CTRL), A
 
-    BANKH_RAM C                                         // バンク切替
+    BANKH_RAM                                           // バンク切替
 
 SD3_PLAY_SP_RESTORE:
     ld      SP, 0x0000                                  // SP を復帰

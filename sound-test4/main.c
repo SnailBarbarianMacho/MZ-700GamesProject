@@ -11,26 +11,28 @@
 
 #pragma disable_warning 85
 #pragma save
-static void puts(u8 const * const str)  __naked
+static void  puts(u8 const * const str) __naked
 {
 __asm
-  // line 17
-  ld DE, HL
-  // line 18
-  jp 21
+  // line 14
+    // line 17
+    ld DE, HL
+    // line 18
+    jp 21
 __endasm;
 }
 
 #pragma restore
 
 
-static void bankRomVramMmio(void)  __naked
+static void  bankRomVramMmio(void) __naked
 {
 __asm
-  // line 29
-  BANKL_ROM_BANKH_VRAM_MMIO 
-  // line 30
-  jp 6
+  // line 26
+    // line 29
+    BANKL_ROM_BANKH_VRAM_MMIO 
+    // line 30
+    jp 6
 __endasm;
 }
 

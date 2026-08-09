@@ -16,9 +16,11 @@
 #define OPCODE_DEC_A    0x3d
 #define OPCODE_DEC_D    0x15
 #define OPCODE_DEC_E    0x1d
+#define OPCODE_DEC_HL   0x2b
 #define OPCODE_INC_A    0x3c
 #define OPCODE_INC_D    0x14
 #define OPCODE_INC_E    0x1c
+#define OPCODE_INC_HL   0x23
 #define OPCODE_JP       0xc3
 #define OPCODE_JP_NZ    0xc2
 #define OPCODE_JP_Z     0xca
@@ -327,7 +329,7 @@ __asm
      * - 4 bytes, 16 T-states
      * - A レジスタを破壊するので, 引数で明示します
      */
-    macro   EXT16T  dst_h, dst_l, A
+    macro   EXT16A  A, dst_h, dst_l
         ld      dst_l,  A
         rlca                        // cf = 符号ビット
         sbc     A,  A               // a = 0x00(正)/0xff(負)
@@ -364,7 +366,7 @@ ADD16_U8T_100:
      * - 10 bytes, 33～38 T-states
      * @note
      * - 余計なレジスタを使っても良いなら,以下のコードが最速(5 bytes, 31 T-states)です:
-     *   EXT16T B, C, A
+     *   EXT16A B, C, A
      *   add    HL, BC
      */
     macro   ADD16_S8T   dst_h, dst_l, A
@@ -390,7 +392,7 @@ ADD16_S8T_POSITIVE:
      * @param imm16 加算値(16bit 即値)
      * @param A     A レジスタを破壊するので, 引数で明示します
      */
-    macro   ADD_IMM16_U8T   dst_h, dst_l, imm16, A
+    macro   ADD_IMM16_U8T   imm16, A, dst_h, dst_l
         add     A,      0 + (imm16) % 256
         ld      dst_l,  A
         adc     A,      0 + (imm16) / 256
@@ -432,7 +434,7 @@ SUB16_U8T_SKIP:
      * @param A     A レジスタを破壊するので, 引数で明示します
      * @note
      * - 余計なレジスタを使っても良いなら,以下のコードが最速(7 bytes, 35 T-states)です:
-     *   EXT16T D, E, A
+     *   EXT16A D, E, A
      *   or     A, A
      *   sbc    HL, DE
      */

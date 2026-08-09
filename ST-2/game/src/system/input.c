@@ -47,7 +47,7 @@ static const u8 INPUT_TAB_[] = {
 static void inputKey_(void) __z88dk_fastcall __naked
 {
 __asm
-    BANKH_VRAM_MMIO C           
+    BANKH_VRAM_MMIO             
 
     
     ld      A, (_input_)
@@ -55,11 +55,11 @@ __asm
 
     ld      HL, 0 + _INPUT_TAB_
     ld      DE, 0 + MMIO_8255_PORTA
-    ld      C,  0x00           
+    ld      C,  0x00            
 
     
 STROBE_LOOP:
-    ld      A,  (HL)             
+    ld      A,  (HL)            
     or      A
     jr      z,  STROBE_LOOP_END
     inc     HL
@@ -89,7 +89,7 @@ KEY_LOOP_END:
 STROBE_LOOP_END:
     ld      A,  C
     ld      (_input_), A
-    BANKH_RAM C                 
+    BANKH_RAM                   
     ret
 __endasm;
 }
@@ -100,7 +100,7 @@ static void inputAM7J_(void) __z88dk_fastcall __naked
 {
 __asm
     
-    BANKH_VRAM_MMIO C           
+    BANKH_VRAM_MMIO             
 
     
     ld      HL, 0 + MMIO_ETC
@@ -210,7 +210,7 @@ JEND2:
 #endif
 AM7J_END:
     ld      (_input_joy_), A
-    BANKH_RAM C                 
+    BANKH_RAM                   
     ret
 
 #if 0
@@ -271,23 +271,24 @@ extern int _input_old_;
 extern int _input_trg_;
 
 
-static void inputMain2_(void) 
+static void  inputMain2_(void)
 {
 __asm
-  // line 278
-  ld A, (_input_joy_)
-  and A, 0 + (~INPUT_MASK_NC) & 0xff
-  ld B, A
-  // line 280
-  ld A, (_input_)
-  or A, B
-  ld (_input_), A
-  ld B, A
-  // line 283
-  ld A, (_input_old_)
-  cpl
-  and A, B
-  ld (_input_trg_), A
+  // line 274
+    // line 278
+    ld A, (_input_joy_)
+    and A, 0 + (~INPUT_MASK_NC)&0xff
+    ld B, A
+    // line 280
+    ld A, (_input_)
+    or A, B
+    ld (_input_), A
+    ld B, A
+    // line 283
+    ld A, (_input_old_)
+    cpl
+    and A, B
+    ld (_input_trg_), A
 __endasm;
 }
 
@@ -356,34 +357,36 @@ void inputMain(void) __z88dk_fastcall
 #pragma save
 #pragma disable_warning 85          
 
-void inputSetMZ1X03Enabled(bool const enabled)  __z88dk_fastcall
+void  inputSetMZ1X03Enabled(bool const enabled) __z88dk_fastcall
 {
 __asm
-  // line 353
-  extern inputMZ1X03_enabled
-  // line 354
-  extern _input_joy_mode_
-  // line 355
-  extern _input_joy_
-  // line 362
-  dec L
-  // line 363
-  ld HL, 0 + inputMZ1X03_enabled
-  // line 364
-  ld (HL), 0 + OPCODE_JP_NZ
-  // line 365
-  jr nz, inputSetMZ1X03Enabled__0 // if (z_jr) {
-      // line 366
-      ld (HL), 0 + OPCODE_LD_BC_NN
-  inputSetMZ1X03Enabled__0: // } endif 
-  // line 371
-  ld A, 0 + INPUT_JOY_MODE_MZ1X03_DETECTED
-  // line 372
-  ld (_input_joy_mode_), A
-  // line 374
-  xor A, A
-  // line 375
-  ld (_input_joy_), A
+  // line 351
+    // line 353
+    extern inputMZ1X03_enabled
+    // line 354
+    extern _input_joy_mode_
+    // line 355
+    extern _input_joy_
+    // line 362
+    dec L
+    // line 363
+    ld HL, 0 + inputMZ1X03_enabled
+    // line 364
+    ld (HL), 0 + OPCODE_JP_NZ
+    // line 365
+    jr nz, inputSetMZ1X03Enabled__endif0
+        // line 366
+        ld (HL), 0 + OPCODE_LD_BC_NN
+    inputSetMZ1X03Enabled__endif0:
+
+    // line 371
+    ld A, 0 + INPUT_JOY_MODE_MZ1X03_DETECTED
+    // line 372
+    ld (_input_joy_mode_), A
+    // line 374
+    xor A, A
+    // line 375
+    ld (_input_joy_), A
 __endasm;
 }
 
@@ -393,19 +396,20 @@ __endasm;
 #pragma save
 #pragma disable_warning 59          
 
-bool inputIsMZ1X03Enabled(void) 
+bool  inputIsMZ1X03Enabled(void)
 {
 __asm
-  // line 386
-  extern inputMZ1X03_enabled
-  // line 389
-  ld A, (inputMZ1X03_enabled)
-  cp A, 0 + OPCODE_JP_NZ
-  // line 390
-  ld L, 0 + false
-  ret z
-  // line 391
-  inc L
+  // line 384
+    // line 386
+    extern inputMZ1X03_enabled
+    // line 389
+    ld A, (inputMZ1X03_enabled)
+    cp A, 0 + OPCODE_JP_NZ
+    // line 390
+    ld L, false
+    ret z
+    // line 391
+    inc L
 __endasm;
 }
 
@@ -415,173 +419,175 @@ __endasm;
 #pragma save
 #pragma disable_warning 85          
 
-void inputMZ1X03ButtonVSyncAxis1(u8 const mz1x03_sensitivity)  __z88dk_fastcall
+void  inputMZ1X03ButtonVSyncAxis1(u8 const mz1x03_sensitivity) __z88dk_fastcall
 {
 __asm
-  // line 430
-  extern inputMZ1X03_button_1
-  // line 431
-  extern inputMZ1X03_vSyncLoop
-  // line 432
-  extern inputMZ1X03_wait1Loop
-  // line 433
-  extern inputMZ1X03_wait2Loop
-  // line 434
-  extern inputMZ1X03_notDetected
-  // line 435
-  extern _input_joy_
-  // line 437
-  BANKH_VRAM_MMIO C
-  // line 439
-  ld E, L
-  // line 441
+  // line 400
+    // line 430
+    extern inputMZ1X03_button_1
+    // line 431
+    extern inputMZ1X03_vSyncLoop
+    // line 432
+    extern inputMZ1X03_wait1Loop
+    // line 433
+    extern inputMZ1X03_wait2Loop
+    // line 434
+    extern inputMZ1X03_notDetected
+    // line 435
+    extern _input_joy_
+    // line 437
+    BANKH_VRAM_MMIO 
+    // line 439
+    ld E, L
+    // line 441
 #if  DEBUG
-  ld A, (MMIO_8255_PORTC)
-  and A, A
-  // line 444
+    ld A, (MMIO_8255_PORTC)
+    and A, A
+    // line 444
 #endif 
-  // line 446
-  ld D, 0 + MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK
-  // line 447
-  ld HL, 0 + MMIO_ETC
-  // line 448
-  ld A, (HL)
-  // line 449
-  cpl
-  // line 450
-  and A, D
-  // line 453
-  rrca
-  // line 454
-  ld (inputMZ1X03_button_1 + 1), A
-  // line 457
-  ld A, H
-  // line 458
-  ld L, 0 + MMIO_8255_PORTC & 0xff
-  // line 460
+    // line 446
+    ld D, 0 + MMIO_ETC_JA1_MASK|MMIO_ETC_JA2_MASK
+    // line 447
+    ld HL, 0 + MMIO_ETC
+    // line 448
+    ld A, (HL)
+    // line 449
+    cpl
+    // line 450
+    and A, D
+    // line 453
+    rrca
+    // line 454
+    ld (inputMZ1X03_button_1+1), A
+    // line 457
+    ld A, H
+    // line 458
+    ld L, 0 + MMIO_8255_PORTC&0xff
+    // line 460
 inputMZ1X03_vSyncLoop:
-    // line 461
-    and A, (HL)
-  jp m, 0 + inputMZ1X03_vSyncLoop
-  // line 463
+      // line 461
+      and A, (HL)
+    jp m, 0 + inputMZ1X03_vSyncLoop
+    // line 463
 inputMZ1X03_vSync:
-  // line 466
-  ld L, 0 + MMIO_ETC & 0xff
-  // line 467
-  ld B, 0 + 6
-  // line 468
+    // line 466
+    ld L, 0 + MMIO_ETC&0xff
+    // line 467
+    ld B, 6
+    // line 468
 inputMZ1X03_wait1Loop:
-  djnz B, 0 + inputMZ1X03_wait1Loop
-  // line 473
-  ld A, (HL)
-  // line 474
-  and A, D
-  // line 475
+    djnz B,0 + inputMZ1X03_wait1Loop
+    // line 473
+    ld A, (HL)
+    // line 474
+    and A, D
+    // line 475
 inputMZ1X03_enabled:
-  // line 476
-  jp nz, 0 + inputMZ1X03_notDetected
-  // line 480
-  ld A, E
-  // line 481
-  add A, A
-  add A, E
-  // line 482
-  add A, A
-  add A, A
-  add A, A
-  add A, A
-  // line 483
-  add A, 0 + 9
-  // line 484
-  exx
-    // line 485
-    ld B, A
-    // line 486
+    // line 476
+    jp nz, 0 + inputMZ1X03_notDetected
+    // line 480
+    ld A, E
+    // line 481
+    add A, A
+    add A, E
+    // line 482
+    add A, A
+    add A, A
+    add A, A
+    add A, A
+    // line 483
+    add A, 9
+    // line 484
+    exx
+      // line 485
+      ld B, A
+      // line 486
 inputMZ1X03_wait2Loop:
-      // line 487
-      inc HL
-    djnz B, 0 + inputMZ1X03_wait2Loop
-  exx
-  // line 493
+        // line 487
+        inc HL
+      djnz B,0 + inputMZ1X03_wait2Loop
+    exx
+    // line 493
 inputMZ1X03_readA:
-  // line 494
-  ld A, (HL)
-  // line 497
-  and A, D
-  // line 498
-  rrca
-  // line 499
-  ld (_input_joy_), A
-  // line 501
-  BANKH_RAM C
-  // line 503
-  ret
-  // line 505
+    // line 494
+    ld A, (HL)
+    // line 497
+    and A, D
+    // line 498
+    rrca
+    // line 499
+    ld (_input_joy_), A
+    // line 501
+    BANKH_RAM 
+    // line 503
+    ret
+    // line 505
 inputMZ1X03_notDetected:
-  // line 506
-  ld A, 0 + INPUT_MASK_NC
-  ld (_input_joy_), A
-  // line 507
-  BANKH_RAM C
+    // line 506
+    ld A, 0 + INPUT_MASK_NC
+    ld (_input_joy_), A
+    // line 507
+    BANKH_RAM 
 __endasm;
 }
 
 #pragma restore
 
 
-void inputMZ1X03Axis2(void)  __naked
+void  inputMZ1X03Axis2(void) __naked
 {
 __asm
-  // line 515
-  extern _input_joy_
-  // line 516
-  extern INPUT_MZ1X03_TAB
-  // line 519
-  ld A, (_input_joy_)
-  // line 520
-  cp A, 0 + INPUT_MASK_NC
-  ret z
-  // line 521
-  ld E, A
-  // line 523
-  BANKH_VRAM_MMIO C
-  // line 524
+  // line 513
+    // line 515
+    extern _input_joy_
+    // line 516
+    extern INPUT_MZ1X03_TAB
+    // line 519
+    ld A, (_input_joy_)
+    // line 520
+    cp A, 0 + INPUT_MASK_NC
+    ret z
+    // line 521
+    ld E, A
+    // line 523
+    BANKH_VRAM_MMIO 
+    // line 524
 inputMZ1X03_readB:
-  // line 525
-  ld A, (MMIO_ETC)
-  // line 528
-  and A, 0 + MMIO_ETC_JA1_MASK | MMIO_ETC_JA2_MASK
-  // line 529
-  add A, A
-  // line 530
-  or A, E
-  // line 531
-  ld HL, 0 + INPUT_MZ1X03_TAB
-  // line 532
-  ld D, 0 + 0x00
-  ld E, A
-  add HL, DE
-  // line 533
-  ld A, (HL)
-  // line 534
+    // line 525
+    ld A, (MMIO_ETC)
+    // line 528
+    and A, 0 + MMIO_ETC_JA1_MASK|MMIO_ETC_JA2_MASK
+    // line 529
+    add A, A
+    // line 530
+    or A, E
+    // line 531
+    ld HL, 0 + INPUT_MZ1X03_TAB
+    // line 532
+    ld D, 0
+    ld E, A
+    add HL, DE
+    // line 533
+    ld A, (HL)
+    // line 534
 inputMZ1X03_button_1:
-  or A, 0 + 0x00
-  // line 535
-  BANKH_RAM C
-  // line 536
-  ld (_input_joy_), A
-  // line 537
-  ret
-  // line 539
+    or A, 0
+    // line 535
+    BANKH_RAM 
+    // line 536
+    ld (_input_joy_), A
+    // line 537
+    ret
+    // line 539
 INPUT_MZ1X03_TAB:
-  // line 540
-db INPUT_MASK_R | INPUT_MASK_D, INPUT_MASK_NC, INPUT_MASK_NC, INPUT_MASK_NC
-  // line 541
-db INPUT_MASK_D, INPUT_MASK_L | INPUT_MASK_D, INPUT_MASK_NC, INPUT_MASK_NC
-  // line 542
-db INPUT_MASK_R, INPUT_MASK_NC, INPUT_MASK_R | INPUT_MASK_U, INPUT_MASK_NC
-  // line 543
-db 0, INPUT_MASK_L, INPUT_MASK_U, INPUT_MASK_L | INPUT_MASK_U
+    // line 540
+    db 0 + INPUT_MASK_R|INPUT_MASK_D, 0 + INPUT_MASK_NC, 0 + INPUT_MASK_NC, 0 + INPUT_MASK_NC
+    // line 541
+    db 0 + INPUT_MASK_D, 0 + INPUT_MASK_L|INPUT_MASK_D, 0 + INPUT_MASK_NC, 0 + INPUT_MASK_NC
+    // line 542
+    db 0 + INPUT_MASK_R, 0 + INPUT_MASK_NC, 0 + INPUT_MASK_R|INPUT_MASK_U, 0 + INPUT_MASK_NC
+    // line 543
+    db 0, 0 + INPUT_MASK_L, 0 + INPUT_MASK_U, 0 + INPUT_MASK_L|INPUT_MASK_U
 __endasm;
 }
 

@@ -199,8 +199,8 @@
 #define DC_MAN_LEFT     0xcb
 #define DC_MAN_RIGHT    0xcc
 #define DC_MAN_DOWN     0xcd
-#define DC_NICOCHAN_1   0xce
-#define DC_NICOCHAN_0   0xcf
+#define DC_NICOCHAN_1   0xce    // ニコチャン(塗りつぶし)
+#define DC_NICOCHAN_0   0xcf    // ニコチャン(ヌケ)
 
 #define DC_KANJI_SUN    0xd0    // 日
 #define DC_KANJI_MON    0xd1    // 月

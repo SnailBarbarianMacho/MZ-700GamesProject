@@ -11,7 +11,7 @@ game/src/system/print.o: game/src/system/print.c ../src-common/common.h game/src
 game/src/system/sound.o: game/src/system/sound.c ../src-common/common.h ../src-common/hard.h game/src/system/addr.h game/src/system/vvram.h game/src/system/math.h game/src/game/bgm.h game/src/game/se.h game/src/system/sound.h
 game/src/system/sys.o: game/src/system/sys.c ../src-common/common.h game/src/system/addr.h game/src/system/sound.h game/src/system/input.h game/src/system/vvram.h game/src/system/sys.h game/src/game/bgm.h game/src/scenes/scene-title.h game/src/scenes/scene-game-mode.h
 game/src/system/utils.o: game/src/system/utils.c ../src-common/common.h game/src/system/utils.h
-game/src/system/vvram.c: game/src/system/vvram.aal.c ../src-common/common.h ../src-common/hard.h game/src/system/addr.h game/src/system/input.h game/src/system/vvram.h game/src/system/math.h
+game/src/system/vvram.c: game/src/system/vvram.aal.c ../src-common/common.h ../src-common/hard.h ../src-common/aal80.h game/src/system/addr.h game/src/system/input.h game/src/system/vvram.h game/src/system/math.h
 game/src/system/vvram.o: game/src/system/vvram.c
 GAME_SYSTEM_OBJS := game/src/system/assert.o game/src/system/input.o game/src/system/main.o game/src/system/math.o game/src/system/obj.o game/src/system/print.o game/src/system/sound.o game/src/system/sys.o game/src/system/utils.o game/src/system/vvram.o
 GAME_SYSTEM_CLEAN_FILES := game/src/system/assert.o game/src/system/input.c game/src/system/input.o game/src/system/main.o game/src/system/math.o game/src/system/obj.o game/src/system/print.o game/src/system/sound.o game/src/system/sys.o game/src/system/utils.o game/src/system/vvram.c game/src/system/vvram.o

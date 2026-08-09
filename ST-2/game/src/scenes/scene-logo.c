@@ -91,7 +91,7 @@ static void logoTrans(bool b_disp) __z88dk_fastcall __naked
 __asm
     // ---------------- 準備
     ld      (LOGO_TRANS_SP_RESTORE + 1), SP// SP を保存(自己書換)
-    BANKH_VRAM_MMIO C                      // バンク切替
+    BANKH_VRAM_MMIO                        // バンク切替
 
     // -------------------------------- 非表示(b_disp == 0)
     ld      A, L
@@ -194,7 +194,7 @@ LOGO_TRANS_DRAW_LOOP1:
 
     // ---------------- 後始末
 LOGO_TRANS_END:
-    BANKH_RAM C                 // バンク切替
+    BANKH_RAM                   // バンク切替
 LOGO_TRANS_SP_RESTORE:
     ld      SP, 0x0000          // SP を復帰
     ret
@@ -208,7 +208,7 @@ static void drawLogoAtb(u8* data) __z88dk_fastcall
 {
     // 余り VRAM ウエイトのことも考えずに気軽に ATB を書く
 __asm
-    BANKH_VRAM_MMIO C                   // バンク切替
+    BANKH_VRAM_MMIO                     // バンク切替
     // HL = data
     ld      DE, 0 + VRAM_ATB_ADDR(LOGO_POS_X, LOGO_POS_Y)
     ld      BC, 0x05ff                  // B 値がいじられないように C には大きな値を
@@ -224,7 +224,7 @@ DRAW_LOGO_ATB_LOOP:
 DRAW_LOGO_ATB_HL_RESTORE:
         ld   HL, 0000                   // HL 復帰
     djnz    B, DRAW_LOGO_ATB_LOOP
-    BANKH_RAM C                         // バンク切替
+    BANKH_RAM                           // バンク切替
 __endasm;
 }
 
