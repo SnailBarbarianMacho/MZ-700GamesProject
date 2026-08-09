@@ -44,7 +44,8 @@ if ($percent <= 100) {
     $percent2 = min((int)($percent / 2), 100);
     $bar = '[' . $col . str_repeat('=', 50) . str_repeat('>', $percent2 - 50) . $col_off . ']';
 }
+$diff = $cmp_filesize - $ref_filesize;
 $out = "[$cmp_filename]: $bar" .
-    sprintf("0x%04x/0x%04x=$col%d%%$col_off", $cmp_filesize, $ref_filesize, $percent) .
+    sprintf("0x%04x/0x%04x=$col%d%%$col_off(%s0x%04x)", $cmp_filesize, $ref_filesize, $percent, ($diff < 0) ? '-' : '+', abs($diff)) .
     " of [$ref_filename]\n";
 fwrite(STDERR, $out);
