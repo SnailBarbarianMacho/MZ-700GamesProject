@@ -7,79 +7,81 @@
 * ある日唐突に MZ-700 で動くゲームを作ってみたくなったので, 作りました！
 * 実行可能バイナリ (.mzt) は残してるので, ビルドしないで遊ぶことができます
 * EmuZ-700 エミュレータでしか動作確認してませんが, 多分実機でも動く...はず
-* PCG-700 等の外付け PCG ハードウェアを使用している場合は, 無効化してください.<br>
+* PCG-700 等の外付け PCG ハードウェアを使用している場合は, 無効化してください.<br/>
   HAL 研究所の製品ならば, GSW スイッチを OFF にします. 互換ハードウェアの場合, 取説に従ってください
-* MZ-1R12(SRAM メモリ カード), MZ-1E05(FDD I/F), MZ-1E14(QD I/F) を装着している場合, 起動しない場合があります. <br>
+* MZ-1R12(SRAM メモリ カード), MZ-1E05(FDD I/F), MZ-1E14(QD I/F) を装着している場合, 起動しない場合があります. <br/>
   原因は不明です. その場合は, これらを切り離してください.
-* MZ-1500 の場合, リセットすると動かなくなるプログラムがあるかもしれません(モニターROMがワークを破壊する為). その場合はロードし直してください.<br>
+* MZ-1500 の場合, リセットすると動かなくなるプログラムがあるかもしれません(モニターROMがワークを破壊する為). その場合はロードし直してください.<br/>
 * MZ-700 に不可能はない! "MZ-700 has NO LIMIT!"
 
 
 # Features
 
 * 複数のサブ プロジェクトが中に入ってます
-* **test** <br>
+* [**MEMO.md**](MEMO.md)<br/>
+  ゲーム作り忘備録
+* **test** <br/>
   コンパイラの動作テスト
-* **memory-dirtinizer** <br>
+* **memory-dirtinizer** <br/>
   実機の電源投入時のように, メモリを「汚く」して, リセットします
-* **ram-check** <br>
+* **ram-check** <br/>
   RAM と VRAM をチェックします
-* **joystick-mz1x03-test** <br>
+* **joystick-mz1x03-test** <br/>
   シャープ純正ジョイスティック MZ-1X03 の動作テスト (デジタル, 検出機能付き)
-* **8253-test** <br>
+* **8253-test** <br/>
   8253の動作を理解するための実験コード (適時書き換えられます)
-* **sound-test1** <br>
+* **sound-test1** <br/>
   サウンド テスト1 (SD3 - PFM+OR 3音源)
   https://www.youtube.com/watch?v=Qs5GZ-hzjp4
-* **sound-test2** <br>
+* **sound-test2** <br/>
   サウンド テスト2 (3音源, PFM+OR合成, 波形誤差拡散, 失敗作)
-* **sound-test3** <br>
+* **sound-test3** <br/>
   サウンド テスト3 (SD6 - PFM+OR 6音源)
-* **sound-test4** <br>
+* **sound-test4** <br/>
   サウンド テスト4 (SD4 - PWM 4音源)
-* **ST-2** <br>
-  習作 縦シューティング ゲーム.<br>
+* **ST-2** <br/>
+  習作 縦シューティング ゲーム.<br/>
   動画は Youtube にあります: https://www.youtube.com/watch?v=PG0ijYIvdNw
-* **Baryon** <br>
-  3D レール シューター<br>
+* **Baryon** <br/>
+  3D レール シューター<br/>
   動画は Youtube にあります: https://www.youtube.com/watch?v=eU8QhuCyoiM
-* 以後, 妻が許せばゲームを増やす予定<br>
+* 以後, 妻が許せばゲームを増やす予定<br/>
 
 
 # Requirement
 
 * バイナリを用意しています. 遊ぶだけなら, 必要なのはエミュレータ (または 実機) のみです
-* **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br>
-  代表的な MZ-700 エミュレータ.<br>
-  モニター ROM イメージと日本版フォントイメージが必要です.<br>
+* **EmuZ-700** http://takeda-toshiya.my.coocan.jp/common/index.html<br/>
+  代表的な MZ-700 エミュレータ.<br/>
+  モニター ROM イメージと日本版フォントイメージが必要です.<br/>
   互換イメージが入手できます: http://mzakd.cool.coocan.jp/starthp/mz700win.html
 * Windows 10 + Power Shell 7 以上
-* **z88dk** https://github.com/z88dk/z88dk/wiki <br>
-  nightly build 20241022<br>
+* **z88dk** https://github.com/z88dk/z88dk/wiki <br/>
+  nightly build 20241022<br/>
   環境変数 PATH を通してください
-* **php 8.x** https://windows.php.net/ <br>
-  gd と mbstring を有効化してください <br>
+* **php 8.x** https://windows.php.net/ <br/>
+  gd と mbstring を有効化してください <br/>
   環境変数 PATH を通してください
-* **gmake 4.4** <br>
-  https://www.mingw-w64.org/ の MinGW-W64 から入手します.<br>
-  x86_64-16.1.0-release-win32-seh-msvcrt-xxxxx をダウンロードして展開します.<br>
-  bin/mingnu32_make.exe を make.exe にリネームして, これ以外は削除します.<br>
+* **gmake 4.4** <br/>
+  https://www.mingw-w64.org/ の MinGW-W64 から入手します.<br/>
+  x86_64-16.1.0-release-win32-seh-msvcrt-xxxxx をダウンロードして展開します.<br/>
+  bin/mingnu32_make.exe を make.exe にリネームして, これ以外は削除します.<br/>
   環境変数 PATH を通してください
-* **exomizer 3.1.1** https://bitbucket.org/magli143/exomizer/wiki/Home<br>
+* **exomizer 3.1.1** https://bitbucket.org/magli143/exomizer/wiki/Home<br/>
   圧縮ツール. ビルドして完成した exomizer.exe を tools/ に置いてください
-* **ZX0** https://github.com/einar-saukas/ZX0<br>
+* **ZX0** https://github.com/einar-saukas/ZX0<br/>
   圧縮ツール. zx0.exe を tools/ に置いてください
-* **salvador** https://github.com/emmanuel-marty/salvador<br>
+* **salvador** https://github.com/emmanuel-marty/salvador<br/>
   圧縮ツール. ビルドして完成した salvador.exe を tools/ に置いてください
 
 
 # Build
 
-* ビルドはプロジェクト ルートで<br>
+* ビルドはプロジェクト ルートで<br/>
 ```
 >make
 ```
-* 又は, 各サブ プロジェクト フォルダへ移動して<br>
+* 又は, 各サブ プロジェクト フォルダへ移動して<br/>
 ```
 >cd サブプロジェクトフォルダ
 >make
@@ -90,7 +92,7 @@
 >make release
 ```
 
-* それぞれ, make clean や meke release が用意されてます<br>
+* それぞれ, make clean や meke release が用意されてます<br/>
 
 
 # EmuZ-700 あんちょこ Cheat Sheet
@@ -127,12 +129,12 @@
 
 # License
 
-* This project is under [MIT license]<br>
-  except <br>
+* This project is under [MIT license]<br/>
+  except <br/>
   - Exomizer3 (original by uniabis) is under [zlib license]
   - ZX0 (original by Einar Saukas & Urusergi) is under [BSD 3-Clause License]
   - Upkr (original by exoticorn) is [Unlicense License]
-* このプロジェクトの成果物のスクリーンショットや動画は, 私の承諾なしに, 自由に作成・改変して配布できます<br>
+* このプロジェクトの成果物のスクリーンショットや動画は, 私の承諾なしに, 自由に作成・改変して配布できます<br/>
   でも出会ったらビールを奢ってください
 
 # Thanks to
